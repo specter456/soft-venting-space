@@ -1,0 +1,472 @@
+/* DO NOT CHANGE */
+@import "tailwindcss";
+@import "tw-animate-css";
+@custom-variant dark (&:is(.dark *));
+
+/* DO NOT CHANGE */
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* ─── Venting pastel palette (Claymorphism) ─────────────────────────── */
+@theme {
+  --color-cream: #fbf5ec;
+  --color-cream-deep: #f2e7d8;
+  --color-cream-soft: #fffdf8;
+
+  --color-lavender-50: #f5f0fc;
+  --color-lavender-100: #eae0f8;
+  --color-lavender-200: #dac9f1;
+  --color-lavender-300: #c4ace8;
+  --color-lavender-400: #ad8fdd;
+  --color-lavender-500: #9774d1;
+  --color-lavender-600: #7d59b8;
+  --color-lavender-700: #65479a;
+
+  --color-blush-50: #fcf1f3;
+  --color-blush-100: #f8e0e4;
+  --color-blush-200: #f1c7cf;
+  --color-blush-300: #e7a8b4;
+  --color-blush-400: #db8a9b;
+  --color-blush-500: #cb6f84;
+
+  --color-mist-50: #f0f8fc;
+  --color-mist-100: #dfeef7;
+  --color-mist-200: #c5e0f0;
+  --color-mist-300: #a3cce6;
+  --color-mist-400: #7fb3d6;
+  --color-mist-500: #5f97c0;
+
+  --color-mint-50: #eff9f3;
+  --color-mint-100: #dcf1e5;
+  --color-mint-200: #bce3cf;
+  --color-mint-300: #94d0b1;
+  --color-mint-400: #6cb894;
+  --color-mint-500: #4d9d79;
+
+  --color-peach-50: #fdf3e6;
+  --color-peach-100: #fbe6cd;
+  --color-peach-200: #f6d3a9;
+  --color-peach-300: #efbc7f;
+  --color-peach-400: #e5a25a;
+
+  --color-ink: #5a5470;
+  --color-ink-soft: #8d87a3;
+  --color-ink-deep: #46405c;
+}
+
+/* CHANGE VALUES FOR THEME */
+:root {
+  --radius: 1rem;
+  --background: oklch(0.973 0.016 84);
+  --foreground: oklch(0.328 0.042 296);
+  --card: oklch(0.993 0.007 84);
+  --card-foreground: oklch(0.328 0.042 296);
+  --popover: oklch(0.993 0.007 84);
+  --popover-foreground: oklch(0.328 0.042 296);
+  --primary: oklch(0.622 0.127 296);
+  --primary-foreground: oklch(0.993 0.007 84);
+  --secondary: oklch(0.922 0.048 296);
+  --secondary-foreground: oklch(0.328 0.042 296);
+  --muted: oklch(0.941 0.03 84);
+  --muted-foreground: oklch(0.56 0.035 296);
+  --accent: oklch(0.924 0.043 8);
+  --accent-foreground: oklch(0.328 0.042 296);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.9 0.03 296);
+  --input: oklch(0.9 0.03 296);
+  --ring: oklch(0.7 0.1 296);
+  --chart-1: oklch(0.622 0.127 296);
+  --chart-2: oklch(0.62 0.11 160);
+  --chart-3: oklch(0.63 0.11 210);
+  --chart-4: oklch(0.64 0.12 40);
+  --chart-5: oklch(0.62 0.11 340);
+  --sidebar: oklch(0.993 0.007 84);
+  --sidebar-foreground: oklch(0.328 0.042 296);
+  --sidebar-primary: oklch(0.622 0.127 296);
+  --sidebar-primary-foreground: oklch(0.993 0.007 84);
+  --sidebar-accent: oklch(0.922 0.048 296);
+  --sidebar-accent-foreground: oklch(0.328 0.042 296);
+  --sidebar-border: oklch(0.9 0.03 296);
+  --sidebar-ring: oklch(0.7 0.1 296);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family:
+      ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN",
+      "Quicksand", system-ui, -apple-system, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  button:not([disabled]),
+  [role="button"]:not([disabled]) {
+    cursor: pointer;
+  }
+}
+
+/* ─── Claymorphism surfaces ─────────────────────────────────────────── */
+@layer components {
+  /* Raised plush card — the main clay surface */
+  .clay-card {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.92),
+      rgba(255, 250, 242, 0.68)
+    );
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 0 -7px 16px -8px rgba(139, 112, 190, 0.2),
+      0 20px 34px -16px rgba(99, 82, 150, 0.32);
+  }
+
+  /* Lighter raised surface for chips and small bits */
+  .clay-chip {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.95),
+      rgba(255, 250, 242, 0.75)
+    );
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -4px 10px -6px rgba(139, 112, 190, 0.25),
+      0 10px 16px -8px rgba(99, 82, 150, 0.28);
+  }
+
+  /* Pressed / inset clay surface */
+  .clay-press {
+    background: linear-gradient(
+      180deg,
+      rgba(232, 222, 244, 0.55),
+      rgba(255, 253, 248, 0.9)
+    );
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow:
+      inset 0 3px 8px -2px rgba(99, 82, 150, 0.25),
+      inset 0 -2px 5px rgba(255, 255, 255, 0.7);
+  }
+
+  /* Primary clay button */
+  .clay-btn {
+    background: linear-gradient(180deg, #cdb9f2, #b59de8);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.65),
+      inset 0 -5px 10px -4px rgba(95, 72, 160, 0.45),
+      0 12px 20px -8px rgba(118, 90, 190, 0.55);
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.15s ease,
+      filter 0.15s ease;
+  }
+  .clay-btn:hover {
+    filter: brightness(1.04);
+  }
+  .clay-btn:active {
+    transform: translateY(2px) scale(0.98);
+    box-shadow:
+      inset 0 3px 9px -2px rgba(95, 72, 160, 0.4),
+      0 6px 12px -6px rgba(118, 90, 190, 0.45);
+  }
+
+  /* Floating pill buttons with soft peach / pink clay */
+  .clay-btn-soft {
+    background: linear-gradient(180deg, #fbe6cd, #f6d3a9);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.7),
+      inset 0 -5px 10px -4px rgba(196, 140, 80, 0.4),
+      0 12px 20px -8px rgba(190, 135, 85, 0.45);
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.15s ease,
+      filter 0.15s ease;
+  }
+  .clay-btn-soft:hover {
+    filter: brightness(1.04);
+  }
+  .clay-btn-soft:active {
+    transform: translateY(2px) scale(0.98);
+  }
+
+  .clay-btn-blush {
+    background: linear-gradient(180deg, #f8e0e4, #f1c7cf);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.7),
+      inset 0 -5px 10px -4px rgba(190, 110, 130, 0.4),
+      0 12px 20px -8px rgba(185, 105, 125, 0.45);
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.15s ease,
+      filter 0.15s ease;
+  }
+  .clay-btn-blush:hover {
+    filter: brightness(1.04);
+  }
+  .clay-btn-blush:active {
+    transform: translateY(2px) scale(0.98);
+  }
+}
+
+/* ─── Mood bubbles (per-feeling clay colors) ────────────────────────── */
+@layer components {
+  .mood-bubble {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    transition:
+      transform 0.18s ease,
+      box-shadow 0.18s ease,
+      filter 0.18s ease;
+  }
+  .mood-bubble:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.03);
+  }
+  .mood-bubble:active {
+    transform: translateY(1px) scale(0.97);
+  }
+  .mood-bubble-selected {
+    outline: 3px solid rgba(70, 64, 92, 0.35);
+    outline-offset: 2px;
+  }
+
+  .mood-sad {
+    background: linear-gradient(180deg, #d8ebf8, #c2dff2);
+    box-shadow:
+      inset 0 2px 3px rgba(255, 255, 255, 0.85),
+      inset 0 -6px 12px -6px rgba(84, 140, 190, 0.5),
+      0 12px 20px -10px rgba(96, 152, 205, 0.55);
+  }
+  .mood-angry {
+    background: linear-gradient(180deg, #fbdccb, #f3c4aa);
+    box-shadow:
+      inset 0 2px 3px rgba(255, 255, 255, 0.85),
+      inset 0 -6px 12px -6px rgba(190, 120, 75, 0.5),
+      0 12px 20px -10px rgba(214, 140, 100, 0.55);
+  }
+  .mood-nervous {
+    background: linear-gradient(180deg, #dcf2e5, #bfe5d0);
+    box-shadow:
+      inset 0 2px 3px rgba(255, 255, 255, 0.85),
+      inset 0 -6px 12px -6px rgba(80, 150, 115, 0.5),
+      0 12px 20px -10px rgba(110, 180, 145, 0.55);
+  }
+  .mood-happy {
+    background: linear-gradient(180deg, #fce7c9, #f6d3a9);
+    box-shadow:
+      inset 0 2px 3px rgba(255, 255, 255, 0.85),
+      inset 0 -6px 12px -6px rgba(190, 130, 60, 0.5),
+      0 12px 20px -10px rgba(220, 160, 90, 0.55);
+  }
+  .mood-tired {
+    background: linear-gradient(180deg, #e6dcf8, #d6c6f0);
+    box-shadow:
+      inset 0 2px 3px rgba(255, 255, 255, 0.85),
+      inset 0 -6px 12px -6px rgba(120, 90, 180, 0.5),
+      0 12px 20px -10px rgba(140, 110, 205, 0.55);
+  }
+  .mood-overwhelmed {
+    background: linear-gradient(180deg, #f8dfe4, #f0c5cf);
+    box-shadow:
+      inset 0 2px 3px rgba(255, 255, 255, 0.85),
+      inset 0 -6px 12px -6px rgba(185, 100, 125, 0.5),
+      0 12px 20px -10px rgba(210, 120, 150, 0.55);
+  }
+  .mood-calm {
+    background: linear-gradient(180deg, #d3eaf7, #b8daf0);
+    box-shadow:
+      inset 0 2px 3px rgba(255, 255, 255, 0.85),
+      inset 0 -6px 12px -6px rgba(76, 140, 190, 0.5),
+      0 12px 20px -10px rgba(100, 170, 215, 0.55);
+  }
+
+  /* Soft colored squircle tiles for tool cards */
+  .tile-lavender {
+    background: linear-gradient(180deg, #eae0f8, #dac9f1);
+    box-shadow:
+      inset 0 2px 3px rgba(255, 255, 255, 0.85),
+      inset 0 -6px 12px -6px rgba(120, 90, 180, 0.4),
+      0 10px 16px -8px rgba(140, 110, 205, 0.45);
+  }
+  .tile-blush {
+    background: linear-gradient(180deg, #f8e0e4, #f1c7cf);
+    box-shadow:
+      inset 0 2px 3px rgba(255, 255, 255, 0.85),
+      inset 0 -6px 12px -6px rgba(185, 100, 125, 0.4),
+      0 10px 16px -8px rgba(210, 120, 150, 0.45);
+  }
+  .tile-mist {
+    background: linear-gradient(180deg, #dfeef7, #c5e0f0);
+    box-shadow:
+      inset 0 2px 3px rgba(255, 255, 255, 0.85),
+      inset 0 -6px 12px -6px rgba(76, 140, 190, 0.4),
+      0 10px 16px -8px rgba(100, 170, 215, 0.45);
+  }
+  .tile-mint {
+    background: linear-gradient(180deg, #dcf1e5, #bce3cf);
+    box-shadow:
+      inset 0 2px 3px rgba(255, 255, 255, 0.85),
+      inset 0 -6px 12px -6px rgba(80, 150, 115, 0.4),
+      0 10px 16px -8px rgba(110, 180, 145, 0.45);
+  }
+  .tile-peach {
+    background: linear-gradient(180deg, #fbe6cd, #f6d3a9);
+    box-shadow:
+      inset 0 2px 3px rgba(255, 255, 255, 0.85),
+      inset 0 -6px 12px -6px rgba(190, 130, 60, 0.4),
+      0 10px 16px -8px rgba(220, 160, 90, 0.45);
+  }
+}
+
+/* ─── Gentle motion ─────────────────────────────────────────────────── */
+@layer utilities {
+  .animate-floaty {
+    animation: floaty 6s ease-in-out infinite;
+  }
+  .animate-floaty-slow {
+    animation: floaty 9s ease-in-out infinite;
+  }
+  .animate-pop-in {
+    animation: pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  .animate-twinkle {
+    animation: twinkle 2.6s ease-in-out infinite;
+  }
+  .animate-rise {
+    animation: rise 1.2s ease-out infinite;
+  }
+}
+
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes rise {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.8);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-22px) scale(1.15);
+  }
+}
+
+/* Thin, soft scrollbar for the app column */
+.soft-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.soft-scroll::-webkit-scrollbar-thumb {
+  background: rgba(139, 112, 190, 0.25);
+  border-radius: 9999px;
+}

@@ -1,0 +1,44 @@
+import { useId } from "react";
+
+/** Venting's soft cloud-heart logo. Pastel gradient squircle + white heart. */
+export function Logo({ className }: { className?: string }) {
+  const id = useId();
+  const grad = `vent-grad-${id}`;
+  const shine = `vent-shine-${id}`;
+
+  return (
+    <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
+      <defs>
+        <linearGradient id={grad} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#cdb9f2" />
+          <stop offset="55%" stopColor="#e9c6d3" />
+          <stop offset="100%" stopColor="#f7d2a9" />
+        </linearGradient>
+        <linearGradient id={shine} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {/* squircle blob */}
+      <rect x="3.5" y="3.5" width="57" height="57" rx="19" fill={`url(#${grad})`} />
+      {/* top-light for that plush clay feel */}
+      <rect x="3.5" y="3.5" width="57" height="26" rx="19" fill={`url(#${shine})`} />
+      {/* heart */}
+      <path
+        d="M32 48 C 25.5 42.6, 13 34.6, 13 25 C 13 19, 18 14, 24 14 C 28 14, 31 16.5, 32 19.5 C 33 16.5, 36 14, 40 14 C 46 14, 51 19, 51 25 C 51 34.6, 38.5 42.6, 32 48 Z"
+        fill="#fffdf8"
+      />
+      {/* tiny sparkles */}
+      <circle cx="49" cy="13" r="2.4" fill="#fffdf8" opacity="0.95" />
+      <circle cx="55.5" cy="22" r="1.6" fill="#fffdf8" opacity="0.8" />
+      <circle cx="9.5" cy="47" r="1.8" fill="#fffdf8" opacity="0.75" />
+      <path
+        d="M12 16 l0 -3 M10.5 14.5 l3 0"
+        stroke="#fffdf8"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        opacity="0.9"
+      />
+    </svg>
+  );
+}
