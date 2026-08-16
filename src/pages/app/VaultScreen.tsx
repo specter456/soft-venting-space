@@ -149,6 +149,13 @@ export default function VaultScreen() {
             Photos, video vents, doodles, stickers and GIFs gather here — safe
             behind the double lock.
           </p>
+          <button
+            type="button"
+            onClick={() => navigate("/dashboard/create")}
+            className="clay-btn mt-6 rounded-full px-6 py-3 text-sm font-bold text-cream-soft"
+          >
+            Keep your first photo
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-3">

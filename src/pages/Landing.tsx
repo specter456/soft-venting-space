@@ -280,7 +280,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ─── Coming soon tools ───────────────────────────────────────── */}
+      {/* ─── The full toolkit ────────────────────────────────────────── */}
       <section className="relative z-10 mx-auto w-full max-w-6xl px-5 pb-20 sm:px-8">
         <motion.div {...fadeUp} className="text-center">
           <p className="text-sm font-bold tracking-wide text-lavender-500 uppercase">

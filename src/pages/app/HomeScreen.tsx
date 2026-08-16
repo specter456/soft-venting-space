@@ -225,7 +225,7 @@ export default function HomeScreen() {
         transition={{ delay: 0.4 }}
         className="pt-1 text-center text-[11px] font-semibold text-ink-soft"
       >
-        🔒 no feed · no likes · no followers — every room here is only yours
+        🔒 Private and safe. Only you can see this.
       </motion.p>
 
       <MoodCheckinDialog

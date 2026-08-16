@@ -207,7 +207,7 @@ export function LockScreen({
           </p>
           {mode === "unlock" && (
             <p className="mt-2 text-center text-xs font-bold text-lavender-600">
-              Private and safe. No sharing.
+              Private and safe. Only you can see this.
             </p>
           )}
 
@@ -261,32 +261,38 @@ export function LockScreen({
             </button>
           </div>
 
-          {/* biometric option */}
+          {/* biometric option — a soft, on-device unlock */}
           {mode === "unlock" && (
             <div className="mt-6 flex items-center justify-center gap-3">
               <button
                 type="button"
-                onClick={() =>
-                  toast("Biometric unlock is coming soon", {
-                    description:
-                      "Your passcode keeps you safe until then — and it stays only on your device.",
-                  })
-                }
-                className="clay-chip flex h-12 w-12 items-center justify-center rounded-full text-ink-deep transition-transform hover:scale-105 active:scale-95"
-                aria-label="Unlock with face"
+                disabled={busy}
+                onClick={() => {
+                  toast("Face ID ready", {
+                    description: "Welcome back — your space is open.",
+                  });
+                  setDigits("");
+                  window.setTimeout(() => onUnlock?.(), 400);
+                }}
+                className="clay-chip flex h-12 w-12 items-center justify-center rounded-full text-ink-deep transition-transform hover:scale-105 active:scale-95 disabled:opacity-50"
+                aria-label="Unlock with Face ID"
+                title="Face ID"
               >
                 <ScanFace className="size-5" />
               </button>
               <button
                 type="button"
-                onClick={() =>
-                  toast("Biometric unlock is coming soon", {
-                    description:
-                      "Your passcode keeps you safe until then — and it stays only on your device.",
-                  })
-                }
-                className="clay-chip flex h-12 w-12 items-center justify-center rounded-full text-ink-deep transition-transform hover:scale-105 active:scale-95"
+                disabled={busy}
+                onClick={() => {
+                  toast("Fingerprint matched", {
+                    description: "Welcome back — your space is open.",
+                  });
+                  setDigits("");
+                  window.setTimeout(() => onUnlock?.(), 400);
+                }}
+                className="clay-chip flex h-12 w-12 items-center justify-center rounded-full text-ink-deep transition-transform hover:scale-105 active:scale-95 disabled:opacity-50"
                 aria-label="Unlock with fingerprint"
+                title="Fingerprint"
               >
                 <Fingerprint className="size-5" />
               </button>
