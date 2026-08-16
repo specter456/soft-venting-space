@@ -15,7 +15,7 @@ import {
   Sticker,
   Video,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { Logo } from "@/components/Logo";
 import { PhoneMockup } from "@/components/PhoneMockup";
 import { MOODS } from "@/lib/moods";
@@ -73,6 +73,30 @@ const TOOLS = [
   },
 ];
 
+/** The four soft rooms — one straight row on wide screens, two per row on small. */
+const FEATURES = [
+  {
+    label: "Record",
+    icon: Mic,
+    tile: "tile-mist",
+  },
+  {
+    label: "Create",
+    icon: Sparkles,
+    tile: "tile-blush",
+  },
+  {
+    label: "Calm",
+    icon: CloudSun,
+    tile: "tile-mint",
+  },
+  {
+    label: "Diary",
+    icon: BookHeart,
+    tile: "tile-lavender",
+  },
+];
+
 const STEPS = [
   {
     n: "01",
@@ -127,19 +151,8 @@ export default function Landing() {
         className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-peach-100/50 blur-3xl"
       />
 
-      {/* ─── Nav ─────────────────────────────────────────────────────── */}
-      <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
-        <Link to="/" className="flex items-center gap-2.5">
-          <Logo className="h-10 w-10" />
-          <div className="leading-tight">
-            <p className="text-lg font-bold tracking-tight text-ink-deep">
-              Venting
-            </p>
-            <p className="text-[11px] font-medium text-ink-soft">
-              a tiny safe room in your phone
-            </p>
-          </div>
-        </Link>
+      {/* ─── Slim top bar (just the app CTA) ─────────────────────────── */}
+      <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-end px-5 py-5 sm:px-8">
         <button
           type="button"
           onClick={primaryCta}
@@ -150,26 +163,71 @@ export default function Landing() {
         </button>
       </header>
 
-      {/* ─── Hero ────────────────────────────────────────────────────── */}
-      <section className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-14 px-5 pt-10 pb-20 sm:px-8 lg:grid-cols-2 lg:gap-8 lg:pt-16">
+      {/* ─── Centered brand header: icon → name → tagline ────────────── */}
+      <section className="relative z-10 mx-auto w-full max-w-6xl px-5 pt-4 pb-8 sm:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="flex flex-col items-center text-center"
+        >
+          <Logo className="h-20 w-20 animate-floaty-slow drop-shadow-[0_10px_20px_rgba(120,100,160,0.25)] sm:h-24 sm:w-24" />
+          <h1 className="mt-5 text-4xl font-bold tracking-tight text-ink-deep sm:text-5xl">
+            Venting
+          </h1>
+          <p className="mt-2 text-base font-medium text-ink-soft sm:text-lg">
+            a tiny safe room in your phone
+          </p>
+        </motion.div>
+
+        {/* four feature icons — one row on wide, two per row on small */}
+        <div className="mx-auto mt-10 grid max-w-3xl grid-cols-2 gap-3.5 sm:gap-4 lg:grid-cols-4">
+          {FEATURES.map((feature, i) => (
+            <motion.button
+              key={feature.label}
+              type="button"
+              onClick={primaryCta}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.1 + i * 0.08, ease: "easeOut" }}
+              className="clay-card group flex flex-col items-center gap-2.5 rounded-[1.8rem] px-4 py-6 transition-transform duration-300 hover:-translate-y-1"
+            >
+              <div
+                className={cn(
+                  "flex h-14 w-14 items-center justify-center rounded-2xl text-ink-deep",
+                  feature.tile,
+                )}
+              >
+                <feature.icon className="size-6" strokeWidth={2.2} />
+              </div>
+              <p className="text-sm font-bold tracking-tight text-ink-deep">
+                {feature.label}
+              </p>
+            </motion.button>
+          ))}
+        </div>
+      </section>
+
+      {/* ─── Phone + text block (moved below the centered section) ───── */}
+      <section className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-14 px-5 pt-6 pb-20 sm:px-8 lg:grid-cols-2 lg:gap-8">
         <motion.div
           initial={{ opacity: 0, y: 28 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
+          transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
         >
           <div className="clay-chip inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold text-lavender-600">
             <Sparkles className="size-3.5" />
             private · gentle · just for you
           </div>
-          <h1 className="mt-6 text-4xl font-bold leading-[1.08] tracking-tight text-ink-deep sm:text-5xl lg:text-[3.4rem]">
+          <h2 className="mt-6 text-4xl font-bold leading-[1.08] tracking-tight text-ink-deep sm:text-5xl lg:text-[3.4rem]">
             A tiny safe room
             <br />
             inside your phone.
-          </h1>
+          </h2>
           <p className="mt-5 max-w-md text-base leading-relaxed text-ink sm:text-lg">
             Venting is your private emotional-wellness space — a soft place to
             feel, let it out, and breathe. It starts with one gentle question:
-           {" "}
+            {" "}
             <span className="font-semibold text-ink-deep">
               how are you feeling today?
             </span>
@@ -206,7 +264,7 @@ export default function Landing() {
         <motion.div
           initial={{ opacity: 0, y: 40, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.8, delay: 0.15, ease: "easeOut" }}
+          transition={{ duration: 0.8, delay: 0.25, ease: "easeOut" }}
           className="flex justify-center"
         >
           <PhoneMockup className="animate-floaty-slow" />
