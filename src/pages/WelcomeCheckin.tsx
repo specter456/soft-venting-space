@@ -1,14 +1,13 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { Navigate, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { Logo } from "@/components/Logo";
 import { todayDateKey } from "@/lib/moods";
-import { safeGetItem, safeSetItem } from "@/lib/safe-storage";
+import { safeSetItem } from "@/lib/safe-storage";
 import { useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
 
-/** Local-only onboarding flags — never sent anywhere. */
-const DONE_KEY = "venting-onboarding-done";
+/** Local-only check-in flag — never sent anywhere. */
 const CHECKIN_KEY = "venting-checkin";
 
 /** Exactly four gentle options, in one straight row. */
@@ -27,8 +26,6 @@ const DAY_MOODS = [
 export default function WelcomeCheckin() {
   const navigate = useNavigate();
   const [picked, setPicked] = useState<string | null>(null);
-  // local-only gate: this screen shows once, ever, per device (never throws)
-  const [alreadyDone] = useState(() => safeGetItem(DONE_KEY) === "1");
 
   const finish = (moodId: string | null) => {
     // the answer lives only on this device — never sent to any server
@@ -36,12 +33,9 @@ export default function WelcomeCheckin() {
       CHECKIN_KEY,
       JSON.stringify({ date: todayDateKey(), mood: moodId }),
     );
-    safeSetItem(DONE_KEY, "1");
     navigate("/dashboard");
   };
   const guardedFinish = useTapGuard(finish, 450);
-
-  if (alreadyDone) return <Navigate to="/dashboard" replace />;
 
   return (
     <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-gradient-to-b from-cream-soft via-cream to-lavender-50 px-5 text-ink">

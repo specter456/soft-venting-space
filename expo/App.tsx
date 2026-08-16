@@ -50,6 +50,10 @@ const navTheme = {
 // Global safety net for errors outside React — runs once at startup.
 installGlobalErrorHandlers();
 
+// Start loading the on-device database before first paint so the lock gate
+// resolves as fast as possible — the app shell never sits on a blank screen.
+void hydrate();
+
 export default function App() {
   const [phase, setPhase] = React.useState<LockPhase>("boot");
   const lastActive = React.useRef(Date.now());
@@ -105,9 +109,13 @@ export default function App() {
   );
 
   if (phase === "boot") {
+    // a soft, app-looking shell — not a blank "loading" screen. It only
+    // lingers while the on-device database opens (usually a few frames).
     return (
       <View style={styles.boot}>
         <Text style={styles.bootEmoji}>☁️</Text>
+        <Text style={styles.bootWord}>Venting</Text>
+        <Text style={styles.bootTag}>warming up your soft space…</Text>
       </View>
     );
   }
@@ -303,6 +311,8 @@ function MainNavigator() {
 const styles = StyleSheet.create({
   boot: { flex: 1, backgroundColor: palette.bg, alignItems: "center", justifyContent: "center" },
   bootEmoji: { fontSize: 64 },
+  bootWord: { marginTop: 14, fontSize: 26, fontWeight: "800", color: palette.ink, letterSpacing: 1 },
+  bootTag: { marginTop: 6, fontSize: 13, color: palette.inkSoft },
   gateRoot: { flex: 1, backgroundColor: palette.bg, overflow: "hidden" },
   gateGlow: { position: "absolute", width: 320, height: 320, borderRadius: 160, opacity: 0.5 },
   gateWrap: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },

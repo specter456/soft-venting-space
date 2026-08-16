@@ -267,7 +267,7 @@ export default function Landing() {
           transition={{ duration: 0.8, delay: 0.25, ease: "easeOut" }}
           className="flex justify-center"
         >
-          <PhoneMockup className="animate-floaty-slow" />
+          <PhoneMockup locked className="animate-floaty-slow" />
         </motion.div>
       </section>
 

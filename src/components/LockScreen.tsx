@@ -272,7 +272,7 @@ export function LockScreen({
                     description: "Welcome back — your space is open.",
                   });
                   setDigits("");
-                  window.setTimeout(() => onUnlock?.(), 400);
+                  onUnlock?.();
                 }}
                 className="clay-chip flex h-12 w-12 items-center justify-center rounded-full text-ink-deep transition-transform hover:scale-105 active:scale-95 disabled:opacity-50"
                 aria-label="Unlock with Face ID"
@@ -288,7 +288,7 @@ export function LockScreen({
                     description: "Welcome back — your space is open.",
                   });
                   setDigits("");
-                  window.setTimeout(() => onUnlock?.(), 400);
+                  onUnlock?.();
                 }}
                 className="clay-chip flex h-12 w-12 items-center justify-center rounded-full text-ink-deep transition-transform hover:scale-105 active:scale-95 disabled:opacity-50"
                 aria-label="Unlock with fingerprint"

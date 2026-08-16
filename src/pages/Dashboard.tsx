@@ -1,4 +1,4 @@
-import { Loader2, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
 import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router";
 import { cn } from "@/lib/utils";
@@ -75,17 +75,6 @@ export default function Dashboard() {
     } else if (safeSessionGetItem(LOCK_DISMISSED_KEY) !== "1") {
       setLock("setup");
     }
-  }
-
-  if (!hydrated) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-cream-soft via-cream to-lavender-50">
-        <div className="flex flex-col items-center gap-3">
-          <Logo className="h-12 w-12 animate-pulse" />
-          <Loader2 className="size-4 animate-spin text-lavender-400" />
-        </div>
-      </div>
-    );
   }
 
   if (lock === "setup") {
@@ -197,7 +186,18 @@ export default function Dashboard() {
 
         {/* ─── Current room ───────────────────────────────────────── */}
         <main className={cn("flex-1 px-5", showBar ? "pb-32" : "pb-14")}>
-          <Outlet />
+          {/* The shell paints instantly; room content fills in softly once
+              the on-device cache is ready. No blocking "Loading…" screen. */}
+          {hydrated ? (
+            <Outlet />
+          ) : (
+            <div className="flex min-h-[60dvh] flex-col items-center justify-center gap-4 text-center">
+              <Logo className="h-14 w-14 animate-floaty-slow" />
+              <p className="text-sm font-semibold text-ink-soft">
+                warming up your soft space…
+              </p>
+            </div>
+          )}
         </main>
 
         {/* ─── Bottom taskbar — Home | Games | Settings ───────────── */}

@@ -4,41 +4,34 @@ import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
 import { AppErrorBoundary, installGlobalErrorHandlers } from "@/components/AppErrorBoundary";
 import { OfflineNotice } from "@/components/Friendly";
 import { hydrate } from "@/lib/db";
-import React, { Suspense, lazy } from "react";
+import React from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import "./index.css";
 
+// All screens are imported eagerly: navigation is instant, with no "Loading…"
+// flash between screens. Everything reads from the on-device reactive cache,
+// so screens paint immediately and content simply fills in.
+import Landing from "./pages/Landing";
+import WelcomeCheckin from "./pages/WelcomeCheckin";
+import Dashboard from "./pages/Dashboard";
+import NotFound from "./pages/NotFound";
+import HomeScreen from "./pages/app/HomeScreen";
+import RecordScreen from "./pages/app/RecordScreen";
+import NotesScreen from "./pages/app/NotesScreen";
+import NoteEditor from "./pages/app/NoteEditor";
+import CreateScreen from "./pages/app/CreateScreen";
+import VaultScreen from "./pages/app/VaultScreen";
+import ScribbleScreen from "./pages/app/ScribbleScreen";
+import StickerStudio from "./pages/app/StickerStudio";
+import GifStudio from "./pages/app/GifStudio";
+import GamesScreen from "./pages/app/GamesScreen";
+import SettingsScreen from "./pages/app/SettingsScreen";
+import DiaryScreen from "./pages/app/DiaryScreen";
+
 // Kick off local-storage hydration immediately — everything Venting needs
 // lives on this device, so no async auth gate is required.
 void hydrate();
-
-// Lazy load route components for better code splitting
-const Landing = lazy(() => import("./pages/Landing.tsx"));
-const WelcomeCheckin = lazy(() => import("./pages/WelcomeCheckin.tsx"));
-const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
-const NotFound = lazy(() => import("./pages/NotFound.tsx"));
-const HomeScreen = lazy(() => import("./pages/app/HomeScreen.tsx"));
-const RecordScreen = lazy(() => import("./pages/app/RecordScreen.tsx"));
-const NotesScreen = lazy(() => import("./pages/app/NotesScreen.tsx"));
-const NoteEditor = lazy(() => import("./pages/app/NoteEditor.tsx"));
-const CreateScreen = lazy(() => import("./pages/app/CreateScreen.tsx"));
-const VaultScreen = lazy(() => import("./pages/app/VaultScreen.tsx"));
-const ScribbleScreen = lazy(() => import("./pages/app/ScribbleScreen.tsx"));
-const StickerStudio = lazy(() => import("./pages/app/StickerStudio.tsx"));
-const GifStudio = lazy(() => import("./pages/app/GifStudio.tsx"));
-const GamesScreen = lazy(() => import("./pages/app/GamesScreen.tsx"));
-const SettingsScreen = lazy(() => import("./pages/app/SettingsScreen.tsx"));
-const DiaryScreen = lazy(() => import("./pages/app/DiaryScreen.tsx"));
-
-// Simple loading fallback for route transitions
-function RouteLoading() {
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-pulse text-muted-foreground">Loading...</div>
-    </div>
-  );
-}
 
 /** Guard so runtime errors never leave the app as a blank page. */
 class ToolbarErrorBoundary extends React.Component<
@@ -110,48 +103,46 @@ createRoot(document.getElementById("root")!).render(
       <BrowserRouter>
         <RouteSyncer />
         <GlobalNotice />
-        <Suspense fallback={<RouteLoading />}>
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <RouteShell>
-                  <Landing />
-                </RouteShell>
-              }
-            />
-            <Route
-              path="/welcome"
-              element={
-                <RouteShell>
-                  <WelcomeCheckin />
-                </RouteShell>
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <RouteShell>
-                  <Dashboard />
-                </RouteShell>
-              }
-            >
-              <Route index element={<HomeScreen />} />
-              <Route path="record" element={<RecordScreen />} />
-              <Route path="notes" element={<NotesScreen />} />
-              <Route path="notes/new" element={<NoteEditor />} />
-              <Route path="create" element={<CreateScreen />} />
-              <Route path="scribble" element={<ScribbleScreen />} />
-              <Route path="stickers" element={<StickerStudio />} />
-              <Route path="gif-studio" element={<GifStudio />} />
-              <Route path="vault" element={<VaultScreen />} />
-              <Route path="games" element={<GamesScreen />} />
-              <Route path="settings" element={<SettingsScreen />} />
-              <Route path="diary" element={<DiaryScreen />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <RouteShell>
+                <Landing />
+              </RouteShell>
+            }
+          />
+          <Route
+            path="/welcome"
+            element={
+              <RouteShell>
+                <WelcomeCheckin />
+              </RouteShell>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <RouteShell>
+                <Dashboard />
+              </RouteShell>
+            }
+          >
+            <Route index element={<HomeScreen />} />
+            <Route path="record" element={<RecordScreen />} />
+            <Route path="notes" element={<NotesScreen />} />
+            <Route path="notes/new" element={<NoteEditor />} />
+            <Route path="create" element={<CreateScreen />} />
+            <Route path="scribble" element={<ScribbleScreen />} />
+            <Route path="stickers" element={<StickerStudio />} />
+            <Route path="gif-studio" element={<GifStudio />} />
+            <Route path="vault" element={<VaultScreen />} />
+            <Route path="games" element={<GamesScreen />} />
+            <Route path="settings" element={<SettingsScreen />} />
+            <Route path="diary" element={<DiaryScreen />} />
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </BrowserRouter>
       <Toaster />
     </AppErrorBoundary>

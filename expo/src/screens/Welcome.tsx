@@ -16,7 +16,6 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export default function WelcomeScreen({ navigation }: Props) {
   const [email, setEmail] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
-  const [busy, setBusy] = React.useState(false);
 
   const enter = async (withEmail: boolean) => {
     if (withEmail) {
@@ -32,9 +31,8 @@ export default function WelcomeScreen({ navigation }: Props) {
       await setKv(KV_PROFILE_EMAIL, trimmed);
     }
     await setKv(KV_ONBOARDING_DONE, "true");
-    setBusy(true);
-    // gentle pause for the soft transition
-    setTimeout(() => navigation.replace("Checkin"), 350);
+    // no artificial delay — the welcome card appears instantly
+    navigation.replace("Checkin");
   };
 
   return (
@@ -72,14 +70,12 @@ export default function WelcomeScreen({ navigation }: Props) {
                 label="Continue with Email"
                 color="primary"
                 size="lg"
-                loading={busy}
                 onPress={() => enter(true)}
               />
               <ClayButton
                 label="Continue as Guest"
                 color="cream"
                 size="lg"
-                disabled={busy}
                 onPress={() => enter(false)}
               />
             </View>
