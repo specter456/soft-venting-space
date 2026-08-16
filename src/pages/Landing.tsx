@@ -18,7 +18,6 @@ import {
 import { Link, useNavigate } from "react-router";
 import { Logo } from "@/components/Logo";
 import { PhoneMockup } from "@/components/PhoneMockup";
-import { useAuth } from "@/hooks/use-auth";
 import { MOODS } from "@/lib/moods";
 import { cn } from "@/lib/utils";
 
@@ -104,14 +103,9 @@ const fadeUp = {
 
 export default function Landing() {
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading } = useAuth();
 
-  const primaryCta = () => navigate("/auth");
-  const ctaLabel = isLoading
-    ? "Opening…"
-    : isAuthenticated
-      ? "Go to your space"
-      : "Open Venting";
+  const primaryCta = () => navigate("/welcome");
+  const ctaLabel = "Open Venting";
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-cream-soft via-cream to-lavender-50 text-ink">

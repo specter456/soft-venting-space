@@ -1,10 +1,14 @@
-import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { Check, Loader2, Mic, Video } from "lucide-react";
-import { api } from "@/convex/_generated/api";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  attachRecordingToNote,
+  createNote,
+  useTable,
+  type Recording,
+} from "@/lib/db";
 import { PHOTO_SCENES, VIDEO_AVATARS } from "@/lib/art";
 import { MOODS, type MoodId } from "@/lib/moods";
 import { cn } from "@/lib/utils";
@@ -14,9 +18,7 @@ export default function NoteEditor() {
   const [params] = useSearchParams();
   const attachId = params.get("attach");
 
-  const createNote = useMutation(api.notes.create);
-  const attachToNote = useMutation(api.recordings.attachToNote);
-  const recordings = useQuery(api.recordings.list);
+  const recordings = useTable<Recording>("recordings");
 
   const [body, setBody] = useState("");
   const [mood, setMood] = useState<MoodId | null>(null);
@@ -61,13 +63,13 @@ export default function NoteEditor() {
           art: photo.emoji,
         });
       }
-      const noteId = await createNote({
+      const note = createNote({
         body: body.trim(),
         mood: mood ?? undefined,
         attachments,
       });
       if (selectedRecording) {
-        await attachToNote({ id: selectedRecording._id, noteId });
+        attachRecordingToNote(selectedRecording._id, note._id);
       }
       toast("Reflection saved", {
         description: "Tucked safely into your private journal.",
@@ -119,11 +121,7 @@ export default function NoteEditor() {
         <p className="text-xs font-bold text-ink-soft uppercase tracking-wide">
           Tie a recording to this note <span className="normal-case">(optional)</span>
         </p>
-        {recordings === undefined ? (
-          <div className="mt-2 flex h-16 items-center justify-center">
-            <Loader2 className="size-4 animate-spin text-lavender-400" />
-          </div>
-        ) : recordings.length === 0 ? (
+        {recordings.length === 0 ? (
           <p className="mt-2 rounded-2xl bg-cream-deep/50 px-4 py-3 text-xs font-medium text-ink-soft">
             No recordings yet — save one in Record and it can live here.
           </p>

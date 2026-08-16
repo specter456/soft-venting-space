@@ -1,9 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { Loader2, Pause, Play, Plus, Save, Trash2 } from "lucide-react";
-import { api } from "@/convex/_generated/api";
+import { createVaultItem } from "@/lib/db";
 import { GIFT_STAMPS, PHOTO_SCENES, VIDEO_AVATARS } from "@/lib/art";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -24,7 +23,6 @@ interface Frame {
 }
 
 export default function GifStudio() {
-  const addToVault = useMutation(api.vault.create);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const lastPoint = useRef<{ x: number; y: number } | null>(null);
@@ -132,7 +130,8 @@ export default function GifStudio() {
     if (saving) return;
     setSaving(true);
     try {
-      await addToVault({
+      // stored on this device only
+      createVaultItem({
         kind: "gif",
         art: "🎞️",
         bg: "tile-blush",

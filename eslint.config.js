@@ -6,7 +6,10 @@ import tseslint from "typescript-eslint";
 import eslintConfigPrettier from "eslint-config-prettier/flat";
 
 export default tseslint.config(
-  { ignores: ["dist"] },
+  {
+    // `expo/` is a standalone React Native project with its own toolchain.
+    ignores: ["dist", "expo/**"],
+  },
   {
     extends: [
       js.configs.recommended,

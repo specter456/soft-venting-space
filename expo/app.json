@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "Venting",
+    "slug": "venting",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#f5f0fc",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Venting uses the camera only for private video expression recordings that stay on your device.",
+        "NSMicrophoneUsageDescription": "Venting uses the microphone only for private voice vents that stay on your device.",
+        "NSFaceIDUsageDescription": "Venting can unlock with Face ID instead of your passcode. Biometrics never leave your device.",
+        "NSPhotoLibraryUsageDescription": "Venting lets you pick photos to keep privately — they stay on your device."
+      }
+    },
+    "android": {
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "USE_BIOMETRIC"
+      ]
+    },
+    "plugins": [
+      "expo-camera",
+      "expo-local-authentication"
+    ]
+  }
+}

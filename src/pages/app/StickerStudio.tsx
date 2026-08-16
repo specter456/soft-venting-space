@@ -1,10 +1,9 @@
 import { motion } from "framer-motion";
-import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { Loader2, Save } from "lucide-react";
-import { api } from "@/convex/_generated/api";
 import { Input } from "@/components/ui/input";
+import { createVaultItem } from "@/lib/db";
 import {
   STICKER_ACCESSORIES,
   STICKER_COLORS,
@@ -24,8 +23,6 @@ const COLOR_TO_TILE: Record<string, string> = {
 };
 
 export default function StickerStudio() {
-  const addToVault = useMutation(api.vault.create);
-
   const [color, setColor] = useState(STICKER_COLORS[0]);
   const [expression, setExpression] = useState(STICKER_EXPRESSIONS[0]);
   const [eyes, setEyes] = useState(STICKER_EYES[1]);
@@ -50,7 +47,8 @@ export default function StickerStudio() {
     if (saving) return;
     setSaving(true);
     try {
-      await addToVault({
+      // stored on this device only
+      createVaultItem({
         kind: "sticker",
         art: accessory ?? "🧸",
         bg: COLOR_TO_TILE[color.id] ?? "tile-peach",

@@ -1,10 +1,9 @@
 import { motion } from "framer-motion";
-import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { Link } from "react-router";
 import { ArrowLeft, Check, Images, Loader2, Lock, Palette, Sparkles } from "lucide-react";
-import { api } from "@/convex/_generated/api";
+import { createVaultItem } from "@/lib/db";
 import { PHOTO_SCENES } from "@/lib/art";
 import { cn } from "@/lib/utils";
 
@@ -36,7 +35,6 @@ const TOOLS = [
 ];
 
 export default function CreateScreen() {
-  const addToVault = useMutation(api.vault.create);
   const [view, setView] = useState<"hub" | "photos">("hub");
   const [selected, setSelected] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -48,7 +46,8 @@ export default function CreateScreen() {
       for (const emoji of selected) {
         const scene = PHOTO_SCENES.find((s) => s.emoji === emoji);
         if (!scene) continue;
-        await addToVault({ kind: "photo", art: scene.emoji, bg: scene.bg, caption: scene.label });
+        // stored on this device only
+        createVaultItem({ kind: "photo", art: scene.emoji, bg: scene.bg, caption: scene.label });
       }
       toast("Saved to your vault", {
         description: `${selected.length} photo${selected.length > 1 ? "s" : ""} tucked behind the double lock.`,

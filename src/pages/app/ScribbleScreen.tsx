@@ -1,8 +1,7 @@
-import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { Eraser, Loader2, Paintbrush, Pen, Save, Square } from "lucide-react";
-import { api } from "@/convex/_generated/api";
+import { createVaultItem } from "@/lib/db";
 import { cn } from "@/lib/utils";
 
 type ToolId = "pencil" | "crayon" | "brush" | "marker" | "eraser";
@@ -43,7 +42,6 @@ const BACKGROUNDS = [
 ];
 
 export default function ScribbleScreen() {
-  const addToVault = useMutation(api.vault.create);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const lastPoint = useRef<{ x: number; y: number } | null>(null);
@@ -110,7 +108,8 @@ export default function ScribbleScreen() {
     if (saving) return;
     setSaving(true);
     try {
-      await addToVault({
+      // stored on this device only
+      createVaultItem({
         kind: "doodle",
         art: "🖍️",
         bg: "tile-lavender",

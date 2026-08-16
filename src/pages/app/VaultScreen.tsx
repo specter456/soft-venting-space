@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useNavigate } from "react-router";
@@ -12,8 +11,15 @@ import {
   Sticker,
   Trash2,
 } from "lucide-react";
-import { api } from "@/convex/_generated/api";
 import { LockScreen } from "@/components/LockScreen";
+import {
+  KV_PASSCODE_HASH,
+  KV_PASSCODE_SALT,
+  removeItem,
+  useTable,
+  type KVPair,
+  type VaultItem,
+} from "@/lib/db";
 import { cn } from "@/lib/utils";
 
 const VAULT_SESSION_KEY = "venting-vault-unlocked";
@@ -39,9 +45,14 @@ const KIND_META: Record<string, { label: string; icon: typeof ImageIcon }> = {
 
 export default function VaultScreen() {
   const navigate = useNavigate();
-  const stored = useQuery(api.passcode.getPasscode);
-  const items = useQuery(api.vault.list);
-  const removeItem = useMutation(api.vault.remove);
+  const kv = useTable<KVPair>("kv");
+  const items = useTable<VaultItem>("vaultItems");
+
+  // the second (vault) lock reads the same on-device passcode
+  const passcodeHash = kv.find((k) => k.key === KV_PASSCODE_HASH)?.value;
+  const passcodeSalt = kv.find((k) => k.key === KV_PASSCODE_SALT)?.value;
+  const stored =
+    passcodeHash && passcodeSalt ? { hash: passcodeHash, salt: passcodeSalt } : null;
 
   const [unlocked, setUnlocked] = useState(
     () => sessionStorage.getItem(VAULT_SESSION_KEY) === "1",
@@ -94,8 +105,8 @@ export default function VaultScreen() {
     );
   }
 
-  const shown = (items ?? []).filter((i) => filter === "all" || i.kind === filter);
-  const openItem = openId ? (items ?? []).find((i) => i._id === openId) : undefined;
+  const shown = items.filter((i) => filter === "all" || i.kind === filter);
+  const openItem = openId ? items.find((i) => i._id === openId) : undefined;
 
   return (
     <div className="space-y-5">
@@ -135,11 +146,7 @@ export default function VaultScreen() {
       </div>
 
       {/* ─── Gallery ──────────────────────────────────────────────── */}
-      {items === undefined ? (
-        <div className="flex h-40 items-center justify-center">
-          <div className="size-5 animate-spin rounded-full border-2 border-lavender-300 border-t-lavender-500" />
-        </div>
-      ) : shown.length === 0 ? (
+      {shown.length === 0 ? (
         <div className="clay-card rounded-[2rem] px-6 py-12 text-center">
           <span className="text-4xl">🫙</span>
           <p className="mt-3 text-lg font-bold tracking-tight text-ink-deep">
@@ -239,7 +246,7 @@ export default function VaultScreen() {
               <button
                 type="button"
                 onClick={() => {
-                  void removeItem({ id: openItem._id });
+                  removeItem("vaultItems", openItem._id);
                   setOpenId(null);
                   toast("Moved out of the vault", { description: "It's gone for good." });
                 }}

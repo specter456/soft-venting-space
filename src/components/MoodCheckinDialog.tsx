@@ -1,6 +1,4 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, Loader2, Sparkles } from "lucide-react";
@@ -14,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { MoodBubble } from "@/components/MoodBubble";
+import { saveCheckin } from "@/lib/db";
 import {
   INTENSITY_LABELS,
   MOODS,
@@ -40,7 +39,6 @@ export function MoodCheckinDialog({
   initialMood = null,
   initialIntensity = null,
 }: MoodCheckinDialogProps) {
-  const checkIn = useMutation(api.moods.checkIn);
   const [stage, setStage] = useState<Stage>("mood");
   const [mood, setMood] = useState<MoodId | null>(null);
   const [intensity, setIntensity] = useState(3);
@@ -67,7 +65,8 @@ export function MoodCheckinDialog({
     if (!mood || saving) return;
     setSaving(true);
     try {
-      await checkIn({
+      // saved to this device only — never sent anywhere
+      saveCheckin({
         dateKey: todayDateKey(),
         mood,
         intensity,

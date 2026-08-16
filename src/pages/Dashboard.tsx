@@ -1,11 +1,15 @@
-import { useQuery } from "convex/react";
-import { Loader2, Lock, LogOut } from "lucide-react";
+import { Loader2, Lock } from "lucide-react";
 import { useState } from "react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router";
-import { api } from "@/convex/_generated/api";
+import { Link, Outlet, useLocation } from "react-router";
 import { Logo } from "@/components/Logo";
 import { LockScreen } from "@/components/LockScreen";
-import { useAuth } from "@/hooks/use-auth";
+import {
+  KV_PASSCODE_HASH,
+  KV_PASSCODE_SALT,
+  useHydrated,
+  useTable,
+  type KVPair,
+} from "@/lib/db";
 
 const LOCK_DISMISSED_KEY = "venting-lock-dismissed";
 
@@ -24,25 +28,27 @@ const TITLES: Record<string, string> = {
 };
 
 /**
- * The app shell. Every room in Venting lives inside this mobile-width column,
- * protected by the passcode lock. The lock gates the whole app once per load;
- * the vault adds its own second lock on top.
+ * The app shell. Every room lives inside this mobile-width column behind the
+ * on-device passcode lock. All data is stored locally — there are no accounts
+ * and no network calls for user content.
  */
 export default function Dashboard() {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
+  const hydrated = useHydrated();
+  const kv = useTable<KVPair>("kv");
 
-  const hasPasscode = useQuery(api.passcode.hasPasscode);
-  const passcodeData = useQuery(api.passcode.getPasscode);
+  const hasPasscode =
+    kv.some((k) => k.key === KV_PASSCODE_HASH && k.value) &&
+    kv.some((k) => k.key === KV_PASSCODE_SALT && k.value);
+  const passcodeHash = kv.find((k) => k.key === KV_PASSCODE_HASH)?.value;
+  const passcodeSalt = kv.find((k) => k.key === KV_PASSCODE_SALT)?.value;
 
   const [lock, setLock] = useState<"setup" | "unlock" | "unlocked">("unlocked");
   const [lockInitDone, setLockInitDone] = useState(false);
 
-  // Decide the initial lock state once the passcode query resolves. This
-  // adjusts state during render (guarded, so it runs once) instead of in an
-  // effect — React re-renders immediately and no cascade is triggered.
-  if (!lockInitDone && hasPasscode !== undefined) {
+  // Decide the initial lock state once storage has hydrated. Adjusting state
+  // during render (guarded, runs once) avoids effect cascades.
+  if (hydrated && !lockInitDone) {
     setLockInitDone(true);
     if (hasPasscode) {
       setLock("unlock");
@@ -51,16 +57,7 @@ export default function Dashboard() {
     }
   }
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
-
-  const isHome = location.pathname === "/dashboard";
-  const title = TITLES[location.pathname] ?? "Venting";
-
-  // ─── Lock overlays ───────────────────────────────────────────────
-  if (hasPasscode === undefined) {
+  if (!hydrated) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-cream-soft via-cream to-lavender-50">
         <div className="flex flex-col items-center gap-3">
@@ -88,22 +85,23 @@ export default function Dashboard() {
   }
 
   if (lock === "unlock") {
-    if (!passcodeData) {
-      return (
-        <div className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-cream-soft via-cream to-lavender-50">
-          <Loader2 className="size-5 animate-spin text-lavender-400" />
-        </div>
-      );
+    if (!passcodeHash || !passcodeSalt) {
+      // passcode was removed mid-session — treat as unlocked
+      setLock("unlocked");
+      return null;
     }
     return (
       <LockScreen
         mode="unlock"
-        storedHash={passcodeData.hash}
-        storedSalt={passcodeData.salt}
+        storedHash={passcodeHash}
+        storedSalt={passcodeSalt}
         onUnlock={() => setLock("unlocked")}
       />
     );
   }
+
+  const isHome = location.pathname === "/dashboard";
+  const title = TITLES[location.pathname] ?? "Venting";
 
   return (
     <div className="relative min-h-dvh overflow-hidden bg-gradient-to-b from-cream-soft via-cream to-lavender-50 text-ink">
@@ -166,20 +164,12 @@ export default function Dashboard() {
                   <Lock className="size-4" />
                 </button>
               )}
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="clay-chip flex h-10 w-10 items-center justify-center rounded-full text-ink-soft transition-transform hover:scale-105 hover:text-ink-deep"
-                aria-label="Sign out"
-                title="Sign out"
-              >
-                <LogOut className="size-4" />
-              </button>
             </div>
           </div>
           {isHome && (
             <p className="mt-1.5 flex items-center gap-1.5 pl-0.5 text-[11px] font-semibold text-ink-soft">
-              <span aria-hidden>🔒</span> only you can see this space · {user?.name?.split(" ")[0] ?? "friend"}
+              <span aria-hidden>🔒</span> only you can see this space · everything
+              stays on this device
             </p>
           )}
         </header>

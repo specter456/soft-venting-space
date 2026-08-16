@@ -1,11 +1,17 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { Check, ChevronLeft, ChevronRight, Loader2, Lock, Mic, Video } from "lucide-react";
-import { api } from "@/convex/_generated/api";
 import { AttachmentChip } from "@/components/AttachmentChip";
+import {
+  attachRecordingToDiary,
+  createDiaryEntry,
+  removeItem,
+  useTable,
+  type DiaryEntry,
+  type Recording,
+} from "@/lib/db";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { DIARY_STICKERS, DIARY_WEATHER, VIDEO_AVATARS } from "@/lib/art";
@@ -23,11 +29,8 @@ export default function DiaryScreen() {
   const [params] = useSearchParams();
   const attachId = params.get("attach");
 
-  const entries = useQuery(api.diary.list);
-  const createEntry = useMutation(api.diary.create);
-  const removeEntry = useMutation(api.diary.remove);
-  const attachToDiary = useMutation(api.recordings.attachToDiary);
-  const recordings = useQuery(api.recordings.list);
+  const entries = useTable<DiaryEntry>("diaryEntries");
+  const recordings = useTable<Recording>("recordings");
 
   const [view, setView] = useState<View>("cover");
   const [page, setPage] = useState(0);
@@ -87,7 +90,7 @@ export default function DiaryScreen() {
               },
         );
       }
-      const entryId = await createEntry({
+      const entry = createDiaryEntry({
         title: title.trim() || "an unspoken page",
         body: body.trim(),
         mood: mood ?? undefined,
@@ -96,7 +99,7 @@ export default function DiaryScreen() {
         attachments,
       });
       if (selectedRecording) {
-        await attachToDiary({ id: selectedRecording._id, diaryId: entryId });
+        attachRecordingToDiary(selectedRecording._id, entry._id);
       }
       toast("Page tucked into your diary", { description: "It'll be waiting for you here." });
       setTitle("");
@@ -114,7 +117,7 @@ export default function DiaryScreen() {
     }
   };
 
-  const sorted = entries ?? [];
+  const sorted = entries;
   const total = sorted.length;
   const safePage = Math.min(page, Math.max(0, total - 1));
   const entry = sorted[safePage];
@@ -325,11 +328,7 @@ export default function DiaryScreen() {
           <p className="text-xs font-bold text-ink-soft uppercase tracking-wide">
             Attach a recording <span className="normal-case">(optional)</span>
           </p>
-          {recordings === undefined ? (
-            <div className="mt-2 flex h-14 items-center justify-center">
-              <Loader2 className="size-4 animate-spin text-lavender-400" />
-            </div>
-          ) : recordings.length === 0 ? (
+          {recordings.length === 0 ? (
             <p className="mt-2 rounded-2xl bg-cream-deep/50 px-4 py-3 text-xs font-medium text-ink-soft">
               No recordings yet — a voice or video vent can live on this page.
             </p>
@@ -394,14 +393,6 @@ export default function DiaryScreen() {
   }
 
   // ─── Read with page-turn ─────────────────────────────────────────
-  if (entries === undefined) {
-    return (
-      <div className="flex h-60 items-center justify-center">
-        <Loader2 className="size-5 animate-spin text-lavender-400" />
-      </div>
-    );
-  }
-
   if (total === 0) {
     return (
       <div className="clay-card rounded-[2rem] px-6 py-14 text-center">
@@ -513,12 +504,11 @@ export default function DiaryScreen() {
             )}
 
             <button
-              type="button"
-              onClick={() => {
-                void removeEntry({ id: entry._id });
-                setPage((p) => Math.max(0, p - 1));
-                toast("Page removed", { description: "That page is gone for good." });
-              }}
+              type="button"                onClick={() => {
+                  removeItem("diaryEntries", entry._id);
+                  setPage((p) => Math.max(0, p - 1));
+                  toast("Page removed", { description: "That page is gone for good." });
+                }}
               className="absolute right-4 bottom-4 flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-blush-100/70 hover:text-blush-500"
               aria-label="Delete this page"
             >

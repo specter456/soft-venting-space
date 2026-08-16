@@ -1,14 +1,12 @@
 import { motion } from "framer-motion";
-import { useMutation, useQuery } from "convex/react";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Link } from "react-router";
-import { api } from "@/convex/_generated/api";
 import { AttachmentChip } from "@/components/AttachmentChip";
+import { removeItem, useTable, type Note } from "@/lib/db";
 import { moodById } from "@/lib/moods";
 
 export default function NotesScreen() {
-  const notes = useQuery(api.notes.list);
-  const removeNote = useMutation(api.notes.remove);
+  const notes = useTable<Note>("notes");
 
   return (
     <div className="space-y-5">
@@ -30,11 +28,7 @@ export default function NotesScreen() {
         </Link>
       </div>
 
-      {notes === undefined ? (
-        <div className="flex h-40 items-center justify-center">
-          <Loader2 className="size-5 animate-spin text-lavender-400" />
-        </div>
-      ) : notes.length === 0 ? (
+      {notes.length === 0 ? (
         <div className="clay-card rounded-[2rem] px-6 py-12 text-center">
           <span className="text-4xl">🌙</span>
           <p className="mt-3 text-lg font-bold tracking-tight text-ink-deep">
@@ -83,7 +77,7 @@ export default function NotesScreen() {
                   )}
                   <button
                     type="button"
-                    onClick={() => void removeNote({ id: note._id })}
+                    onClick={() => removeItem("notes", note._id)}
                     className="flex h-7 w-7 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-blush-100/70 hover:text-blush-500"
                     aria-label="Delete note"
                   >

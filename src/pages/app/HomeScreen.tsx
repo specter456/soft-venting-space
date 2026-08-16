@@ -1,12 +1,10 @@
 import { motion } from "framer-motion";
-import { useQuery } from "convex/react";
-import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
-import { api } from "@/convex/_generated/api";
+
 import { MoodBubble } from "@/components/MoodBubble";
 import { MoodCheckinDialog } from "@/components/MoodCheckinDialog";
-import { useAuth } from "@/hooks/use-auth";
+import { useTable, type MoodCheckin } from "@/lib/db";
 import { MOODS, type MoodId, moodById, todayDateKey } from "@/lib/moods";
 import { cn } from "@/lib/utils";
 
@@ -50,9 +48,9 @@ function greeting(): { text: string; emoji: string } {
 }
 
 export default function HomeScreen() {
-  const { user } = useAuth();
+  const checkins = useTable<MoodCheckin>("moodCheckins");
   const dateKey = todayDateKey();
-  const today = useQuery(api.moods.todayMood, { dateKey });
+  const today = checkins.find((c) => c.dateKey === dateKey);
 
   const [checkinOpen, setCheckinOpen] = useState(false);
   const [preselect, setPreselect] = useState<{
@@ -61,7 +59,6 @@ export default function HomeScreen() {
   }>({ mood: null, intensity: null });
 
   const greet = greeting();
-  const firstName = user?.name?.split(" ")[0] ?? "friend";
   const todayMood = today ? moodById(today.mood) : undefined;
 
   const openCheckin = (mood: MoodId | null) => {
@@ -85,7 +82,7 @@ export default function HomeScreen() {
         transition={{ duration: 0.45 }}
       >
         <p className="text-2xl font-bold tracking-tight text-ink-deep">
-          {greet.text}, {firstName}
+          {greet.text}, friend
         </p>
         <p className="mt-1 text-sm font-medium text-ink-soft">
           {new Date().toLocaleDateString(undefined, {
@@ -105,11 +102,7 @@ export default function HomeScreen() {
         <div className="clay-card relative overflow-hidden rounded-[2rem] px-5 py-6">
           <SparkleDecor />
 
-          {today === undefined ? (
-            <div className="flex h-36 items-center justify-center">
-              <Loader2 className="size-5 animate-spin text-lavender-400" />
-            </div>
-          ) : todayMood && today ? (
+          {todayMood && today ? (
             <div className="text-center">
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}

@@ -1,11 +1,10 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { Check, Loader2, Pause, Play, Trash2 } from "lucide-react";
-import { api } from "@/convex/_generated/api";
 import { Waveform } from "@/components/AttachmentChip";
+import { createRecording, removeItem, useTable, type Recording } from "@/lib/db";
 import { VIDEO_AVATARS, VOICE_COMPANION } from "@/lib/art";
 import { MOODS, type MoodId, moodById } from "@/lib/moods";
 import { cn } from "@/lib/utils";
@@ -23,9 +22,7 @@ function fmt(seconds: number): string {
 
 export default function RecordScreen() {
   const navigate = useNavigate();
-  const createRecording = useMutation(api.recordings.create);
-  const removeRecording = useMutation(api.recordings.remove);
-  const recordings = useQuery(api.recordings.list);
+  const recordings = useTable<Recording>("recordings");
 
   const [mode, setMode] = useState<Mode>("voice");
   const [mood, setMood] = useState<MoodId | null>(null);
@@ -66,13 +63,14 @@ export default function RecordScreen() {
     if (saving || savedId) return null;
     setSaving(true);
     try {
-      const id = await createRecording({
+      // stored on this device only — the media itself never leaves
+      const recording = createRecording({
         kind: mode,
         mood: mood ?? undefined,
         duration: Math.max(1, seconds),
       });
-      setSavedId(id);
-      return id;
+      setSavedId(recording._id);
+      return recording._id;
     } catch (error) {
       console.error(error);
       toast("Couldn't save that recording", {
@@ -414,7 +412,7 @@ export default function RecordScreen() {
               mood={rec.mood}
               createdAt={rec._creationTime}
               onDelete={() => {
-                void removeRecording({ id: rec._id });
+                removeItem("recordings", rec._id);
                 if (savedId === rec._id) setSavedId(null);
               }}
             />

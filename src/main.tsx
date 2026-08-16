@@ -1,19 +1,20 @@
 import '@vly-ai/integrations';
 import { Toaster } from "@/components/ui/sonner";
-import { RequireAuth } from "@/components/RequireAuth";
 import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
-import { ConvexAuthProvider } from "@convex-dev/auth/react";
-import { ConvexReactClient } from "convex/react";
-import React, { StrictMode, useEffect, lazy, Suspense } from "react";
+import { hydrate } from "@/lib/db";
+import React, { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import "./index.css";
 
+// Kick off local-storage hydration immediately — everything Venting needs
+// lives on this device, so no async auth gate is required.
+void hydrate();
+
 // Lazy load route components for better code splitting
 const Landing = lazy(() => import("./pages/Landing.tsx"));
-const AuthPage = lazy(() => import("./pages/Auth.tsx"));
-const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
 const WelcomeCheckin = lazy(() => import("./pages/WelcomeCheckin.tsx"));
+const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const HomeScreen = lazy(() => import("./pages/app/HomeScreen.tsx"));
 const RecordScreen = lazy(() => import("./pages/app/RecordScreen.tsx"));
@@ -34,24 +35,6 @@ function RouteLoading() {
       <div className="animate-pulse text-muted-foreground">Loading...</div>
     </div>
   );
-}
-
-/** Silent error boundary — if VlyToolbar crashes it renders nothing instead of
- *  crashing the whole app (e.g. hook errors in WebContainer environment). */
-class ToolbarErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean }
-> {
-  state = { hasError: false };
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-  componentDidCatch(err: Error) {
-    console.warn("[VlyToolbar] Caught error, toolbar disabled:", err.message);
-  }
-  render() {
-    return this.state.hasError ? null : this.props.children;
-  }
 }
 
 /** Hard guard so runtime errors never leave the preview as a blank page. */
@@ -92,20 +75,34 @@ class RootErrorBoundary extends React.Component<
   }
 }
 
-const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
-
-
+/** Silent error boundary — if VlyToolbar crashes it renders nothing instead of
+ *  crashing the whole app (e.g. hook errors in WebContainer environment). */
+class ToolbarErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(err: Error) {
+    console.warn("[VlyToolbar] Caught error, toolbar disabled:", err.message);
+  }
+  render() {
+    return this.state.hasError ? null : this.props.children;
+  }
+}
 
 function RouteSyncer() {
   const location = useLocation();
-  useEffect(() => {
+  React.useEffect(() => {
     window.parent.postMessage(
       { type: "iframe-route-change", path: location.pathname },
       "*",
     );
   }, [location.pathname]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     function handleMessage(event: MessageEvent) {
       if (event.data?.type === "navigate") {
         if (event.data.direction === "back") window.history.back();
@@ -119,57 +116,36 @@ function RouteSyncer() {
   return null;
 }
 
-
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
+  <React.StrictMode>
     <RootErrorBoundary>
       <ToolbarErrorBoundary>
         <VlyToolbar />
       </ToolbarErrorBoundary>
-      <ConvexAuthProvider client={convex}>
-        <BrowserRouter>
-          <RouteSyncer />
-          <Suspense fallback={<RouteLoading />}>
-            <Routes>
-              <Route path="/" element={<Landing />} />
-              <Route
-                path="/auth"
-                element={<AuthPage redirectAfterAuth="/welcome" />}
-              />
-              <Route
-                path="/welcome"
-                element={
-                  <RequireAuth>
-                    <WelcomeCheckin />
-                  </RequireAuth>
-                }
-              />
-              <Route
-                path="/dashboard"
-                element={
-                  <RequireAuth>
-                    <Dashboard />
-                  </RequireAuth>
-                }
-              >
-                <Route index element={<HomeScreen />} />
-                <Route path="record" element={<RecordScreen />} />
-                <Route path="notes" element={<NotesScreen />} />
-                <Route path="notes/new" element={<NoteEditor />} />
-                <Route path="create" element={<CreateScreen />} />
-                <Route path="scribble" element={<ScribbleScreen />} />
-                <Route path="stickers" element={<StickerStudio />} />
-                <Route path="gif-studio" element={<GifStudio />} />
-                <Route path="vault" element={<VaultScreen />} />
-                <Route path="calm" element={<CalmScreen />} />
-                <Route path="diary" element={<DiaryScreen />} />
-              </Route>
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-        <Toaster />
-      </ConvexAuthProvider>
+      <BrowserRouter>
+        <RouteSyncer />
+        <Suspense fallback={<RouteLoading />}>
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/welcome" element={<WelcomeCheckin />} />
+            <Route path="/dashboard" element={<Dashboard />}>
+              <Route index element={<HomeScreen />} />
+              <Route path="record" element={<RecordScreen />} />
+              <Route path="notes" element={<NotesScreen />} />
+              <Route path="notes/new" element={<NoteEditor />} />
+              <Route path="create" element={<CreateScreen />} />
+              <Route path="scribble" element={<ScribbleScreen />} />
+              <Route path="stickers" element={<StickerStudio />} />
+              <Route path="gif-studio" element={<GifStudio />} />
+              <Route path="vault" element={<VaultScreen />} />
+              <Route path="calm" element={<CalmScreen />} />
+              <Route path="diary" element={<DiaryScreen />} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
+      <Toaster />
     </RootErrorBoundary>
-  </StrictMode>,
+  </React.StrictMode>,
 );

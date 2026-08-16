@@ -1,9 +1,8 @@
 import { motion } from "framer-motion";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { Delete, Fingerprint, LockKeyhole, ScanFace, Sparkles } from "lucide-react";
+import { KV_PASSCODE_HASH, KV_PASSCODE_SALT, setKv } from "@/lib/db";
 import { hashPasscode, randomSalt } from "@/lib/passcode";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +39,6 @@ export function LockScreen({
   onClose,
   closeLabel = "Not now",
 }: LockScreenProps) {
-  const setPasscode = useMutation(api.passcode.setPasscode);
   const [digits, setDigits] = useState("");
   const [phase, setPhase] = useState<"enter" | "confirm">("enter");
   const [tempCode, setTempCode] = useState("");
@@ -94,7 +92,9 @@ export function LockScreen({
       try {
         const salt = randomSalt();
         const hash = await hashPasscode(code, salt);
-        await setPasscode({ hash, salt });
+        // stored only on this device — never sent anywhere
+        await setKv(KV_PASSCODE_HASH, hash);
+        await setKv(KV_PASSCODE_SALT, salt);
         toast("Passcode set", {
           description: "Your space is locked — only you can open it.",
         });
