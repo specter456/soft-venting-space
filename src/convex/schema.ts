@@ -45,6 +45,76 @@ const schema = defineSchema(
       note: v.optional(v.string()),
       dateKey: v.string(), // YYYY-MM-DD in the user's local time
     }).index("by_user_date", ["userId", "dateKey"]),
+
+    // private voice / video expression recordings. only metadata lives here;
+    // the actual media never leaves the device.
+    recordings: defineTable({
+      userId: v.id("users"),
+      kind: v.union(v.literal("voice"), v.literal("video")),
+      mood: v.optional(v.string()),
+      duration: v.number(), // seconds
+      noteId: v.optional(v.id("notes")),
+      diaryId: v.optional(v.id("diaryEntries")),
+    }).index("by_user", ["userId"]),
+
+    // reflection notes — recordings, notes, and attachments are all optional
+    // so a note can exist without a recording and vice versa.
+    notes: defineTable({
+      userId: v.id("users"),
+      body: v.string(),
+      mood: v.optional(v.string()),
+      attachments: v.array(
+        v.object({
+          kind: v.union(
+            v.literal("audio"),
+            v.literal("video"),
+            v.literal("photo"),
+          ),
+          label: v.string(),
+          duration: v.optional(v.number()),
+          art: v.optional(v.string()), // emoji art for video/photo placeholders
+        }),
+      ),
+    }).index("by_user", ["userId"]),
+
+    // diary pages — a cozy book with weather, stickers, and optional
+    // attachments.
+    diaryEntries: defineTable({
+      userId: v.id("users"),
+      title: v.string(),
+      body: v.string(),
+      mood: v.optional(v.string()),
+      weather: v.string(), // emoji
+      stickers: v.array(v.string()),
+      attachments: v.array(
+        v.object({
+          kind: v.union(
+            v.literal("audio"),
+            v.literal("video"),
+            v.literal("photo"),
+          ),
+          label: v.string(),
+          duration: v.optional(v.number()),
+          art: v.optional(v.string()),
+        }),
+      ),
+    }).index("by_user", ["userId"]),
+
+    // the double-locked photo vault: photos, video vents, doodles, stickers
+    // and GIFs. only the owner can ever see these rows.
+    vaultItems: defineTable({
+      userId: v.id("users"),
+      kind: v.union(
+        v.literal("photo"),
+        v.literal("video"),
+        v.literal("gif"),
+        v.literal("doodle"),
+        v.literal("sticker"),
+      ),
+      art: v.string(), // emoji art shown on the placeholder tile
+      bg: v.string(), // pastel tile class
+      caption: v.optional(v.string()),
+    }).index("by_user", ["userId"]),
   },
   {
     schemaValidation: false,

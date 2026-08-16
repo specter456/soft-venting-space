@@ -1,11 +1,12 @@
 export type MoodId =
+  | "calm"
   | "sad"
   | "angry"
   | "nervous"
+  | "irritated"
   | "happy"
   | "tired"
-  | "overwhelmed"
-  | "calm";
+  | "overwhelmed";
 
 export interface Mood {
   id: MoodId;
@@ -20,14 +21,6 @@ export interface Mood {
 }
 
 export const MOODS: Mood[] = [
-  {
-    id: "happy",
-    label: "Happy",
-    emoji: "😊",
-    clay: "mood-happy",
-    affirmation: "Your joy is safe here — let's keep it glowing.",
-    blurb: "bright moments worth remembering",
-  },
   {
     id: "calm",
     label: "Calm",
@@ -59,6 +52,22 @@ export const MOODS: Mood[] = [
     clay: "mood-nervous",
     affirmation: "Breathe with me — in, and out. You're safe.",
     blurb: "butterflies need somewhere safe to flutter",
+  },
+  {
+    id: "irritated",
+    label: "Irritated",
+    emoji: "🫤",
+    clay: "mood-irritated",
+    affirmation: "Irritation is a signal, not a flaw. Let it soften here.",
+    blurb: "little sparks that say enough for today",
+  },
+  {
+    id: "happy",
+    label: "Happy",
+    emoji: "😊",
+    clay: "mood-happy",
+    affirmation: "Your joy is safe here — let's keep it glowing.",
+    blurb: "bright moments worth remembering",
   },
   {
     id: "tired",

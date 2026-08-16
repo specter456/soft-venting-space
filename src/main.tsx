@@ -14,6 +14,17 @@ const Landing = lazy(() => import("./pages/Landing.tsx"));
 const AuthPage = lazy(() => import("./pages/Auth.tsx"));
 const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
+const HomeScreen = lazy(() => import("./pages/app/HomeScreen.tsx"));
+const RecordScreen = lazy(() => import("./pages/app/RecordScreen.tsx"));
+const NotesScreen = lazy(() => import("./pages/app/NotesScreen.tsx"));
+const NoteEditor = lazy(() => import("./pages/app/NoteEditor.tsx"));
+const CreateScreen = lazy(() => import("./pages/app/CreateScreen.tsx"));
+const VaultScreen = lazy(() => import("./pages/app/VaultScreen.tsx"));
+const ScribbleScreen = lazy(() => import("./pages/app/ScribbleScreen.tsx"));
+const StickerStudio = lazy(() => import("./pages/app/StickerStudio.tsx"));
+const GifStudio = lazy(() => import("./pages/app/GifStudio.tsx"));
+const CalmScreen = lazy(() => import("./pages/app/CalmScreen.tsx"));
+const DiaryScreen = lazy(() => import("./pages/app/DiaryScreen.tsx"));
 
 // Simple loading fallback for route transitions
 function RouteLoading() {
@@ -131,7 +142,19 @@ createRoot(document.getElementById("root")!).render(
                     <Dashboard />
                   </RequireAuth>
                 }
-              />
+              >
+                <Route index element={<HomeScreen />} />
+                <Route path="record" element={<RecordScreen />} />
+                <Route path="notes" element={<NotesScreen />} />
+                <Route path="notes/new" element={<NoteEditor />} />
+                <Route path="create" element={<CreateScreen />} />
+                <Route path="scribble" element={<ScribbleScreen />} />
+                <Route path="stickers" element={<StickerStudio />} />
+                <Route path="gif-studio" element={<GifStudio />} />
+                <Route path="vault" element={<VaultScreen />} />
+                <Route path="calm" element={<CalmScreen />} />
+                <Route path="diary" element={<DiaryScreen />} />
+              </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

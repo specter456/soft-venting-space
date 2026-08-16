@@ -1,26 +1,15 @@
 import { motion } from "framer-motion";
-import {
-  BookHeart,
-  Brush,
-  CloudSun,
-  Lock,
-  LockKeyhole,
-  Mic,
-  NotebookPen,
-  Sticker,
-} from "lucide-react";
+import { LockKeyhole } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { MoodBubble } from "@/components/MoodBubble";
 import { MOODS } from "@/lib/moods";
 import { cn } from "@/lib/utils";
 
-const TOOLS = [
-  { label: "Voice Vent", icon: Mic, tile: "tile-mist" },
-  { label: "Notes", icon: NotebookPen, tile: "tile-blush" },
-  { label: "Scribble", icon: Brush, tile: "tile-lavender" },
-  { label: "Stickers", icon: Sticker, tile: "tile-peach" },
-  { label: "Calm Game", icon: CloudSun, tile: "tile-mint" },
-  { label: "Diary", icon: BookHeart, tile: "tile-lavender" },
+const ROOMS = [
+  { title: "Record", emoji: "🎙️", tile: "tile-mist", blurb: "voice & video vents" },
+  { title: "Create", emoji: "🎨", tile: "tile-blush", blurb: "photos, stickers, GIFs" },
+  { title: "Calm", emoji: "🌬️", tile: "tile-mint", blurb: "breathe & pop worries" },
+  { title: "Diary", emoji: "📖", tile: "tile-lavender", blurb: "a cozy private book" },
 ];
 
 export function PhoneMockup({ className }: { className?: string }) {
@@ -95,20 +84,17 @@ export function PhoneMockup({ className }: { className?: string }) {
               <p className="text-center text-[14px] font-bold tracking-tight text-ink-deep">
                 How are you feeling today?
               </p>
-              <p className="mt-1 text-center text-[10px] text-ink-soft">
-                tap a feeling — there&apos;s no wrong answer
-              </p>
-              <div className="mt-4 grid grid-cols-4 gap-x-1 gap-y-3">
+              <div className="mt-3.5 grid grid-cols-4 gap-x-1 gap-y-2.5">
                 {MOODS.map((mood, i) => (
-                  <div key={mood.id} className="flex flex-col items-center gap-1">
+                  <div key={mood.id} className="flex flex-col items-center gap-0.5">
                     <MoodBubble
                       mood={mood}
                       size="sm"
-                      selected={i === 1}
+                      selected={i === 5}
                       onClick={() => undefined}
-                      className={i === 1 ? "animate-floaty" : undefined}
+                      className={i === 5 ? "animate-floaty" : undefined}
                     />
-                    <span className="text-[8px] font-semibold text-ink-soft">
+                    <span className="text-[7px] font-semibold text-ink-soft">
                       {mood.label}
                     </span>
                   </div>
@@ -116,33 +102,39 @@ export function PhoneMockup({ className }: { className?: string }) {
               </div>
             </div>
 
-            {/* toolkit preview */}
-            <p className="mt-5 text-[11px] font-bold tracking-tight text-ink-soft">
-              your soft toolkit <span className="font-medium">· blooming soon</span>
-            </p>
-            <div className="mt-2.5 grid grid-cols-3 gap-2.5">
-              {TOOLS.map((tool) => (
+            {/* the four rooms */}
+            <div className="mt-4 space-y-2.5">
+              {ROOMS.map((room) => (
                 <div
-                  key={tool.label}
-                  className="clay-chip relative flex flex-col items-center gap-1.5 rounded-2xl px-1 py-2.5"
+                  key={room.title}
+                  className="clay-card flex items-center gap-2.5 rounded-[1.4rem] px-3 py-2.5"
                 >
-                  <span className="absolute top-1.5 right-1.5 flex h-3 w-3 items-center justify-center rounded-full bg-lavender-100 text-lavender-500">
-                    <Lock className="size-2" />
-                  </span>
                   <div
                     className={cn(
-                      "flex h-9 w-9 items-center justify-center rounded-xl text-ink-deep",
-                      tool.tile,
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base",
+                      room.tile,
                     )}
                   >
-                    <tool.icon className="size-4" strokeWidth={2.2} />
+                    <span aria-hidden>{room.emoji}</span>
                   </div>
-                  <span className="text-[8px] font-semibold text-ink">
-                    {tool.label}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-bold tracking-tight text-ink-deep">
+                      {room.title}
+                    </p>
+                    <p className="truncate text-[8px] font-medium text-ink-soft">
+                      {room.blurb}
+                    </p>
+                  </div>
+                  <span aria-hidden className="text-xs text-lavender-400">
+                    →
                   </span>
                 </div>
               ))}
             </div>
+
+            <p className="mt-4 text-center text-[8px] font-semibold text-ink-soft">
+              🔒 no feed · no likes · no followers — only yours
+            </p>
           </div>
         </div>
       </div>

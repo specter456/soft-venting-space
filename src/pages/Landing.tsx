@@ -229,7 +229,7 @@ export default function Landing() {
             There&apos;s no wrong answer to a check-in
           </h2>
         </motion.div>
-        <div className="mt-10 grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-7">
+        <div className="mt-10 grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-8">
           {MOODS.map((mood, i) => (
             <motion.div
               key={mood.id}
@@ -284,15 +284,16 @@ export default function Landing() {
       <section className="relative z-10 mx-auto w-full max-w-6xl px-5 pb-20 sm:px-8">
         <motion.div {...fadeUp} className="text-center">
           <p className="text-sm font-bold tracking-wide text-lavender-500 uppercase">
-            your full safe space is blooming
+            eight soft rooms, one safe space
           </p>
           <h2 className="mx-auto mt-3 max-w-xl text-3xl font-bold tracking-tight text-ink-deep sm:text-4xl">
-            Eight soft rooms, all coming soon
+            The full toolkit, all locked to you
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-ink">
-            Version one starts gentle: home and the daily mood check-in. The
-            rest of the toolkit is on its way, one soft corner at a time —
-            every room locked, every room only yours.
+            Record, Create, Calm and Diary are open right now — with voice &
+            video vents, reflection notes, scribbles, stickers, GIFs, calm
+            games and a double-locked photo vault inside. Every room is only
+            yours.
           </p>
         </motion.div>
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -327,8 +328,8 @@ export default function Landing() {
                       <Lock className="size-3" />
                     </span>
                   )}
-                  <span className="rounded-full bg-lavender-100/80 px-2.5 py-1 text-[10px] font-bold tracking-wide text-lavender-600 uppercase">
-                    soon
+                  <span className="rounded-full bg-mint-100/80 px-2.5 py-1 text-[10px] font-bold tracking-wide text-mint-500 uppercase">
+                    inside
                   </span>
                 </div>
               </div>
