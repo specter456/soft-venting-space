@@ -1,6 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
+import MusicWidget from "@/components/MusicWidget";
 import { WORRY_BUBBLES } from "@/lib/art";
+import { music } from "@/lib/music";
 import { useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
 
@@ -30,48 +32,62 @@ const GAMES: {
 export default function GamesScreen() {
   const [open, setOpen] = useState<GameId | null>(null);
 
-  if (open) {
-    return (
-      <div className="space-y-4">
-        <button
-          type="button"
-          onClick={() => setOpen(null)}
-          className="clay-chip rounded-full px-4 py-2 text-xs font-bold text-ink-deep transition-transform hover:scale-105 active:scale-95"
-        >
-          ← all games
-        </button>
-        {open === "pop" && <BubblePop />}
-        {open === "breathe" && <BreathBubble />}
-        {open === "dandelion" && <DandelionWishes />}
-        {open === "buddy" && <ComfortBuddy />}
-        {open === "jars" && <FeelingsJars />}
-        {open === "star" && <StarTrace />}
-      </div>
-    );
-  }
+  // Leaving the Games section softly fades the music out and stops it.
+  useEffect(() => {
+    return () => {
+      music.stop(1000);
+    };
+  }, []);
+
+  // Opening a game is a user gesture, so the browser allows audio — the
+  // gentle music starts softly (default on, low volume).
+  const openGame = (id: GameId) => {
+    setOpen(id);
+    music.playDefault();
+  };
 
   return (
-    <div className="space-y-5">
-      <div className="text-center">
-        <p className="text-lg font-bold tracking-tight text-ink-deep">
-          Games
-        </p>
-        <p className="mt-1 text-sm font-medium text-ink-soft">
-          gentle places to land — no scores, no timers, no rush
-        </p>
-      </div>
+    <div className="relative">
+      <MusicWidget />
 
-      <div className="grid grid-cols-2 gap-3">
-        {GAMES.map((g, i) => (
-          <motion.button
-            key={g.id}
+      {open ? (
+        <div className="space-y-4">
+          <button
             type="button"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: i * 0.05 }}
-            onClick={() => setOpen(g.id)}
-            className="clay-card group flex h-full flex-col items-center gap-2 rounded-[1.8rem] px-4 py-5 text-center transition-transform hover:-translate-y-0.5"
+            onClick={() => setOpen(null)}
+            className="clay-chip rounded-full px-4 py-2 text-xs font-bold text-ink-deep transition-transform hover:scale-105 active:scale-95"
           >
+            ← all games
+          </button>
+          {open === "pop" && <BubblePop />}
+          {open === "breathe" && <BreathBubble />}
+          {open === "dandelion" && <DandelionWishes />}
+          {open === "buddy" && <ComfortBuddy />}
+          {open === "jars" && <FeelingsJars />}
+          {open === "star" && <StarTrace />}
+        </div>
+      ) : (
+        <div className="space-y-5">
+          <div className="text-center">
+            <p className="text-lg font-bold tracking-tight text-ink-deep">
+              Games
+            </p>
+            <p className="mt-1 text-sm font-medium text-ink-soft">
+              gentle places to land — no scores, no timers, no rush
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {GAMES.map((g, i) => (
+              <motion.button
+                key={g.id}
+                type="button"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: i * 0.05 }}
+                onClick={() => openGame(g.id)}
+                className="clay-card group flex h-full flex-col items-center gap-2 rounded-[1.8rem] px-4 py-5 text-center transition-transform hover:-translate-y-0.5"
+              >
             <span
               className={cn(
                 "flex h-12 w-12 items-center justify-center rounded-2xl text-2xl transition-transform group-hover:scale-110",
@@ -89,12 +105,14 @@ export default function GamesScreen() {
               {g.line}
             </span>
           </motion.button>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      <p className="pt-1 text-center text-[11px] font-semibold text-ink-soft">
-        🔒 private, calm, and all on this device
-      </p>
+        <p className="pt-1 text-center text-[11px] font-semibold text-ink-soft">
+          🔒 private, calm, and all on this device
+        </p>
+      </div>
+      )}
     </div>
   );
 }

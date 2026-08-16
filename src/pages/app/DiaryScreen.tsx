@@ -20,7 +20,7 @@ import { playPageTurn } from "@/lib/sound";
 import { cn } from "@/lib/utils";
 import { safeGetItem, safeSetItem } from "@/lib/safe-storage";
 
-const COVER_COLORS = ["#cdb9f2", "#f6cdd5", "#bce3cf", "#f7d8ae", "#c5d9f2"];
+const COVER_COLORS = ["#c8b2ee", "#f0bcc8", "#ade1c5", "#f2cd99", "#b5d9ef"];
 const COVER_EMBLEMS = ["💗", "⭐", "🌙", "🦋", "☁️", "🌸"];
 const COVER_KEY = "venting-diary-cover";
 

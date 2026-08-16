@@ -155,7 +155,7 @@ export default function RecordScreen() {
             className={cn(
               "rounded-full px-5 py-2 text-sm font-bold transition-all",
               mode === m
-                ? "bg-gradient-to-b from-[#cdb9f2] to-[#b59de8] text-cream-soft shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_6px_12px_-6px_rgba(118,90,190,0.55)]"
+                ? "bg-gradient-to-b from-[#c8b2ee] to-[#a588e0] text-cream-soft shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_6px_12px_-6px_rgba(118,90,190,0.55)]"
                 : "text-ink-soft hover:text-ink-deep",
             )}
           >

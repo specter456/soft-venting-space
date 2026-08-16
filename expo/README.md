@@ -123,6 +123,25 @@ bun run build:web      # bundles the app + PWA assets; verify dist/
 
 Regenerate icons after design changes: `node scripts/make-icons.mjs`.
 
+## Games music (native, planned)
+
+The web build ships a full soothing-music feature for the Games section:
+built-in tracks are synthesized locally with WebAudio (offline), plus
+"From your downloads" plays a local audio file through a hidden
+`accept="audio/*"` input + `URL.createObjectURL`. Nothing is uploaded.
+
+For the native Expo app, implement the same feature with the Expo APIs:
+
+- Local files: `expo-document-picker` (or `expo-media-library`) to pick an
+  audio file, then `expo-av` `Audio.Sound.createAsync({ uri })` with `loop`
+  and `volume` — the file stays on the device.
+- Built-in tracks: bundle 3–4 short ambient audio files under
+  `expo/assets/audio/` and `require()` them through `expo-av` so they play
+  offline. (The web app synthesizes these at runtime; native needs real
+  assets.)
+- Fade out on leaving Games: `sound.setVolumeAsync(0)` over ~1s, then
+  `sound.unloadAsync()`.
+
 ## Honest scope notes
 
 - GIF Studio stores animated frames and previews them with a looping

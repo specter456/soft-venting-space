@@ -42,51 +42,54 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* ─── Venting pastel palette (Claymorphism) ─────────────────────────── */
+/* ─── Venting pastel palette (Claymorphism, a little deeper & fluffier) ─
+   Colors are deepened just enough that every card and section shows its
+   soft color at a glance, while staying calm, warm and pastel. Ink gets
+   stronger contrast so text stays cozy and readable. */
 @theme {
-  --color-cream: #fbf5ec;
-  --color-cream-deep: #f2e7d8;
-  --color-cream-soft: #fffdf8;
+  --color-cream: #faf0e0;
+  --color-cream-deep: #eedcc2;
+  --color-cream-soft: #fffcf3;
 
-  --color-lavender-50: #f5f0fc;
-  --color-lavender-100: #eae0f8;
-  --color-lavender-200: #dac9f1;
-  --color-lavender-300: #c4ace8;
-  --color-lavender-400: #ad8fdd;
-  --color-lavender-500: #9774d1;
-  --color-lavender-600: #7d59b8;
-  --color-lavender-700: #65479a;
+  --color-lavender-50: #f3edfb;
+  --color-lavender-100: #e4d7f5;
+  --color-lavender-200: #d1bcef;
+  --color-lavender-300: #b797e3;
+  --color-lavender-400: #9c76d5;
+  --color-lavender-500: #855ac5;
+  --color-lavender-600: #6e46a6;
+  --color-lavender-700: #5a3888;
 
-  --color-blush-50: #fcf1f3;
-  --color-blush-100: #f8e0e4;
-  --color-blush-200: #f1c7cf;
-  --color-blush-300: #e7a8b4;
-  --color-blush-400: #db8a9b;
-  --color-blush-500: #cb6f84;
+  --color-blush-50: #fbeff2;
+  --color-blush-100: #f6dbe1;
+  --color-blush-200: #edbdc9;
+  --color-blush-300: #e19aae;
+  --color-blush-400: #d27594;
+  --color-blush-500: #bf5a7d;
 
-  --color-mist-50: #f0f8fc;
-  --color-mist-100: #dfeef7;
-  --color-mist-200: #c5e0f0;
-  --color-mist-300: #a3cce6;
-  --color-mist-400: #7fb3d6;
-  --color-mist-500: #5f97c0;
+  --color-mist-50: #eef7fb;
+  --color-mist-100: #d8ebf6;
+  --color-mist-200: #b5d9ef;
+  --color-mist-300: #8cc1e4;
+  --color-mist-400: #63a3d5;
+  --color-mist-500: #4d86c0;
 
-  --color-mint-50: #eff9f3;
-  --color-mint-100: #dcf1e5;
-  --color-mint-200: #bce3cf;
-  --color-mint-300: #94d0b1;
-  --color-mint-400: #6cb894;
-  --color-mint-500: #4d9d79;
+  --color-mint-50: #ecf8f1;
+  --color-mint-100: #d4eee0;
+  --color-mint-200: #ade1c5;
+  --color-mint-300: #81cea8;
+  --color-mint-400: #5cb28b;
+  --color-mint-500: #439976;
 
-  --color-peach-50: #fdf3e6;
-  --color-peach-100: #fbe6cd;
-  --color-peach-200: #f6d3a9;
-  --color-peach-300: #efbc7f;
-  --color-peach-400: #e5a25a;
+  --color-peach-50: #fcf1e0;
+  --color-peach-100: #f9e3c2;
+  --color-peach-200: #f2cd99;
+  --color-peach-300: #e9b16b;
+  --color-peach-400: #dd9447;
 
-  --color-ink: #5a5470;
-  --color-ink-soft: #8d87a3;
-  --color-ink-deep: #46405c;
+  --color-ink: #4e4866;
+  --color-ink-soft: #78718f;
+  --color-ink-deep: #3a3452;
 }
 
 /* CHANGE VALUES FOR THEME */
@@ -98,31 +101,31 @@
   --card-foreground: oklch(0.328 0.042 296);
   --popover: oklch(0.993 0.007 84);
   --popover-foreground: oklch(0.328 0.042 296);
-  --primary: oklch(0.622 0.127 296);
+  --primary: oklch(0.585 0.128 296);
   --primary-foreground: oklch(0.993 0.007 84);
-  --secondary: oklch(0.922 0.048 296);
+  --secondary: oklch(0.9 0.05 296);
   --secondary-foreground: oklch(0.328 0.042 296);
-  --muted: oklch(0.941 0.03 84);
-  --muted-foreground: oklch(0.56 0.035 296);
-  --accent: oklch(0.924 0.043 8);
+  --muted: oklch(0.935 0.03 84);
+  --muted-foreground: oklch(0.545 0.04 296);
+  --accent: oklch(0.9 0.05 8);
   --accent-foreground: oklch(0.328 0.042 296);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.9 0.03 296);
-  --input: oklch(0.9 0.03 296);
-  --ring: oklch(0.7 0.1 296);
-  --chart-1: oklch(0.622 0.127 296);
+  --border: oklch(0.895 0.032 296);
+  --input: oklch(0.895 0.032 296);
+  --ring: oklch(0.655 0.105 296);
+  --chart-1: oklch(0.585 0.128 296);
   --chart-2: oklch(0.62 0.11 160);
   --chart-3: oklch(0.63 0.11 210);
   --chart-4: oklch(0.64 0.12 40);
   --chart-5: oklch(0.62 0.11 340);
   --sidebar: oklch(0.993 0.007 84);
   --sidebar-foreground: oklch(0.328 0.042 296);
-  --sidebar-primary: oklch(0.622 0.127 296);
+  --sidebar-primary: oklch(0.585 0.128 296);
   --sidebar-primary-foreground: oklch(0.993 0.007 84);
-  --sidebar-accent: oklch(0.922 0.048 296);
+  --sidebar-accent: oklch(0.9 0.05 296);
   --sidebar-accent-foreground: oklch(0.328 0.042 296);
-  --sidebar-border: oklch(0.9 0.03 296);
-  --sidebar-ring: oklch(0.7 0.1 296);
+  --sidebar-border: oklch(0.895 0.032 296);
+  --sidebar-ring: oklch(0.655 0.105 296);
 }
 
 .dark {
@@ -222,57 +225,75 @@
   }
 }
 
-/* ─── Claymorphism surfaces ─────────────────────────────────────────── */
+/* ─── Claymorphism surfaces (fluffy & cozy) ───────────────────────────
+   Cards carry a soft felt/velvet texture (tiny dots), a warm cream-to-
+   lavender tint so color is visible at a glance, plush cloud shadows and
+   a tiny top highlight — like soft toys and clouds. */
 @layer components {
   /* Raised plush card — the main clay surface */
   .clay-card {
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.92),
-      rgba(255, 250, 242, 0.68)
-    );
-    border: 1px solid rgba(255, 255, 255, 0.95);
+    background-image:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='110' height='110'><circle cx='7' cy='7' r='1.3' fill='%239c76d5' fill-opacity='0.09'/><circle cx='55' cy='55' r='1.1' fill='%23e19aae' fill-opacity='0.08'/></svg>"),
+      radial-gradient(
+        130% 100% at 12% 0%,
+        rgba(255, 255, 255, 0.9) 0%,
+        rgba(255, 255, 255, 0) 52%
+      ),
+      linear-gradient(180deg, #fffaf1 0%, #f4ecfa 100%);
+    background-size:
+      110px 110px,
+      100% 100%,
+      100% 100%;
+    border: 1px solid rgba(255, 255, 255, 0.96);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.95),
-      inset 0 -7px 16px -8px rgba(139, 112, 190, 0.2),
-      0 20px 34px -16px rgba(99, 82, 150, 0.32);
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.95),
+      inset 0 -8px 18px -8px rgba(139, 112, 190, 0.3),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+      0 26px 44px -18px rgba(96, 78, 150, 0.42);
   }
 
   /* Lighter raised surface for chips and small bits */
   .clay-chip {
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.95),
-      rgba(255, 250, 242, 0.75)
-    );
+    background-image:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='90' height='90'><circle cx='7' cy='7' r='1.1' fill='%239c76d5' fill-opacity='0.08'/></svg>"),
+      radial-gradient(
+        120% 100% at 14% 0%,
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(255, 255, 255, 0) 55%
+      ),
+      linear-gradient(180deg, #fffdf5 0%, #f6eefb 100%);
+    background-size:
+      90px 90px,
+      100% 100%,
+      100% 100%;
     border: 1px solid rgba(255, 255, 255, 0.95);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.9),
-      inset 0 -4px 10px -6px rgba(139, 112, 190, 0.25),
-      0 10px 16px -8px rgba(99, 82, 150, 0.28);
+      inset 0 1px 0 rgba(255, 255, 255, 0.92),
+      inset 0 -5px 12px -6px rgba(139, 112, 190, 0.28),
+      0 12px 20px -10px rgba(96, 78, 150, 0.34);
   }
 
   /* Pressed / inset clay surface */
   .clay-press {
     background: linear-gradient(
       180deg,
-      rgba(232, 222, 244, 0.55),
-      rgba(255, 253, 248, 0.9)
+      rgba(224, 210, 242, 0.6),
+      rgba(255, 252, 244, 0.92)
     );
     border: 1px solid rgba(255, 255, 255, 0.8);
     box-shadow:
-      inset 0 3px 8px -2px rgba(99, 82, 150, 0.25),
+      inset 0 3px 8px -2px rgba(99, 82, 150, 0.3),
       inset 0 -2px 5px rgba(255, 255, 255, 0.7);
   }
 
   /* Primary clay button */
   .clay-btn {
-    background: linear-gradient(180deg, #cdb9f2, #b59de8);
+    background: linear-gradient(180deg, #c8b2ee, #a588e0);
     border: 1px solid rgba(255, 255, 255, 0.7);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.65),
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.65),
       inset 0 -5px 10px -4px rgba(95, 72, 160, 0.45),
-      0 12px 20px -8px rgba(118, 90, 190, 0.55);
+      0 14px 24px -10px rgba(118, 90, 190, 0.6);
     transition:
       transform 0.15s ease,
       box-shadow 0.15s ease,
@@ -290,12 +311,12 @@
 
   /* Floating pill buttons with soft peach / pink clay */
   .clay-btn-soft {
-    background: linear-gradient(180deg, #fbe6cd, #f6d3a9);
+    background: linear-gradient(180deg, #f9ddb6, #efc28e);
     border: 1px solid rgba(255, 255, 255, 0.8);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.7),
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.7),
       inset 0 -5px 10px -4px rgba(196, 140, 80, 0.4),
-      0 12px 20px -8px rgba(190, 135, 85, 0.45);
+      0 14px 24px -10px rgba(190, 135, 85, 0.5);
     transition:
       transform 0.15s ease,
       box-shadow 0.15s ease,
@@ -309,12 +330,12 @@
   }
 
   .clay-btn-blush {
-    background: linear-gradient(180deg, #f8e0e4, #f1c7cf);
+    background: linear-gradient(180deg, #f3d3da, #e9b2bf);
     border: 1px solid rgba(255, 255, 255, 0.8);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.7),
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.7),
       inset 0 -5px 10px -4px rgba(190, 110, 130, 0.4),
-      0 12px 20px -8px rgba(185, 105, 125, 0.45);
+      0 14px 24px -10px rgba(185, 105, 125, 0.5);
     transition:
       transform 0.15s ease,
       box-shadow 0.15s ease,
@@ -349,61 +370,61 @@
     transform: translateY(1px) scale(0.97);
   }
   .mood-bubble-selected {
-    outline: 3px solid rgba(70, 64, 92, 0.35);
+    outline: 3px solid rgba(58, 52, 82, 0.38);
     outline-offset: 2px;
   }
 
   .mood-sad {
-    background: linear-gradient(180deg, #d8ebf8, #c2dff2);
+    background: linear-gradient(180deg, #cfe5f6, #b5d7ef);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
       inset 0 -6px 12px -6px rgba(84, 140, 190, 0.5),
       0 12px 20px -10px rgba(96, 152, 205, 0.55);
   }
   .mood-angry {
-    background: linear-gradient(180deg, #fbdccb, #f3c4aa);
+    background: linear-gradient(180deg, #f8d2b6, #efb58f);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
       inset 0 -6px 12px -6px rgba(190, 120, 75, 0.5),
       0 12px 20px -10px rgba(214, 140, 100, 0.55);
   }
   .mood-nervous {
-    background: linear-gradient(180deg, #dcf2e5, #bfe5d0);
+    background: linear-gradient(180deg, #cfeade, #aedbc6);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
       inset 0 -6px 12px -6px rgba(80, 150, 115, 0.5),
       0 12px 20px -10px rgba(110, 180, 145, 0.55);
   }
   .mood-happy {
-    background: linear-gradient(180deg, #fce7c9, #f6d3a9);
+    background: linear-gradient(180deg, #f9dcb0, #f0c48c);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
       inset 0 -6px 12px -6px rgba(190, 130, 60, 0.5),
       0 12px 20px -10px rgba(220, 160, 90, 0.55);
   }
   .mood-tired {
-    background: linear-gradient(180deg, #e6dcf8, #d6c6f0);
+    background: linear-gradient(180deg, #dccdf5, #c9b2ec);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
       inset 0 -6px 12px -6px rgba(120, 90, 180, 0.5),
       0 12px 20px -10px rgba(140, 110, 205, 0.55);
   }
   .mood-overwhelmed {
-    background: linear-gradient(180deg, #f8dfe4, #f0c5cf);
+    background: linear-gradient(180deg, #f4cdd8, #e9adbd);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
       inset 0 -6px 12px -6px rgba(185, 100, 125, 0.5),
       0 12px 20px -10px rgba(210, 120, 150, 0.55);
   }
   .mood-calm {
-    background: linear-gradient(180deg, #d3eaf7, #b8daf0);
+    background: linear-gradient(180deg, #c8e2f5, #a9d2ec);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
       inset 0 -6px 12px -6px rgba(76, 140, 190, 0.5),
       0 12px 20px -10px rgba(100, 170, 215, 0.55);
   }
   .mood-irritated {
-    background: linear-gradient(180deg, #fbe9d0, #f6d6ab);
+    background: linear-gradient(180deg, #f8e0ba, #f0c996);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
       inset 0 -6px 12px -6px rgba(190, 135, 70, 0.5),
@@ -412,39 +433,39 @@
 
   /* Soft colored squircle tiles for tool cards */
   .tile-lavender {
-    background: linear-gradient(180deg, #eae0f8, #dac9f1);
+    background: linear-gradient(180deg, #e4d7f5, #d1bcef);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
-      inset 0 -6px 12px -6px rgba(120, 90, 180, 0.4),
-      0 10px 16px -8px rgba(140, 110, 205, 0.45);
+      inset 0 -6px 12px -6px rgba(110, 70, 166, 0.45),
+      0 10px 16px -8px rgba(140, 110, 205, 0.5);
   }
   .tile-blush {
-    background: linear-gradient(180deg, #f8e0e4, #f1c7cf);
+    background: linear-gradient(180deg, #f6dbe1, #edbdc9);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
-      inset 0 -6px 12px -6px rgba(185, 100, 125, 0.4),
-      0 10px 16px -8px rgba(210, 120, 150, 0.45);
+      inset 0 -6px 12px -6px rgba(185, 100, 125, 0.45),
+      0 10px 16px -8px rgba(210, 120, 150, 0.5);
   }
   .tile-mist {
-    background: linear-gradient(180deg, #dfeef7, #c5e0f0);
+    background: linear-gradient(180deg, #d8ebf6, #b5d9ef);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
-      inset 0 -6px 12px -6px rgba(76, 140, 190, 0.4),
-      0 10px 16px -8px rgba(100, 170, 215, 0.45);
+      inset 0 -6px 12px -6px rgba(76, 140, 190, 0.45),
+      0 10px 16px -8px rgba(100, 170, 215, 0.5);
   }
   .tile-mint {
-    background: linear-gradient(180deg, #dcf1e5, #bce3cf);
+    background: linear-gradient(180deg, #d4eee0, #ade1c5);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
-      inset 0 -6px 12px -6px rgba(80, 150, 115, 0.4),
-      0 10px 16px -8px rgba(110, 180, 145, 0.45);
+      inset 0 -6px 12px -6px rgba(80, 150, 115, 0.45),
+      0 10px 16px -8px rgba(110, 180, 145, 0.5);
   }
   .tile-peach {
-    background: linear-gradient(180deg, #fbe6cd, #f6d3a9);
+    background: linear-gradient(180deg, #f9e3c2, #f2cd99);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
-      inset 0 -6px 12px -6px rgba(190, 130, 60, 0.4),
-      0 10px 16px -8px rgba(220, 160, 90, 0.45);
+      inset 0 -6px 12px -6px rgba(190, 130, 60, 0.45),
+      0 10px 16px -8px rgba(220, 160, 90, 0.5);
   }
 }
 
@@ -465,6 +486,10 @@
   .animate-rise {
     animation: rise 1.2s ease-out infinite;
   }
+  /* the spinning music CD in the Games section */
+  .animate-cd-spin {
+    animation: cd-spin 3.2s linear infinite;
+  }
 
   /* handwritten journal text for the diary */
   .font-hand {
@@ -472,6 +497,22 @@
       "Comic Sans MS", "Segoe Print", "Bradley Hand", "Chalkboard SE",
       "Hiragino Maru Gothic ProN", cursive;
   }
+}
+
+/* A tiny vinyl record — used by the floating music CD widget. */
+.cd-disc {
+  background: radial-gradient(
+    circle at 50% 50%,
+    #fff 0 13%,
+    transparent 15% 18%,
+    #7d6cb8 20% 42%,
+    #9d8cd2 42% 62%,
+    #c3b5e8 62% 100%
+  );
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.75),
+    inset 0 -4px 8px rgba(70, 60, 120, 0.45),
+    0 10px 18px -8px rgba(96, 78, 150, 0.55);
 }
 
 @keyframes floaty {
@@ -518,6 +559,12 @@
   100% {
     opacity: 0;
     transform: translateY(-22px) scale(1.15);
+  }
+}
+
+@keyframes cd-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
