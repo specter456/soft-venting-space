@@ -11,21 +11,14 @@ import { cn } from "@/lib/utils";
 /** Exactly four quick moods — one tap selects only that one. */
 const QUICK_MOODS: MoodId[] = ["happy", "sad", "angry", "nervous"];
 
-/** Main features, exactly two per row. */
+/** Main features, exactly two per row — one single Recording entry. */
 const FEATURES = [
   {
-    to: "/dashboard/record?mode=voice",
-    title: "Voice Vent",
+    to: "/dashboard/record",
+    title: "Recording",
     emoji: "🎙️",
     tile: "tile-mist",
-    line: "say it out loud",
-  },
-  {
-    to: "/dashboard/record?mode=video",
-    title: "Video Vent",
-    emoji: "🎥",
-    tile: "tile-blush",
-    line: "express with your face",
+    line: "voice & video in one place",
   },
   {
     to: "/dashboard/notes",
@@ -68,6 +61,13 @@ const FEATURES = [
     emoji: "📖",
     tile: "tile-lavender",
     line: "your private little book",
+  },
+  {
+    to: "/dashboard/vault",
+    title: "Private Vault",
+    emoji: "🔒",
+    tile: "tile-blush",
+    line: "double-locked keepsakes",
   },
 ];
 

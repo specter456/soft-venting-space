@@ -14,8 +14,8 @@ const CHECKIN_KEY = "venting-checkin";
 /** Exactly four gentle options, in one straight row. */
 const DAY_MOODS = [
   { id: "happy", label: "Happy", emoji: "😊" },
-  { id: "sad", label: "Sad", emoji: "🥺" },
-  { id: "angry", label: "Angry", emoji: "😤" },
+  { id: "sad", label: "Sad", emoji: "😢" },
+  { id: "angry", label: "Angry", emoji: "😠" },
   { id: "nervous", label: "Nervous", emoji: "😰" },
 ];
 

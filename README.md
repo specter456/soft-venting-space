@@ -35,11 +35,16 @@ bun run dev        # platform-managed dev server
   exactly four emoji options in one row (Happy / Sad / Angry / Nervous) and a
   small Skip button.
 - Home: mood typing box (type your exact feeling) + four quick moods
-  (Happy / Sad / Angry / Nervous), then a two-per-row feature grid — Voice
-  Vent, Video Vent, Notes, Scribble, Photo Doodle, Stickers, GIF Studio, Diary.
-- **Record** — Recording Box with Voice | Video toggle, mood tags, post-actions
-  (Save privately / Reflect in Notes / Attach to Diary / Doodle on it / Make
-  GIF / Delete). Video uses soft illustrated avatars, never a real face.
+  (Happy / Sad / Angry / Nervous), then a two-per-row feature grid —
+  Recording, Notes, Scribble, Photo Doodle, Stickers, GIF Studio, Diary,
+  Private Vault.
+- **Record** — one Recording entry opens a screen with exactly two soft
+  choice cards (Voice Recording | Video Recording). Voice: mic, record,
+  waves, mood tags, actions Save / Reflect in Notes / Attach to Diary /
+  Delete. Video: rounded camera frame, mood tags, the privacy message “Only
+  you can see this. Nothing is uploaded.”, and actions Save privately /
+  Doodle on it / Make GIF / Attach to Note / Delete. Video uses soft
+  illustrated avatars, never a real face.
 - **Notes** — private reflection journal with optional audio/video/photo
   attachment chips; notes and recordings each stand alone.
 - **Create** — Photos, Scribble canvas, Sticker studio, GIF Studio, and the

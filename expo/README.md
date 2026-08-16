@@ -71,12 +71,15 @@ bun run build:web            # production PWA build → dist/ (host it anywhere 
   Settings. Settings opens the full settings screen (profile, security,
   appearance, install options, general).
 - **Home** — greeting, the skippable **daily check-in checklist** (once per
-  day), a **mood typing box** (“Type how you feel…”) with exactly four quick
-  moods (Happy / Sad / Angry / Nervous), a two-per-row feature grid (Voice
-  Vent, Video Vent, Notes, Scribble, Photo Doodle, Stickers, GIF Studio,
-  Diary), a **“Pick up where you left off”** row, a gentle **suggestion card**
-  matched to the mood, the **“Private · Only you”** chip, and the settings
-  gear.
+  day),  a **mood typing box** (“Type how you feel…”) with exactly four quick
+  moods (Happy / Sad / Angry / Nervous), a two-per-row feature grid
+  (Recording, Notes, Scribble, Photo Doodle, Stickers, GIF Studio, Diary,
+  Private Vault), a **“Pick up where you left off”** row, a gentle
+  **suggestion card** matched to the mood, the **“Private · Only you”** chip,
+  and the settings gear.
+- **Record** — one Recording entry shows exactly two soft choice cards (Voice
+  Recording | Video Recording); voice and video modes keep their own privacy
+  message (“Only you can see this. Nothing is uploaded.”) and action sets.
 - **Games** (taskbar tab) — six gentle psychological games in a two-per-row
   grid: Bubble Pop, Breath Bubble, Dandelion Wishes (press & hold), Comfort
   the Buddy, Feelings Jars, Star Trace. No scores, no timers, no competition;

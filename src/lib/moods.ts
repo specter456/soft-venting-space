@@ -32,7 +32,7 @@ export const MOODS: Mood[] = [
   {
     id: "sad",
     label: "Sad",
-    emoji: "🥺",
+    emoji: "😢",
     clay: "mood-sad",
     affirmation: "It's okay to feel this. I'm right here with you.",
     blurb: "tears are feelings finding their way out",
@@ -40,7 +40,7 @@ export const MOODS: Mood[] = [
   {
     id: "angry",
     label: "Angry",
-    emoji: "😤",
+    emoji: "😠",
     clay: "mood-angry",
     affirmation: "Let it out. Your anger is allowed here.",
     blurb: "frustration deserves a soft place to land",

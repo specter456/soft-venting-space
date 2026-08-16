@@ -19,8 +19,8 @@ export interface Mood {
 
 export const MOODS: Mood[] = [
   { id: "calm", label: "Calm", emoji: "😌", affirmation: "Quiet and steady. Enjoy this soft moment." },
-  { id: "sad", label: "Sad", emoji: "🥺", affirmation: "It's okay to feel this. I'm right here with you." },
-  { id: "angry", label: "Angry", emoji: "😤", affirmation: "Let it out. Your anger is allowed here." },
+  { id: "sad", label: "Sad", emoji: "😢", affirmation: "It's okay to feel this. I'm right here with you." },
+  { id: "angry", label: "Angry", emoji: "😠", affirmation: "Let it out. Your anger is allowed here." },
   { id: "nervous", label: "Nervous", emoji: "😰", affirmation: "Breathe with me — in, and out. You're safe." },
   { id: "irritated", label: "Irritated", emoji: "🫤", affirmation: "Irritation is a signal, not a flaw. Let it soften here." },
   { id: "happy", label: "Happy", emoji: "😊", affirmation: "Your joy is safe here — let's keep it glowing." },

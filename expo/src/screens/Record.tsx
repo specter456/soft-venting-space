@@ -16,7 +16,7 @@ import { MoodChips, MoodTag } from "../components/MoodChips";
 import { MOODS, VIDEO_AVATARS, VOICE_COMPANION } from "../data";
 import { createRecording, deleteFile, removeItem, useTable } from "../db";
 import { playSoftChime } from "../sound";
-import { useAsyncPressGuard } from "../hooks";
+import { useAsyncPressGuard, usePressGuard } from "../hooks";
 import { palette, radius, TILE_BGS, clayShadow } from "../theme";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../nav";
@@ -33,7 +33,9 @@ interface Draft {
 }
 
 export default function RecordScreen({ navigation, route }: Props) {
-  const [mode, setMode] = React.useState<"voice" | "video">(route.params?.mode ?? "voice");
+  // With no deep-link mode, show exactly two soft choice cards first
+  // (Voice Recording | Video Recording) — one Recording entry on Home.
+  const [mode, setMode] = React.useState<"voice" | "video" | null>(route.params?.mode ?? null);
   const [mood, setMood] = React.useState<string | undefined>();
   const [draft, setDraft] = React.useState<Draft | null>(null);
   const [toast, setToast] = React.useState<string | null>(null);
@@ -89,26 +91,36 @@ export default function RecordScreen({ navigation, route }: Props) {
 
   return (
     <Screen title="Recording Box" subtitle="Private. Safe. Just for you." bottomBar={<TaskBar />}>
-      {/* Voice | Video toggle */}
-      <View style={[styles.toggle, clayShadow(false)]}>
-        <ToggleButton active={mode === "voice"} label="🎙️ Voice" onPress={() => setMode("voice")} />
-        <ToggleButton active={mode === "video"} label="🎥 Video" onPress={() => setMode("video")} />
-      </View>
-
-      {draft ? (
-        <DraftActions
-          draft={draft}
-          onSave={handleSave}
-          onReflect={handleReflect}
-          onDiary={handleDiary}
-          onDoodle={() => handleDoodle(false)}
-          onGif={() => handleDoodle(true)}
-          onDelete={handleDelete}
-        />
-      ) : mode === "voice" ? (
-        <VoiceRecorder mood={mood} setMood={setMood} onDone={(d) => setDraft(d)} />
+      {mode === null ? (
+        <ModePicker onPick={(m) => setMode(m)} />
       ) : (
-        <VideoRecorder mood={mood} setMood={setMood} onDone={(d) => setDraft(d)} />
+        <>
+          {/* Voice | Video toggle */}
+          <View style={[styles.toggle, clayShadow(false)]}>
+            <ToggleButton active={mode === "voice"} label="🎙️ Voice" onPress={() => setMode("voice")} />
+            <ToggleButton active={mode === "video"} label="🎥 Video" onPress={() => setMode("video")} />
+          </View>
+
+          {draft ? (
+            <DraftActions
+              draft={draft}
+              onSave={handleSave}
+              onReflect={handleReflect}
+              onDiary={handleDiary}
+              onDoodle={() => handleDoodle(false)}
+              onGif={() => handleDoodle(true)}
+              onDelete={handleDelete}
+            />
+          ) : mode === "voice" ? (
+            <VoiceRecorder mood={mood} setMood={setMood} onDone={(d) => setDraft(d)} />
+          ) : (
+            <VideoRecorder mood={mood} setMood={setMood} onDone={(d) => setDraft(d)} />
+          )}
+
+          <Pressable onPress={() => setMode(null)} style={({ pressed }) => [styles.switchLink, pressed && { opacity: 0.6 }]}>
+            <Text style={styles.switchLinkText}>← choose a different way to record</Text>
+          </Pressable>
+        </>
       )}
 
       <Text style={styles.privacyLine}>🔒 No sharing. No feed. No audience. Just you.</Text>
@@ -120,6 +132,34 @@ export default function RecordScreen({ navigation, route }: Props) {
         </View>
       ) : null}
     </Screen>
+  );
+}
+
+/* ─── Two options inside the Recording screen ─────────────────────── */
+
+function ModePicker({ onPick }: { onPick: (m: "voice" | "video") => void }) {
+  const pickVoice = usePressGuard(() => onPick("voice"), 450);
+  const pickVideo = usePressGuard(() => onPick("video"), 450);
+  return (
+    <>
+      <Text style={styles.pickTitle}>How would you like to let it out?</Text>
+      <Text style={styles.pickSub}>Two gentle ways — both stay privately on this device.</Text>
+
+      <View style={styles.pickRow}>
+        <ClayCard style={styles.pickCard} bg={hexWithAlpha(palette.sky, 0.85)} onPress={pickVoice}>
+          <Text style={styles.pickEmoji}>🎤</Text>
+          <Text style={styles.pickName}>Voice Recording</Text>
+          <Text style={styles.pickLine}>say it out loud — quietly listened to, never judged</Text>
+        </ClayCard>
+        <ClayCard style={styles.pickCard} bg={hexWithAlpha(palette.blush, 0.85)} onPress={pickVideo}>
+          <Text style={styles.pickEmoji}>🎥</Text>
+          <Text style={styles.pickName}>Video Recording</Text>
+          <Text style={styles.pickLine}>express with your face — a private mirror, never social</Text>
+        </ClayCard>
+      </View>
+
+      <Text style={styles.pickPrivacy}>🔒 Only you can see this. Nothing is uploaded.</Text>
+    </>
   );
 }
 
@@ -389,6 +429,7 @@ function VideoRecorder({
           <Text style={styles.privacyBadgeText}>🔒 only you</Text>
         </View>
       </View>
+      <Text style={styles.videoPrivacy}>Only you can see this. Nothing is uploaded.</Text>
 
       {!useCamera ? (
         <View style={styles.avatarRow}>
@@ -469,10 +510,9 @@ function DraftActions({
       </Text>
       {draft.kind === "voice" ? (
         <>
-          <ClayButton label="🔒 Save privately" color="primary" size="lg" onPress={onSave} style={{ width: "100%", marginTop: 6 }} />
+          <ClayButton label="🔒 Save" color="primary" size="lg" onPress={onSave} style={{ width: "100%", marginTop: 6 }} />
           <ClayButton label="📝 Reflect in Notes" color="cream" onPress={onReflect} style={{ width: "100%", marginTop: 10 }} />
           <ClayButton label="📖 Attach to Diary" color="cream" onPress={onDiary} style={{ width: "100%", marginTop: 10 }} />
-          <ClayButton label="✏️ Doodle on it" color="cream" onPress={onDoodle} style={{ width: "100%", marginTop: 10 }} />
         </>
       ) : (
         <>
@@ -480,7 +520,6 @@ function DraftActions({
           <ClayButton label="✏️ Doodle on it" color="cream" onPress={onDoodle} style={{ width: "100%", marginTop: 10 }} />
           <ClayButton label="🎞️ Make GIF" color="cream" onPress={onGif} style={{ width: "100%", marginTop: 10 }} />
           <ClayButton label="📝 Attach to Note" color="cream" onPress={onReflect} style={{ width: "100%", marginTop: 10 }} />
-          <ClayButton label="📖 Attach to Diary" color="cream" onPress={onDiary} style={{ width: "100%", marginTop: 10 }} />
         </>
       )}
       <ClayButton label="🗑️ Delete" color="ghost" onPress={onDelete} textStyle={{ color: "#b0707e" }} />
@@ -701,6 +740,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   privacyBadgeText: { fontSize: 11.5, fontWeight: "700", color: palette.ink },
+  videoPrivacy: { marginTop: 8, fontSize: 11.5, fontWeight: "700", color: palette.mintDeep, textAlign: "center" },
   avatarRow: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 8, marginTop: 12 },
   avatarOption: {
     width: 40,
@@ -720,6 +760,16 @@ const styles = StyleSheet.create({
     color: palette.inkFaint,
     fontWeight: "600",
   },
+  pickTitle: { fontSize: 17, fontWeight: "800", color: palette.ink, textAlign: "center", marginTop: 4 },
+  pickSub: { marginTop: 4, fontSize: 12.5, color: palette.inkSoft, textAlign: "center", lineHeight: 18 },
+  pickRow: { flexDirection: "row", justifyContent: "space-between", gap: 12, marginTop: 16 },
+  pickCard: { width: "48%", alignItems: "center", paddingVertical: 22 },
+  pickEmoji: { fontSize: 34 },
+  pickName: { marginTop: 8, fontSize: 14.5, fontWeight: "800", color: palette.ink, textAlign: "center" },
+  pickLine: { marginTop: 4, fontSize: 11, color: palette.inkSoft, textAlign: "center", lineHeight: 15 },
+  pickPrivacy: { marginTop: 16, fontSize: 11.5, fontWeight: "700", color: palette.inkSoft, textAlign: "center" },
+  switchLink: { alignSelf: "center", marginTop: 14, padding: 6 },
+  switchLinkText: { fontSize: 12.5, fontWeight: "700", color: palette.inkSoft, textDecorationLine: "underline" },
   sectionTitle: { fontSize: 15, fontWeight: "800", color: palette.ink, marginBottom: 10 },
   recRow: {
     flexDirection: "row",

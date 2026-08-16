@@ -30,7 +30,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 /** Exactly four quick moods — one tap selects only that one. */
 const QUICK_MOODS = ["happy", "sad", "angry", "nervous"] as const;
 
-/** Main features, exactly two per row. */
+/** Main features, exactly two per row — one single Recording entry. */
 const FEATURES: {
   emoji: string;
   title: string;
@@ -38,14 +38,14 @@ const FEATURES: {
   bg: string;
   go: (n: Props["navigation"]) => void;
 }[] = [
-  { emoji: "🎙️", title: "Voice Vent", line: "say it out loud", bg: palette.sky, go: (n) => n.navigate("Record", { mode: "voice" }) },
-  { emoji: "🎥", title: "Video Vent", line: "express with your face", bg: palette.blush, go: (n) => n.navigate("Record", { mode: "video" }) },
+  { emoji: "🎙️", title: "Recording", line: "voice & video in one place", bg: palette.sky, go: (n) => n.navigate("Record") },
   { emoji: "📝", title: "Notes", line: "write it down softly", bg: palette.peach, go: (n) => n.navigate("Notes") },
   { emoji: "🖍️", title: "Scribble", line: "draw how it feels", bg: palette.lavender, go: (n) => n.navigate("Scribble") },
   { emoji: "🖼️", title: "Photo Doodle", line: "doodle on your photos", bg: palette.mint, go: (n) => n.navigate("Photos") },
   { emoji: "🧸", title: "Stickers", line: "make cute feelings", bg: palette.blush, go: (n) => n.navigate("Stickers") },
   { emoji: "🎞️", title: "GIF Studio", line: "soft little animations", bg: palette.sky, go: (n) => n.navigate("GifStudio") },
   { emoji: "📖", title: "Diary", line: "your private little book", bg: palette.lavender, go: (n) => n.navigate("Diary") },
+  { emoji: "🔒", title: "Private Vault", line: "double-locked keepsakes", bg: palette.blush, go: (n) => n.navigate("Vault") },
 ];
 
 const SUGGESTIONS: Record<string, { emoji: string; text: string; route: keyof RootStackParamList }> = {

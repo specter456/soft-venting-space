@@ -26,10 +26,13 @@ export default function RecordScreen() {
   const [params] = useSearchParams();
   const recordings = useTable<Recording>("recordings");
 
-  // The home grid deep-links here with ?mode=voice | ?mode=video. The query
-  // param is the source of truth until the user toggles it on screen.
-  const [localMode, setLocalMode] = useState<Mode | null>(null);
-  const mode: Mode = localMode ?? (params.get("mode") === "video" ? "video" : "voice");
+  // The home grid deep-links here with ?mode=voice | ?mode=video. With no
+  // param, we first show two soft choice cards (Voice Recording | Video
+  // Recording) — exactly two options inside the Recording screen.
+  const [mode, setMode] = useState<Mode | null>(() => {
+    const m = params.get("mode");
+    return m === "voice" || m === "video" ? m : null;
+  });
   const [mood, setMood] = useState<MoodId | null>(null);
   const [stage, setStage] = useState<Stage>("idle");
   const [seconds, setSeconds] = useState(0);
@@ -67,7 +70,7 @@ export default function RecordScreen() {
   };
 
   const persist = async () => {
-    if (saving || savedId) return null;
+    if (saving || savedId || !mode) return null;
     setSaving(true);
     try {
       // stored on this device only — the media itself never leaves
@@ -127,6 +130,17 @@ export default function RecordScreen() {
 
   return (
     <div className="space-y-6">
+      {mode === null ? (
+        /* ─── Two options inside the Recording screen ─────────────── */
+        <ModePicker
+          onPick={(m) => {
+            setMode(m);
+            setStage("idle");
+            setSavedId(null);
+          }}
+        />
+      ) : (
+        <>
       {/* ─── Voice | Video toggle ─────────────────────────────────── */}
       <div className="clay-chip mx-auto flex w-fit items-center gap-1 rounded-full p-1">
         {(["voice", "video"] as Mode[]).map((m) => (
@@ -134,7 +148,7 @@ export default function RecordScreen() {
             key={m}
             type="button"
             onClick={() => {
-              setLocalMode(m);
+              setMode(m);
               setStage("idle");
               setSavedId(null);
             }}
@@ -233,6 +247,12 @@ export default function RecordScreen() {
                 </div>
               )}
 
+              {mode === "video" && (
+                <p className="mt-4 text-[11px] font-bold text-mint-500">
+                  Only you can see this. Nothing is uploaded.
+                </p>
+              )}
+
               <button
                 type="button"
                 onClick={startRecording}
@@ -299,6 +319,12 @@ export default function RecordScreen() {
                 </div>
               )}
 
+              {mode === "video" && (
+                <p className="mt-4 text-[11px] font-bold text-mint-500">
+                  Only you can see this. Nothing is uploaded.
+                </p>
+              )}
+
               <div className="mt-5 flex items-center justify-center gap-3">
                 <button
                   type="button"
@@ -363,13 +389,12 @@ export default function RecordScreen() {
                 {mode === "voice" ? (
                   <>
                     <ActionChip onClick={handleDiary} label="Attach to Diary" disabled={Boolean(saving)} />
-                    <ActionChip onClick={() => handleVideoExtra("doodle")} label="Doodle on it" disabled={Boolean(saving)} />
                   </>
                 ) : (
                   <>
                     <ActionChip onClick={() => handleVideoExtra("doodle")} label="Doodle on it" disabled={Boolean(saving)} />
                     <ActionChip onClick={() => handleVideoExtra("gif")} label="Make GIF" disabled={Boolean(saving)} />
-                    <ActionChip onClick={handleDiary} label="Attach to Note" disabled={Boolean(saving)} />
+                    <ActionChip onClick={handleReflect} label="Attach to Note" disabled={Boolean(saving)} />
                   </>
                 )}
                 <button
@@ -390,6 +415,20 @@ export default function RecordScreen() {
           )}
         </AnimatePresence>
       </motion.div>
+
+        <button
+          type="button"
+          onClick={() => {
+            setMode(null);
+            setStage("idle");
+            setSavedId(null);
+          }}
+          className="mx-auto block rounded-full px-4 py-2 text-xs font-bold text-ink-soft underline-offset-4 hover:text-ink-deep hover:underline"
+        >
+          ← choose a different way to record
+        </button>
+        </>
+      )}
 
       {/* ─── Recent recordings ────────────────────────────────────── */}
       <section className="space-y-3">
@@ -430,6 +469,68 @@ export default function RecordScreen() {
       {/* vault hint */}
       <p className="text-center text-[11px] font-semibold text-ink-soft">
         Video vents can also live in your <span className="text-lavender-600">🔒 Photo Vault</span>
+      </p>
+    </div>
+  );
+}
+
+/* ─── Two options inside the Recording screen ─────────────────────── */
+
+function ModePicker({ onPick }: { onPick: (m: Mode) => void }) {
+  const pick = useTapGuard((m: Mode) => onPick(m), 450);
+  return (
+    <div className="space-y-4">
+      <div className="text-center">
+        <p className="text-lg font-bold tracking-tight text-ink-deep">
+          How would you like to let it out?
+        </p>
+        <p className="mt-1 text-sm font-medium text-ink-soft">
+          Two gentle ways — both stay privately on this device.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <motion.button
+          type="button"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          onClick={() => pick("voice")}
+          className="clay-card group flex flex-col items-center gap-2 rounded-[1.8rem] px-4 py-6 text-center transition-transform hover:-translate-y-0.5"
+        >
+          <span className="tile-mist flex h-14 w-14 items-center justify-center rounded-2xl text-3xl transition-transform group-hover:scale-110">
+            <span aria-hidden className="drop-shadow-sm">🎤</span>
+          </span>
+          <span className="text-base font-bold tracking-tight text-ink-deep">
+            Voice Recording
+          </span>
+          <span className="text-[11px] leading-snug font-medium text-ink-soft">
+            say it out loud — quietly listened to, never judged
+          </span>
+        </motion.button>
+
+        <motion.button
+          type="button"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.06 }}
+          onClick={() => pick("video")}
+          className="clay-card group flex flex-col items-center gap-2 rounded-[1.8rem] px-4 py-6 text-center transition-transform hover:-translate-y-0.5"
+        >
+          <span className="tile-blush flex h-14 w-14 items-center justify-center rounded-2xl text-3xl transition-transform group-hover:scale-110">
+            <span aria-hidden className="drop-shadow-sm">🎥</span>
+          </span>
+          <span className="text-base font-bold tracking-tight text-ink-deep">
+            Video Recording
+          </span>
+          <span className="text-[11px] leading-snug font-medium text-ink-soft">
+            express with your face — a private mirror, never social
+          </span>
+        </motion.button>
+      </div>
+
+      <p className="text-center text-[11px] font-semibold text-ink-soft">
+        🔒 Only you can see this. Nothing is uploaded.
       </p>
     </div>
   );
