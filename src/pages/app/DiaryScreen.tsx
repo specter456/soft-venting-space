@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { DIARY_STICKERS, DIARY_WEATHER, VIDEO_AVATARS } from "@/lib/art";
 import { MOODS, type MoodId, moodById } from "@/lib/moods";
+import { playPageTurn } from "@/lib/sound";
 import { cn } from "@/lib/utils";
 
 const COVER_COLORS = ["#cdb9f2", "#f6cdd5", "#bce3cf", "#f7d8ae", "#c5d9f2"];
@@ -535,7 +536,10 @@ export default function DiaryScreen() {
       <div className="flex items-center justify-between">
         <button
           type="button"
-          onClick={() => setPage((p) => Math.max(0, p - 1))}
+          onClick={() => {
+            setPage((p) => Math.max(0, p - 1));
+            playPageTurn();
+          }}
           disabled={safePage === 0}
           className="clay-chip flex items-center gap-1 rounded-full px-4 py-2.5 text-xs font-bold text-ink-deep transition-transform hover:scale-105 active:scale-95 disabled:opacity-40"
         >
@@ -550,7 +554,10 @@ export default function DiaryScreen() {
         </button>
         <button
           type="button"
-          onClick={() => setPage((p) => Math.min(total - 1, p + 1))}
+          onClick={() => {
+            setPage((p) => Math.min(total - 1, p + 1));
+            playPageTurn();
+          }}
           disabled={safePage === total - 1}
           className="clay-chip flex items-center gap-1 rounded-full px-4 py-2.5 text-xs font-bold text-ink-deep transition-transform hover:scale-105 active:scale-95 disabled:opacity-40"
         >

@@ -46,8 +46,13 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
   }, [authLoading, isAuthenticated, navigate, redirect]);
   const handleEmailSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setIsLoading(true);
     setError(null);
+    const emailValue = String(new FormData(event.currentTarget).get("email") ?? "").trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailValue)) {
+      setError("Please enter a valid email.");
+      return;
+    }
+    setIsLoading(true);
     try {
       const formData = new FormData(event.currentTarget);
       await signIn("email-otp", formData);
@@ -133,17 +138,16 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
             Welcome to Venting
           </h1>
           <p className="mt-1.5 max-w-xs text-sm text-ink-soft">
-            Your private, soft space. Only you can ever see what you share
-            here.
+            Your feelings are safe here — and only you can ever see them.
           </p>
           <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-lavender-100/80 px-3 py-1 text-[11px] font-bold text-lavender-600">
-            <LockKeyhole className="size-3" /> private by design
+            <LockKeyhole className="size-3" /> Private. No sharing. Only you can see this.
           </span>
         </div>
 
         {step === "signIn" ? (
           <>
-            <form onSubmit={handleEmailSubmit} className="mt-7">
+            <form onSubmit={handleEmailSubmit} noValidate className="mt-7">
               <div className="relative flex items-center gap-2">
                 <div className="relative flex-1">
                   <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-ink-soft" />
@@ -288,15 +292,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
         )}
 
         <p className="mt-6 text-center text-xs font-medium text-ink-soft">
-          Secured by{" "}
-          <a
-            href="https://freebuff.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-bold text-lavender-600 underline-offset-4 hover:underline"
-          >
-            freebuff.com
-          </a>
+          🔒 Private and safe. Only you can see this.
         </p>
       </div>
     </div>

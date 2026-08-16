@@ -124,6 +124,27 @@ function Breathe() {
         aria-hidden
         className="pointer-events-none absolute -right-16 -bottom-16 h-48 w-48 rounded-full bg-mist-100/70 blur-2xl"
       />
+      {/* floating clouds & glowing particles */}
+      <span aria-hidden className="animate-floaty-slow absolute top-8 left-8 text-2xl opacity-70">
+        ☁️
+      </span>
+      <span
+        aria-hidden
+        className="animate-floaty absolute top-16 right-10 text-xl opacity-60"
+        style={{ animationDelay: "1.4s" }}
+      >
+        ☁️
+      </span>
+      <span aria-hidden className="animate-twinkle absolute bottom-14 left-10 text-sm text-mint-400">
+        ✦
+      </span>
+      <span
+        aria-hidden
+        className="animate-twinkle absolute right-14 bottom-20 text-xs text-mist-400"
+        style={{ animationDelay: "0.9s" }}
+      >
+        ✧
+      </span>
 
       <motion.div
         animate={{ scale: phase.scale }}
@@ -149,6 +170,9 @@ function Breathe() {
       </motion.p>
       <p className="mt-2 text-sm font-medium text-ink-soft">
         follow the bubble — in, hold, and let it all out
+      </p>
+      <p className="mt-3 text-sm font-bold text-ink">
+        <span aria-hidden>🐻</span> your little bear is breathing along with you
       </p>
       <p className="mt-4 text-xs font-bold text-mint-500">
         {rounds} gentle round{rounds === 1 ? "" : "s"} done

@@ -13,6 +13,7 @@ import "./index.css";
 const Landing = lazy(() => import("./pages/Landing.tsx"));
 const AuthPage = lazy(() => import("./pages/Auth.tsx"));
 const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
+const WelcomeCheckin = lazy(() => import("./pages/WelcomeCheckin.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const HomeScreen = lazy(() => import("./pages/app/HomeScreen.tsx"));
 const RecordScreen = lazy(() => import("./pages/app/RecordScreen.tsx"));
@@ -133,7 +134,15 @@ createRoot(document.getElementById("root")!).render(
               <Route path="/" element={<Landing />} />
               <Route
                 path="/auth"
-                element={<AuthPage redirectAfterAuth="/dashboard" />}
+                element={<AuthPage redirectAfterAuth="/welcome" />}
+              />
+              <Route
+                path="/welcome"
+                element={
+                  <RequireAuth>
+                    <WelcomeCheckin />
+                  </RequireAuth>
+                }
               />
               <Route
                 path="/dashboard"

@@ -354,7 +354,10 @@ export default function RecordScreen() {
                   disabled={Boolean(saving)}
                 />
                 {mode === "voice" ? (
-                  <ActionChip onClick={handleDiary} label="Attach to Diary" disabled={Boolean(saving)} />
+                  <>
+                    <ActionChip onClick={handleDiary} label="Attach to Diary" disabled={Boolean(saving)} />
+                    <ActionChip onClick={() => handleVideoExtra("doodle")} label="Doodle on it" disabled={Boolean(saving)} />
+                  </>
                 ) : (
                   <>
                     <ActionChip onClick={() => handleVideoExtra("doodle")} label="Doodle on it" disabled={Boolean(saving)} />
