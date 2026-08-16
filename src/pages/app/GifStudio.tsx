@@ -23,8 +23,6 @@ interface Frame {
   text?: string;
 }
 
-let stampCounter = 0;
-
 export default function GifStudio() {
   const addToVault = useMutation(api.vault.create);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -35,6 +33,7 @@ export default function GifStudio() {
   const [avatar] = useState(() => VIDEO_AVATARS[Math.floor(Math.random() * VIDEO_AVATARS.length)]);
   const [stamps, setStamps] = useState<Stamp[]>([]);
   const [text, setText] = useState("");
+  const stampIdRef = useRef(0);
   const [frames, setFrames] = useState<Frame[]>([]);
   const [playing, setPlaying] = useState(false);
   const [playIdx, setPlayIdx] = useState(0);
@@ -92,11 +91,12 @@ export default function GifStudio() {
   };
 
   const addStamp = (emoji: string) => {
-    stampCounter += 1;
+    stampIdRef.current += 1;
+    const id = `stamp-${stampIdRef.current}`;
     setStamps((prev) => [
       ...prev,
       {
-        id: `stamp-${stampCounter}`,
+        id,
         emoji,
         x: 18 + Math.random() * 64,
         y: 18 + Math.random() * 64,

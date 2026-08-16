@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Navigate, useNavigate } from "react-router";
 import { Logo } from "@/components/Logo";
 import { todayDateKey } from "@/lib/moods";
@@ -64,11 +64,8 @@ const ACTIONS = [
 export default function WelcomeCheckin() {
   const navigate = useNavigate();
   const [checked, setChecked] = useState<string[]>([]);
-  const [alreadyDone, setAlreadyDone] = useState(false);
-
-  useEffect(() => {
-    if (localStorage.getItem(DONE_KEY) === "1") setAlreadyDone(true);
-  }, []);
+  // local-only gate: this screen shows once, ever, per device
+  const [alreadyDone] = useState(() => localStorage.getItem(DONE_KEY) === "1");
 
   if (alreadyDone) return <Navigate to="/dashboard" replace />;
 

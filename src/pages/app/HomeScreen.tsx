@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
 import { api } from "@/convex/_generated/api";
 import { MoodBubble } from "@/components/MoodBubble";

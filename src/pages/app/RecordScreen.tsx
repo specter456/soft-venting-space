@@ -25,7 +25,6 @@ export default function RecordScreen() {
   const navigate = useNavigate();
   const createRecording = useMutation(api.recordings.create);
   const removeRecording = useMutation(api.recordings.remove);
-  const addVaultItem = useMutation(api.vault.create);
   const recordings = useQuery(api.recordings.list);
 
   const [mode, setMode] = useState<Mode>("voice");
@@ -116,7 +115,10 @@ export default function RecordScreen() {
     navigate("/dashboard/gif-studio");
   };
 
-  const avatar = VIDEO_AVATARS[Math.floor(Math.random() * VIDEO_AVATARS.length)];
+  // pick one cozy avatar per visit — stable across re-renders
+  const [avatar] = useState(
+    () => VIDEO_AVATARS[Math.floor(Math.random() * VIDEO_AVATARS.length)],
+  );
 
   return (
     <div className="space-y-6">

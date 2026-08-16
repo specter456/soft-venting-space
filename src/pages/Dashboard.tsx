@@ -1,6 +1,6 @@
 import { useQuery } from "convex/react";
 import { Loader2, Lock, LogOut } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router";
 import { api } from "@/convex/_generated/api";
 import { Logo } from "@/components/Logo";
@@ -39,15 +39,17 @@ export default function Dashboard() {
   const [lock, setLock] = useState<"setup" | "unlock" | "unlocked">("unlocked");
   const [lockInitDone, setLockInitDone] = useState(false);
 
-  useEffect(() => {
-    if (lockInitDone || hasPasscode === undefined) return;
+  // Decide the initial lock state once the passcode query resolves. This
+  // adjusts state during render (guarded, so it runs once) instead of in an
+  // effect — React re-renders immediately and no cascade is triggered.
+  if (!lockInitDone && hasPasscode !== undefined) {
     setLockInitDone(true);
     if (hasPasscode) {
       setLock("unlock");
     } else if (sessionStorage.getItem(LOCK_DISMISSED_KEY) !== "1") {
       setLock("setup");
     }
-  }, [hasPasscode, lockInitDone]);
+  }
 
   const handleSignOut = async () => {
     await signOut();

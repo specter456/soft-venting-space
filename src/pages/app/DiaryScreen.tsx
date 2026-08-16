@@ -1,8 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useState } from "react";
+import { useSearchParams } from "react-router";
 import { Check, ChevronLeft, ChevronRight, Loader2, Lock, Mic, Video } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { AttachmentChip } from "@/components/AttachmentChip";
@@ -20,7 +20,6 @@ const COVER_KEY = "venting-diary-cover";
 type View = "cover" | "read" | "compose";
 
 export default function DiaryScreen() {
-  const navigate = useNavigate();
   const [params] = useSearchParams();
   const attachId = params.get("attach");
 
@@ -50,12 +49,9 @@ export default function DiaryScreen() {
   const [weather, setWeather] = useState(DIARY_WEATHER[0]);
   const [stickers, setStickers] = useState<string[]>(["💗"]);
   const [mood, setMood] = useState<MoodId | null>(null);
+  // pre-select the recording we were sent here with (from Record → Attach to Diary)
   const [recordingId, setRecordingId] = useState<string | null>(attachId);
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (attachId) setRecordingId(attachId);
-  }, [attachId]);
 
   const selectedRecording = recordings?.find((r) => r._id === recordingId) ?? null;
 

@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { Check, Loader2, Mic, Video } from "lucide-react";
 import { api } from "@/convex/_generated/api";
@@ -13,7 +13,6 @@ export default function NoteEditor() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const attachId = params.get("attach");
-  const attachKind = params.get("kind");
 
   const createNote = useMutation(api.notes.create);
   const attachToNote = useMutation(api.recordings.attachToNote);
@@ -21,14 +20,10 @@ export default function NoteEditor() {
 
   const [body, setBody] = useState("");
   const [mood, setMood] = useState<MoodId | null>(null);
+  // pre-select the recording we were sent here with (from Record → Reflect in Notes)
   const [recordingId, setRecordingId] = useState<string | null>(attachId);
   const [photo, setPhoto] = useState<(typeof PHOTO_SCENES)[number] | null>(null);
   const [saving, setSaving] = useState(false);
-
-  // pre-select the recording we were sent here with
-  useEffect(() => {
-    if (attachId) setRecordingId(attachId);
-  }, [attachId]);
 
   const selectedRecording = recordings?.find((r) => r._id === recordingId) ?? null;
 

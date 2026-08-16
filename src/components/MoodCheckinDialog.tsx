@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ArrowLeft, ArrowRight, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,14 +47,19 @@ export function MoodCheckinDialog({
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  // Reset the flow each time the dialog opens. Done as a render-phase
+  // adjustment guarded by lastOpen (instead of an effect) so no cascade
+  // renders are triggered — the dialog simply starts fresh on every open.
+  const [lastOpen, setLastOpen] = useState(open);
+  if (open !== lastOpen) {
+    setLastOpen(open);
     if (open) {
       setMood(initialMood);
       setIntensity(initialIntensity ?? 3);
       setNote("");
       setStage(initialMood ? "intensity" : "mood");
     }
-  }, [open, initialMood, initialIntensity]);
+  }
 
   const selected = mood ? moodById(mood) : undefined;
 

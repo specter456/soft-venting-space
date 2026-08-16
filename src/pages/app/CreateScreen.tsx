@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { ArrowLeft, Check, Images, Loader2, Lock, Palette, Sparkles } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { PHOTO_SCENES } from "@/lib/art";
@@ -36,7 +36,6 @@ const TOOLS = [
 ];
 
 export default function CreateScreen() {
-  const navigate = useNavigate();
   const addToVault = useMutation(api.vault.create);
   const [view, setView] = useState<"hub" | "photos">("hub");
   const [selected, setSelected] = useState<string[]>([]);
