@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { WORRY_BUBBLES } from "@/lib/art";
 import { useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
@@ -292,27 +292,55 @@ function BreathBubble() {
   );
 }
 
-/* ─── 3. Dandelion Wishes (press & hold) ───────────────────────────── */
+/* ─── 3. Dandelion Wishes (press & hold to blow) ───────────────────── */
+
+const DANDELION_TOTAL = 33;
+
+/** Seed positions for a full, fluffy white seed head (three rings). */
+function dandelionSeeds(): { x: number; y: number; size: number }[] {
+  const seeds: { x: number; y: number; size: number }[] = [];
+  const rings: { n: number; r: number; size: number; offset: number }[] = [
+    { n: 7, r: 12, size: 5, offset: 0 },
+    { n: 11, r: 24, size: 6, offset: 0.45 },
+    { n: 15, r: 35, size: 7, offset: 0.2 },
+  ];
+  for (const ring of rings) {
+    for (let i = 0; i < ring.n; i++) {
+      const a = (Math.PI * 2 * i) / ring.n + ring.offset;
+      seeds.push({
+        x: 50 + Math.cos(a) * ring.r,
+        y: 44 + Math.sin(a) * ring.r * 0.92,
+        size: ring.size,
+      });
+    }
+  }
+  return seeds;
+}
+
+const DANDELION_SEEDS = dandelionSeeds();
+
+/** A random peel order so the head thins from all around, never in a line. */
+function shuffleSeeds(): number[] {
+  const idx = Array.from({ length: DANDELION_TOTAL }, (_, i) => i);
+  for (let i = idx.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [idx[i], idx[j]] = [idx[j], idx[i]];
+  }
+  return idx;
+}
 
 function DandelionWishes() {
+  const order = useRef<number[]>(shuffleSeeds());
+  const [remaining, setRemaining] = useState(DANDELION_TOTAL);
+  const [gone, setGone] = useState<Set<number>>(new Set());
+  const [flying, setFlying] = useState<
+    { id: number; x: number; y: number; angle: number; dist: number }[]
+  >([]);
   const [holding, setHolding] = useState(false);
-  const [bursts, setBursts] = useState<number[]>([]);
-  const [wishes, setWishes] = useState(0);
-  const counter = useRef(0);
+  const [empty, setEmpty] = useState(false);
+  const nextIdx = useRef(0);
+  const flyId = useRef(0);
   const timerRef = useRef<number | null>(null);
-
-  const spawn = () => {
-    counter.current += 1;
-    setBursts((b) => [...b.slice(-4), counter.current]);
-    setWishes((w) => w + 1);
-  };
-
-  const start = () => {
-    if (timerRef.current) return;
-    setHolding(true);
-    spawn();
-    timerRef.current = window.setInterval(spawn, 480);
-  };
 
   const stop = () => {
     setHolding(false);
@@ -322,11 +350,55 @@ function DandelionWishes() {
     }
   };
 
+  /** One seed lets go and drifts away — the head visibly thins. */
+  const releaseOne = () => {
+    if (nextIdx.current >= DANDELION_TOTAL) {
+      stop();
+      return;
+    }
+    const seedIdx = order.current[nextIdx.current];
+    nextIdx.current += 1;
+    const seed = DANDELION_SEEDS[seedIdx];
+    flyId.current += 1;
+    const angle = Math.random() * Math.PI * 2;
+    setGone((g) => new Set(g).add(seedIdx));
+    setFlying((f) => [
+      ...f.slice(-6),
+      { id: flyId.current, x: seed.x, y: seed.y, angle, dist: 90 + Math.random() * 90 },
+    ]);
+    const left = DANDELION_TOTAL - nextIdx.current;
+    setRemaining(left);
+    if (left <= 0) {
+      setEmpty(true);
+      stop();
+    }
+  };
+
+  const start = () => {
+    if (timerRef.current || empty) return;
+    setHolding(true);
+    releaseOne();
+    timerRef.current = window.setInterval(releaseOne, 320);
+  };
+
   useEffect(() => {
     return () => {
       if (timerRef.current) window.clearInterval(timerRef.current);
     };
   }, []);
+
+  const regrow = () => {
+    order.current = shuffleSeeds();
+    nextIdx.current = 0;
+    setGone(new Set());
+    setFlying([]);
+    setRemaining(DANDELION_TOTAL);
+    setEmpty(false);
+    setHolding(false);
+  };
+
+  // the head starts full and visibly contracts as the fluff thins out
+  const headScale = 0.82 + 0.18 * (remaining / DANDELION_TOTAL);
 
   return (
     <motion.div
@@ -342,80 +414,149 @@ function DandelionWishes() {
       <GameIntro
         emoji="🌼"
         title="Dandelion Wishes"
-        sub="Press and hold to blow the seeds away — each one carries a little weight with it."
+        sub="Press and hold the flower (or the button) to blow gently."
       />
 
-      <div className="relative mx-auto mt-8 flex h-56 items-center justify-center">
-        <motion.span
-          animate={holding ? { scale: [1, 0.9, 1], rotate: [0, -5, 3, 0] } : { y: [0, -6, 0] }}
-          transition={holding ? { duration: 0.9 } : { duration: 3.4, repeat: Infinity, ease: "easeInOut" }}
-          className="text-7xl drop-shadow-md select-none"
-          aria-hidden
-        >
-          🌼
-        </motion.span>
-        <AnimatePresence>
-          {bursts.map((b) => (
-            <SeedBurst key={b} />
-          ))}
-        </AnimatePresence>
-      </div>
-
-      <button
-        type="button"
-        onPointerDown={start}
+      {/* The whole flower is pressable — hold anywhere on it to blow. */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label="Press and hold the dandelion to blow its seeds"
+        aria-pressed={holding}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          start();
+        }}
         onPointerUp={stop}
         onPointerLeave={stop}
         onPointerCancel={stop}
-        className={cn(
-          "mt-4 inline-flex touch-none items-center gap-2 rounded-full px-7 py-3 text-sm font-bold text-ink-deep select-none",
-          holding ? "clay-btn-blush scale-95" : "clay-btn-blush",
-        )}
+        className="relative mx-auto mt-6 h-64 w-64 cursor-pointer touch-none select-none"
       >
-        {holding ? "whoosh… keep holding" : "🌬️ press & hold to blow"}
-      </button>
-      <p className="mt-4 text-sm font-bold text-mint-500">
-        {wishes} seed{wishes === 1 ? "" : "s"} sent to the wind
-      </p>
-      <p className="mt-1 text-xs font-medium text-ink-soft">
-        hold as long as you need — no rush, no score
-      </p>
-    </motion.div>
-  );
-}
-
-function SeedBurst() {
-  // computed once per burst (lazy initializer — never during render)
-  const [seeds] = useState(() =>
-    Array.from({ length: 10 }, (_, i) => ({
-      angle: (Math.PI * 2 * i) / 10 + Math.random() * 0.5,
-      dist: 70 + Math.random() * 60,
-      size: 10 + Math.random() * 14,
-    })),
-  );
-  return (
-    <>
-      {seeds.map((s, i) => (
-        <motion.span
-          key={i}
-          initial={{ x: 0, y: 0, opacity: 1, scale: 0.6 }}
-          animate={{
-            x: Math.cos(s.angle) * s.dist,
-            y: Math.sin(s.angle) * s.dist - 40,
-            opacity: 0,
-            scale: 1,
-            rotate: s.angle * 2,
-          }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 1.6, ease: "easeOut", delay: i * 0.04 }}
-          className="absolute text-mint-500 select-none"
-          style={{ fontSize: s.size }}
+        {/* fluffy seed head — scales down as seeds let go */}
+        <div
+          className="absolute inset-0 transition-transform duration-500"
+          style={{ transform: `scale(${headScale})`, transformOrigin: "50% 44%" }}
           aria-hidden
         >
-          🌱
-        </motion.span>
-      ))}
-    </>
+          {DANDELION_SEEDS.map((s, i) => {
+            if (gone.has(i)) return null;
+            return (
+              <span
+                key={i}
+                className="absolute -translate-x-1/2 -translate-y-1/2"
+                style={{ left: `${s.x}%`, top: `${s.y}%` }}
+              >
+                <span
+                  className="block rounded-full bg-white shadow-[0_1px_3px_rgba(122,150,180,0.5),inset_0_-1px_2px_rgba(160,185,205,0.55)]"
+                  style={{ width: s.size * 1.6, height: s.size * 1.6 }}
+                />
+              </span>
+            );
+          })}
+
+          {/* seeds floating off while you hold */}
+          {flying.map((f) => (
+            <motion.span
+              key={f.id}
+              initial={{ x: 0, y: 0, opacity: 1, scale: 0.7 }}
+              animate={{
+                x: Math.cos(f.angle) * f.dist,
+                y: Math.sin(f.angle) * f.dist - 34,
+                opacity: 0,
+                scale: 1,
+                rotate: f.angle * 2.5,
+              }}
+              transition={{ duration: 1.5, ease: "easeOut" }}
+              className="absolute"
+              style={{ left: `${f.x}%`, top: `${f.y}%` }}
+            >
+              <span
+                className="block rounded-full bg-white shadow-[0_1px_3px_rgba(122,150,180,0.5)]"
+                style={{ width: 9, height: 9 }}
+              />
+            </motion.span>
+          ))}
+
+          {/* the little receptacle at the heart of the head */}
+          <span
+            className="absolute h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-b from-amber-200 to-amber-300 shadow-sm"
+            style={{ left: "50%", top: "44%" }}
+          />
+        </div>
+
+        {/* stem + tiny leaves */}
+        <div
+          className="absolute top-[52%] left-1/2 h-[42%] w-1.5 -translate-x-1/2 rounded-full bg-gradient-to-b from-mint-200 to-mint-300"
+          aria-hidden
+        />
+        <div
+          className="absolute top-[62%] left-[34%] h-6 w-3 -rotate-[24deg] rounded-full bg-mint-200"
+          aria-hidden
+        />
+        <div
+          className="absolute top-[70%] left-[62%] h-6 w-3 rotate-[24deg] rounded-full bg-mint-200"
+          aria-hidden
+        />
+
+        {/* a fresh little sprout once every seed is gone */}
+        {empty && (
+          <motion.span
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-4xl drop-shadow-sm"
+            aria-hidden
+          >
+            🌱
+          </motion.span>
+        )}
+      </div>
+
+      {empty ? (
+        <motion.p
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-5 text-sm leading-relaxed font-bold text-ink-deep"
+        >
+          the dandelion is light now — your worries went with the wind.
+        </motion.p>
+      ) : (
+        <p className="mt-5 text-sm font-bold text-mint-500">
+          {remaining} seed{remaining === 1 ? "" : "s"} still holding on
+        </p>
+      )}
+
+      {empty ? (
+        <button
+          type="button"
+          onClick={regrow}
+          className="clay-btn-soft mt-4 rounded-full px-6 py-3 text-sm font-bold text-ink-deep"
+        >
+          🌱 grow another dandelion
+        </button>
+      ) : (
+        <>
+          <button
+            type="button"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              start();
+            }}
+            onPointerUp={stop}
+            onPointerLeave={stop}
+            onPointerCancel={stop}
+            className={cn(
+              "mt-4 inline-flex touch-none items-center gap-2 rounded-full px-7 py-3 text-sm font-bold text-ink-deep select-none transition-transform",
+              holding ? "clay-btn-blush scale-95" : "clay-btn-blush",
+            )}
+          >
+            {holding ? "whoosh… keep blowing gently" : "🌬️ press & hold to blow"}
+          </button>
+          <p className="mt-2 text-xs font-medium text-ink-soft">
+            hold as long as you need — no rush, no score
+          </p>
+        </>
+      )}
+    </motion.div>
   );
 }
 
@@ -646,19 +787,124 @@ function FeelingsJars() {
   );
 }
 
-/* ─── 6. Star Trace ────────────────────────────────────────────────── */
+/* ─── 6. Star Trace (many gentle shapes) ───────────────────────────── */
 
-// 10 points of a soft five-pointed star (outer + inner radii), as percents.
-const STAR_POINTS = Array.from({ length: 10 }, (_, i) => {
-  const angle = -Math.PI / 2 + (i * Math.PI) / 5;
-  const r = i % 2 === 0 ? 42 : 17;
-  return { x: 50 + Math.cos(angle) * r, y: 50 + Math.sin(angle) * r };
-});
+type TraceShapeId = "star" | "heart" | "spiral" | "circle" | "moon" | "flower" | "cloud";
+
+const TRACE_SHAPES: {
+  id: TraceShapeId;
+  label: string;
+  emoji: string;
+  closed: boolean;
+  done: string;
+}[] = [
+  { id: "star", label: "star", emoji: "⭐", closed: true, done: "a full, steady star — tracing it slowed your mind ✨" },
+  { id: "heart", label: "heart", emoji: "🤍", closed: true, done: "a soft, whole heart — traced gently, held gently 🤍" },
+  { id: "spiral", label: "spiral", emoji: "🌀", closed: false, done: "a calm spiral unwound — let it keep going inward ☁️" },
+  { id: "circle", label: "circle", emoji: "🫧", closed: true, done: "a complete circle — round and whole, like you 🫧" },
+  { id: "moon", label: "moon", emoji: "🌙", closed: true, done: "a gentle crescent — soft light to sit with 🌙" },
+  { id: "flower", label: "flower", emoji: "🌸", closed: true, done: "a quiet flower, traced petal by petal 🌸" },
+  { id: "cloud", label: "cloud", emoji: "☁️", closed: true, done: "a light cloud traced — let it drift away ☁️" },
+];
+
+/** Points (0–100 %) for each shape, in trace order. */
+function tracePoints(id: TraceShapeId): { x: number; y: number }[] {
+  switch (id) {
+    case "star":
+      return Array.from({ length: 10 }, (_, i) => {
+        const angle = -Math.PI / 2 + (i * Math.PI) / 5;
+        const r = i % 2 === 0 ? 42 : 17;
+        return { x: 50 + Math.cos(angle) * r, y: 50 + Math.sin(angle) * r };
+      });
+    case "heart": {
+      const pts: { x: number; y: number }[] = [];
+      const N = 40;
+      for (let i = 0; i <= N; i++) {
+        const t = (i / N) * Math.PI * 2;
+        const x = 16 * Math.pow(Math.sin(t), 3);
+        const y =
+          13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+        pts.push({ x: 50 + 2.5 * x, y: 100 - (57.5 + 2.5 * y) });
+      }
+      return pts;
+    }
+    case "spiral": {
+      const pts: { x: number; y: number }[] = [];
+      const N = 44;
+      for (let i = 0; i < N; i++) {
+        const t = (i / (N - 1)) * Math.PI * 2 * 1.75;
+        const r = 5 + (36 * i) / (N - 1);
+        const a = t - Math.PI / 2;
+        pts.push({ x: 50 + Math.cos(a) * r, y: 50 + Math.sin(a) * r });
+      }
+      return pts;
+    }
+    case "circle":
+      return Array.from({ length: 26 }, (_, i) => {
+        const a = (i / 26) * Math.PI * 2;
+        return { x: 50 + Math.cos(a) * 38, y: 50 + Math.sin(a) * 38 };
+      });
+    case "moon": {
+      const pts: { x: number; y: number }[] = [];
+      const N = 14;
+      // crescent: outer arc (right) + inner arc sweeping through the left
+      const outerTip = Math.atan2(20.5, 32);
+      const innerTip = Math.atan2(20.5, 16);
+      for (let i = 0; i <= N; i++) {
+        const a = outerTip - (i / N) * 2 * outerTip;
+        pts.push({ x: 50 + Math.cos(a) * 38, y: 50 + Math.sin(a) * 38 });
+      }
+      const sweep = Math.PI * 2 - 2 * innerTip;
+      for (let i = 0; i <= N; i++) {
+        const a = -innerTip - (i / N) * sweep;
+        pts.push({ x: 66 + Math.cos(a) * 26, y: 50 + Math.sin(a) * 26 });
+      }
+      return pts;
+    }
+    case "flower": {
+      const pts: { x: number; y: number }[] = [];
+      const N = 48;
+      for (let i = 0; i <= N; i++) {
+        const t = (i / N) * Math.PI * 2;
+        const r = 28 + 11 * Math.cos(6 * t);
+        pts.push({ x: 50 + Math.cos(t) * r, y: 50 + Math.sin(t) * r });
+      }
+      return pts;
+    }
+    case "cloud": {
+      // a soft puffy silhouette, traced clockwise around its bumps
+      const raw: [number, number][] = [
+        [34, 66], [26, 58], [28, 46], [36, 40],
+        [44, 32], [54, 28], [64, 32], [72, 38],
+        [78, 48], [74, 58], [66, 66], [50, 70],
+      ];
+      const pts: { x: number; y: number }[] = [];
+      const steps = 5;
+      for (let i = 0; i < raw.length; i++) {
+        const a = raw[i];
+        const b = raw[(i + 1) % raw.length];
+        for (let s = 0; s < steps; s++) {
+          const t = s / steps;
+          const u = (1 - Math.cos(Math.PI * t)) / 2;
+          pts.push({ x: a[0] + (b[0] - a[0]) * u, y: a[1] + (b[1] - a[1]) * u });
+        }
+      }
+      return pts;
+    }
+  }
+}
 
 function StarTrace() {
+  const [shapeId, setShapeId] = useState<TraceShapeId>(() => {
+    const ids = TRACE_SHAPES;
+    return ids[Math.floor(Math.random() * ids.length)].id;
+  });
   const [lit, setLit] = useState<Set<number>>(new Set());
   const boxRef = useRef<HTMLDivElement | null>(null);
-  const complete = lit.size >= STAR_POINTS.length;
+
+  const shape = TRACE_SHAPES.find((s) => s.id === shapeId) ?? TRACE_SHAPES[0];
+  const points = useMemo(() => tracePoints(shapeId), [shapeId]);
+  const complete = lit.size >= points.length;
 
   const touch = (clientX: number, clientY: number) => {
     const box = boxRef.current;
@@ -670,8 +916,8 @@ function StarTrace() {
     setLit((prev) => {
       let changed = false;
       const next = new Set(prev);
-      STAR_POINTS.forEach((p, i) => {
-        if (!next.has(i) && Math.hypot(p.x - px, p.y - py) < 17) {
+      points.forEach((p, i) => {
+        if (!next.has(i) && Math.hypot(p.x - px, p.y - py) < 15) {
           next.add(i);
           changed = true;
         }
@@ -680,7 +926,21 @@ function StarTrace() {
     });
   };
 
-  const reset = useTapGuard(() => setLit(new Set()), 400);
+  // every finish (or button tap) brings a DIFFERENT shape — never the same
+  // one twice in a row
+  const nextShape = useTapGuard(() => {
+    let next = shapeId;
+    while (next === shapeId) {
+      const ids = TRACE_SHAPES;
+      next = ids[Math.floor(Math.random() * ids.length)].id;
+    }
+    setShapeId(next);
+    setLit(new Set());
+  }, 400);
+
+  const d =
+    points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ") +
+    (shape.closed ? " Z" : "");
 
   return (
     <motion.div
@@ -689,9 +949,9 @@ function StarTrace() {
       className="clay-card rounded-[2.25rem] px-5 py-7"
     >
       <GameIntro
-        emoji="⭐"
+        emoji={shape.emoji}
         title="Star Trace"
-        sub="Slowly trace the glowing star with your finger — the light follows you."
+        sub="Slowly trace the glowing shape with your finger — the light follows you."
       />
 
       <div
@@ -700,19 +960,20 @@ function StarTrace() {
         onPointerDown={(e) => touch(e.clientX, e.clientY)}
         className="relative mx-auto mt-6 h-72 w-full max-w-xs touch-none select-none"
       >
-        {/* soft star outline */}
+        {/* soft outline of the current shape */}
         <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full" aria-hidden>
-          <polygon
-            points={STAR_POINTS.map((p) => `${p.x},${p.y}`).join(" ")}
+          <path
+            d={d}
             fill={complete ? "rgba(255,214,150,0.25)" : "none"}
             stroke={complete ? "#f0b96a" : "#e2d5f5"}
             strokeWidth="1.5"
             strokeLinejoin="round"
+            strokeLinecap="round"
             className="transition-all duration-700"
           />
         </svg>
 
-        {STAR_POINTS.map((p, i) => (
+        {points.map((p, i) => (
           <span
             key={i}
             className={cn(
@@ -730,9 +991,9 @@ function StarTrace() {
           <motion.p
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="absolute inset-x-0 -bottom-1 text-center text-sm font-bold text-mint-500"
+            className="absolute inset-x-0 -bottom-1 px-2 text-center text-sm font-bold text-mint-500"
           >
-            a full, steady star — tracing it slowed your mind ✨
+            {shape.done}
           </motion.p>
         )}
       </div>
@@ -741,15 +1002,14 @@ function StarTrace() {
         {complete ? (
           <button
             type="button"
-            onClick={reset}
+            onClick={nextShape}
             className="clay-btn-soft rounded-full px-5 py-2.5 text-xs font-bold text-ink-deep"
           >
-            trace another star
+            trace another shape
           </button>
         ) : (
           <p className="text-xs font-semibold text-ink-soft">
-            {STAR_POINTS.length - lit.size} star-light
-            {STAR_POINTS.length - lit.size === 1 ? "" : "s"} to light — go slowly
+            {points.length - lit.size} light{points.length - lit.size === 1 ? "" : "s"} to trace — go slowly
           </p>
         )}
       </div>
