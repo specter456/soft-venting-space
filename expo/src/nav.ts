@@ -14,7 +14,7 @@ export type RootStackParamList = {
   Stickers: undefined;
   GifStudio: { baseArt?: string; baseBg?: string; fromRecording?: string } | undefined;
   Vault: undefined;
-  Calm: undefined;
+  Games: undefined;
   Diary: { attachRecording?: string } | undefined;
 };
 

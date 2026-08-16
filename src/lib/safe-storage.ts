@@ -64,6 +64,14 @@ export function safeSessionSetItem(key: string, value: string): void {
   }
 }
 
+export function safeSessionRemoveItem(key: string): void {
+  try {
+    if (sessionOk) (session as Storage).removeItem(key);
+  } catch {
+    /* ignore */
+  }
+}
+
 /** True when this device can persist anything at all. */
 export function canPersist(): boolean {
   return localOk || sessionOk;

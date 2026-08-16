@@ -16,10 +16,9 @@ This repo contains **two projects**:
 
 The **hybrid app** in `expo/` is the single codebase that runs as a native
 iOS/Android app **and** as an installable PWA (manifest, service worker,
-offline, add-to-home-screen). It includes the bottom taskbar (Home · Record ·
-Create · Calm · Diary), the Settings screen (profile, security, appearance,
-install), and the upgraded Home. See `expo/README.md` for full run
-instructions.
+offline, add-to-home-screen). It includes the bottom taskbar (Home · Games ·
+Settings), the Settings screen (profile, security, appearance, install), and
+the upgraded Home. See `expo/README.md` for full run instructions.
 
 ## Web app
 
@@ -31,10 +30,13 @@ bun run dev        # platform-managed dev server
 - Entry (`/`): pastel landing → "Enter Venting" leads in-app to the app
   (no external tabs, no new windows).
 - Entry screen: optional email (validated) or guest — both stored only on-device.
-- Welcome check-in: multi-select day checklist + "What would you like to do
-  now?" (Record / Create / Calm / Diary) + Skip.
-- Home: 8-mood check-in (one per day) + four large cards — Record, Create,
-  Calm, Diary.
+- Welcome check-in: a soft popup card — “Welcome to Venting. We hope you had a
+  nice day. I hope you can keep shining.” — then “How was your day?” with
+  exactly four emoji options in one row (Happy / Sad / Angry / Nervous) and a
+  small Skip button.
+- Home: mood typing box (type your exact feeling) + four quick moods
+  (Happy / Sad / Angry / Nervous), then a two-per-row feature grid — Voice
+  Vent, Video Vent, Notes, Scribble, Photo Doodle, Stickers, GIF Studio, Diary.
 - **Record** — Recording Box with Voice | Video toggle, mood tags, post-actions
   (Save privately / Reflect in Notes / Attach to Diary / Doodle on it / Make
   GIF / Delete). Video uses soft illustrated avatars, never a real face.
@@ -42,7 +44,10 @@ bun run dev        # platform-managed dev server
   attachment chips; notes and recordings each stand alone.
 - **Create** — Photos, Scribble canvas, Sticker studio, GIF Studio, and the
   double-locked Private Vault.
-- **Calm** — breathing bubbles, poppable worry bubbles, dandelion wishes.
+- **Games** (bottom taskbar) — six gentle psychological games, two per row:
+  Bubble Pop, Breath Bubble, Dandelion Wishes (press & hold), Comfort the
+  Buddy, Feelings Jars, and Star Trace. No scores, no timers, no competition.
+- **Bottom taskbar** — exactly three tabs: Home · Games · Settings.
 - **Diary** — customizable cover, 3D page-turn animation with a soft swish,
   weather icons, stickers, and optional recording attachments.
 - **Lock** — 4-digit passcode (salted SHA-256, never stored raw), active

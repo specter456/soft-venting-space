@@ -11,15 +11,14 @@ import type { RootStackParamList } from "../nav";
 
 export const MAIN_TABS = [
   { name: "Home", emoji: "🏠", label: "Home", route: "Home" as const },
-  { name: "Record", emoji: "🎙️", label: "Record", route: "Record" as const },
-  { name: "Create", emoji: "🎨", label: "Create", route: "Create" as const },
-  { name: "Calm", emoji: "🫧", label: "Calm", route: "Calm" as const },
-  { name: "Diary", emoji: "📖", label: "Diary", route: "Diary" as const },
+  { name: "Games", emoji: "🫧", label: "Games", route: "Games" as const },
+  { name: "Settings", emoji: "⚙️", label: "Settings", route: "Settings" as const },
 ];
 
 /**
- * The soft rounded bottom taskbar — exactly five tabs: Home, Record, Create,
- * Calm, Diary. Settings deliberately lives in the Home header gear, not here.
+ * The soft rounded bottom taskbar — exactly three tabs: Home, Games,
+ * Settings. Settings opens the full settings screen (profile, security,
+ * appearance, install options, general).
  */
 export function TaskBar() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();

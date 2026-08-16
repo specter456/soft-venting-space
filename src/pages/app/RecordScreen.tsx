@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { Check, Loader2, Pause, Play, Trash2 } from "lucide-react";
 import { Waveform } from "@/components/AttachmentChip";
 import { createRecording, removeItem, useTable, type Recording } from "@/lib/db";
@@ -23,9 +23,13 @@ function fmt(seconds: number): string {
 
 export default function RecordScreen() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const recordings = useTable<Recording>("recordings");
 
-  const [mode, setMode] = useState<Mode>("voice");
+  // The home grid deep-links here with ?mode=voice | ?mode=video. The query
+  // param is the source of truth until the user toggles it on screen.
+  const [localMode, setLocalMode] = useState<Mode | null>(null);
+  const mode: Mode = localMode ?? (params.get("mode") === "video" ? "video" : "voice");
   const [mood, setMood] = useState<MoodId | null>(null);
   const [stage, setStage] = useState<Stage>("idle");
   const [seconds, setSeconds] = useState(0);
@@ -130,7 +134,7 @@ export default function RecordScreen() {
             key={m}
             type="button"
             onClick={() => {
-              setMode(m);
+              setLocalMode(m);
               setStage("idle");
               setSavedId(null);
             }}

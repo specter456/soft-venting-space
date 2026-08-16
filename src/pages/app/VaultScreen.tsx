@@ -58,6 +58,9 @@ export default function VaultScreen() {
   const [unlocked, setUnlocked] = useState(
     () => safeSessionGetItem(VAULT_SESSION_KEY) === "1",
   );
+  // the vault's second lock can be switched off in Settings (default on)
+  const doubleLock =
+    kv.find((k) => k.key === "vaultDoubleLock")?.value !== "false";
   const [filter, setFilter] = useState<Filter>("all");
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -90,7 +93,7 @@ export default function VaultScreen() {
     );
   }
 
-  if (!unlocked) {
+  if (!unlocked && doubleLock) {
     return (
       <LockScreen
         mode="unlock"
@@ -115,7 +118,7 @@ export default function VaultScreen() {
       <div className="clay-card flex items-center justify-between gap-2 rounded-3xl px-4 py-3">
         <p className="flex items-center gap-2 text-xs font-bold text-ink-deep">
           <LockKeyhole className="size-4 text-lavender-600" />
-          double-locked
+          {doubleLock ? "double-locked" : "vault lock off — turn it on in Settings"}
         </p>
         <div className="flex items-center gap-2 text-ink-soft">
           <span className="clay-chip flex h-8 w-8 items-center justify-center rounded-full" title="Face ID ready">

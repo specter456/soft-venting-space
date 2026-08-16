@@ -30,7 +30,7 @@ expo/
     ├── components/
     │   ├── Clay.tsx           # ClayCard / ClayButton / ClayChip / MoodBubble
     │   ├── Screen.tsx         # soft screen wrapper (supports floating bottomBar)
-    │   ├── TaskBar.tsx        # rounded 5-tab bottom bar: Home · Record · Create · Calm · Diary
+    │   ├── TaskBar.tsx        # rounded 3-tab bottom bar: Home · Games · Settings
     │   ├── LockPad.tsx        # 4-digit soft number pad
     │   ├── MoodChips.tsx / AttachmentChip.tsx
     └── screens/
@@ -41,7 +41,7 @@ expo/
         ├── Settings.tsx       # Profile · Security & Privacy · Appearance · Install · General
         ├── Record.tsx         # Recording Box: Voice | Video (+ TaskBar)
         ├── Create.tsx         # Photos · Scribble · Stickers · GIF Studio · Vault (+ TaskBar)
-        ├── Calm.tsx           # breathe, worry pops, dandelion (+ TaskBar)
+        ├── Games.tsx          # 6 calming games: pop, breathe, dandelion, buddy, jars, star
         ├── Diary.tsx          # cover, page-turn, entries (+ TaskBar)
         ├── Notes.tsx / NoteEditor.tsx / Photos.tsx / Scribble.tsx / Stickers.tsx
         ├── GifStudio.tsx / Vault.tsx
@@ -67,13 +67,20 @@ bun run build:web            # production PWA build → dist/ (host it anywhere 
 
 ## What's new in the hybrid upgrade
 
-- **Bottom taskbar** — soft rounded pill with exactly five tabs (Home, Record,
-  Create, Calm, Diary). Settings is deliberately *not* a tab: it opens from the
-  gear at Home's top-right.
-- **Home** — greeting + mood bubbles, the skippable **daily check-in
-  checklist** (once per day), a **“Pick up where you left off”** row (latest
-  note / vent / diary page), a gentle **suggestion card** matched to the
-  selected mood, the **“Private · Only you”** chip, and the settings gear.
+- **Bottom taskbar** — soft rounded pill with exactly three tabs: Home · Games ·
+  Settings. Settings opens the full settings screen (profile, security,
+  appearance, install options, general).
+- **Home** — greeting, the skippable **daily check-in checklist** (once per
+  day), a **mood typing box** (“Type how you feel…”) with exactly four quick
+  moods (Happy / Sad / Angry / Nervous), a two-per-row feature grid (Voice
+  Vent, Video Vent, Notes, Scribble, Photo Doodle, Stickers, GIF Studio,
+  Diary), a **“Pick up where you left off”** row, a gentle **suggestion card**
+  matched to the mood, the **“Private · Only you”** chip, and the settings
+  gear.
+- **Games** (taskbar tab) — six gentle psychological games in a two-per-row
+  grid: Bubble Pop, Breath Bubble, Dandelion Wishes (press & hold), Comfort
+  the Buddy, Feelings Jars, Star Trace. No scores, no timers, no competition;
+  Scribble stays only on the Home grid.
 - **Settings** — profile & account (email / Guest mode, display name, avatar,
   log out), security & privacy (change passcode, Face ID/fingerprint toggle,
   vault double-lock toggle, auto-lock timer, “Delete everything” with gentle

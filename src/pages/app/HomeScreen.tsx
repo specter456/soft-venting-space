@@ -3,39 +3,71 @@ import { useState } from "react";
 import { Link } from "react-router";
 
 import { MoodBubble } from "@/components/MoodBubble";
-import { MoodCheckinDialog } from "@/components/MoodCheckinDialog";
-import { useTable, type MoodCheckin } from "@/lib/db";
-import { MOODS, type MoodId, moodById, todayDateKey } from "@/lib/moods";
+import { removeItem, saveCheckin, useTable, type MoodCheckin } from "@/lib/db";
+import { type MoodId, moodById, todayDateKey } from "@/lib/moods";
+import { useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
 
-const ROOMS = [
+/** Exactly four quick moods — one tap selects only that one. */
+const QUICK_MOODS: MoodId[] = ["happy", "sad", "angry", "nervous"];
+
+/** Main features, exactly two per row. */
+const FEATURES = [
   {
-    to: "/dashboard/record",
-    title: "Record",
+    to: "/dashboard/record?mode=voice",
+    title: "Voice Vent",
     emoji: "🎙️",
     tile: "tile-mist",
-    blurb: "voice & video vents — let it out",
+    line: "say it out loud",
+  },
+  {
+    to: "/dashboard/record?mode=video",
+    title: "Video Vent",
+    emoji: "🎥",
+    tile: "tile-blush",
+    line: "express with your face",
+  },
+  {
+    to: "/dashboard/notes",
+    title: "Notes",
+    emoji: "📝",
+    tile: "tile-peach",
+    line: "write it down softly",
+  },
+  {
+    to: "/dashboard/scribble",
+    title: "Scribble",
+    emoji: "🖍️",
+    tile: "tile-lavender",
+    line: "draw how it feels",
   },
   {
     to: "/dashboard/create",
-    title: "Create",
-    emoji: "🎨",
-    tile: "tile-blush",
-    blurb: "photos, scribbles, stickers & GIFs",
+    title: "Photo Doodle",
+    emoji: "🖼️",
+    tile: "tile-mint",
+    line: "doodle on your photos",
   },
   {
-    to: "/dashboard/calm",
-    title: "Calm",
-    emoji: "🌬️",
-    tile: "tile-mint",
-    blurb: "breathe, pop worries, drift away",
+    to: "/dashboard/stickers",
+    title: "Stickers",
+    emoji: "🧸",
+    tile: "tile-blush",
+    line: "make cute feelings",
+  },
+  {
+    to: "/dashboard/gif-studio",
+    title: "GIF Studio",
+    emoji: "🎞️",
+    tile: "tile-mist",
+    line: "soft little animations",
   },
   {
     to: "/dashboard/diary",
     title: "Diary",
     emoji: "📖",
     tile: "tile-lavender",
-    blurb: "a cozy private book that turns pages",
+    line: "your private little book",
   },
 ];
 
@@ -52,26 +84,23 @@ export default function HomeScreen() {
   const dateKey = todayDateKey();
   const today = checkins.find((c) => c.dateKey === dateKey);
 
-  const [checkinOpen, setCheckinOpen] = useState(false);
-  const [preselect, setPreselect] = useState<{
-    mood: MoodId | null;
-    intensity: number | null;
-  }>({ mood: null, intensity: null });
-
+  const [feelingText, setFeelingText] = useState("");
   const greet = greeting();
   const todayMood = today ? moodById(today.mood) : undefined;
 
-  const openCheckin = (mood: MoodId | null) => {
-    setPreselect({ mood, intensity: null });
-    setCheckinOpen(true);
-  };
+  // one tap records one mood — held/double presses are ignored
+  const pickMood = useTapGuard((mood: MoodId) => {
+    saveCheckin({
+      dateKey,
+      mood,
+      intensity: 3,
+      note: feelingText.trim() || undefined,
+    });
+  }, 450);
 
-  const editToday = () => {
-    if (today) {
-      setPreselect({ mood: today.mood as MoodId, intensity: today.intensity });
-    }
-    setCheckinOpen(true);
-  };
+  const clearToday = useTapGuard(() => {
+    if (today) removeItem("moodCheckins", today._id);
+  }, 450);
 
   return (
     <div className="space-y-6">
@@ -82,7 +111,7 @@ export default function HomeScreen() {
         transition={{ duration: 0.45 }}
       >
         <p className="text-2xl font-bold tracking-tight text-ink-deep">
-          {greet.text}, friend
+          {greet.emoji} {greet.text}, friend
         </p>
         <p className="mt-1 text-sm font-medium text-ink-soft">
           {new Date().toLocaleDateString(undefined, {
@@ -93,7 +122,7 @@ export default function HomeScreen() {
         </p>
       </motion.section>
 
-      {/* ─── Mood check-in ────────────────────────────────────────── */}
+      {/* ─── Mood typing box + 4 quick moods ──────────────────────── */}
       <motion.section
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
@@ -118,17 +147,6 @@ export default function HomeScreen() {
               <p className="mx-auto mt-1.5 max-w-[17rem] text-sm leading-relaxed text-ink">
                 {todayMood.affirmation}
               </p>
-              <div className="mt-3 flex items-center justify-center gap-1.5">
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <span
-                    key={n}
-                    className={cn(
-                      "h-2 rounded-full transition-all",
-                      n <= today.intensity ? "w-4 bg-lavender-400" : "w-2 bg-lavender-200",
-                    )}
-                  />
-                ))}
-              </div>
               {today.note && (
                 <p className="mx-auto mt-4 max-w-[18rem] rounded-2xl bg-cream-deep/60 px-4 py-3 text-sm leading-relaxed text-ink italic">
                   “{today.note}”
@@ -136,7 +154,7 @@ export default function HomeScreen() {
               )}
               <button
                 type="button"
-                onClick={editToday}
+                onClick={clearToday}
                 className="mt-4 rounded-full px-4 py-2 text-xs font-bold text-lavender-600 underline-offset-4 transition-colors hover:bg-lavender-100/70 hover:underline"
               >
                 I feel differently now
@@ -148,67 +166,88 @@ export default function HomeScreen() {
                 How are you feeling today?
               </p>
               <p className="mt-1 text-center text-sm text-ink-soft">
-                Tap a feeling — there&apos;s no wrong answer here.
+                Type your exact feeling, then tap one mood.
               </p>
-              <div className="mt-5 grid grid-cols-4 gap-x-2 gap-y-4">
-                {MOODS.map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => openCheckin(m.id)}
-                    className="group flex flex-col items-center gap-1.5"
-                  >
-                    <MoodBubble mood={m} size="md" className="group-hover:scale-110" />
-                    <span className="text-[11px] font-bold text-ink-soft group-hover:text-ink">
-                      {m.label}
-                    </span>
-                  </button>
-                ))}
+
+              {/* typing box */}
+              <input
+                type="text"
+                value={feelingText}
+                onChange={(e) => setFeelingText(e.target.value)}
+                autoCorrect="off"
+                autoCapitalize="sentences"
+                spellCheck={false}
+                placeholder="Type how you feel… (slightly happy, extremely sad, a little nervous…)"
+                aria-label="How you feel right now"
+                className="mt-5 w-full rounded-2xl border-0 bg-cream-soft px-4 py-3.5 text-sm leading-relaxed text-ink-deep shadow-[inset_0_2px_6px_rgba(99,82,150,0.08)] placeholder:text-ink-soft/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-lavender-300"
+              />
+
+              {/* exactly four quick moods, one row */}
+              <div className="mt-5 grid grid-cols-4 gap-x-2 gap-y-3">
+                {QUICK_MOODS.map((id) => {
+                  const m = moodById(id);
+                  if (!m) return null;
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => pickMood(m.id)}
+                      className="group flex flex-col items-center gap-1.5"
+                    >
+                      <MoodBubble mood={m} size="md" className="group-hover:scale-110" />
+                      <span className="text-[11px] font-bold text-ink-soft group-hover:text-ink">
+                        {m.label}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
+              <p className="mt-4 text-center text-xs text-ink-soft">
+                One tap, one mood — no wrong answers here.
+              </p>
             </div>
           )}
         </div>
       </motion.section>
 
-      {/* ─── The four rooms ───────────────────────────────────────── */}
+      {/* ─── Feature grid — exactly two per row ───────────────────── */}
       <motion.section
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.16 }}
-        className="space-y-3.5"
       >
-        {ROOMS.map((room) => (
-          <Link
-            key={room.to}
-            to={room.to}
-            className="clay-card group flex items-center gap-4 rounded-[2rem] px-5 py-4 transition-transform hover:-translate-y-0.5"
-          >
-            <div
-              className={cn(
-                "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl transition-transform group-hover:scale-110",
-                room.tile,
-              )}
+        <div className="grid grid-cols-2 gap-3">
+          {FEATURES.map((f, i) => (
+            <motion.div
+              key={f.to + f.title}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.18 + i * 0.04 }}
             >
-              <span aria-hidden className="drop-shadow-sm">
-                {room.emoji}
-              </span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-lg font-bold tracking-tight text-ink-deep">
-                {room.title}
-              </p>
-              <p className="truncate text-[13px] font-medium text-ink-soft">
-                {room.blurb}
-              </p>
-            </div>
-            <span
-              aria-hidden
-              className="text-xl text-lavender-400 transition-transform group-hover:translate-x-1"
-            >
-              →
-            </span>
-          </Link>
-        ))}
+              <Link
+                to={f.to}
+                className="clay-card group flex h-full flex-col items-center gap-2 rounded-[1.8rem] px-4 py-5 text-center transition-transform hover:-translate-y-0.5"
+              >
+                <span
+                  className={cn(
+                    "flex h-12 w-12 items-center justify-center rounded-2xl text-2xl transition-transform group-hover:scale-110",
+                    f.tile,
+                  )}
+                >
+                  <span aria-hidden className="drop-shadow-sm">
+                    {f.emoji}
+                  </span>
+                </span>
+                <span className="text-sm font-bold tracking-tight text-ink-deep">
+                  {f.title}
+                </span>
+                <span className="text-[11px] leading-snug font-medium text-ink-soft">
+                  {f.line}
+                </span>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
       </motion.section>
 
       {/* ─── Tiny privacy footer ──────────────────────────────────── */}
@@ -220,13 +259,6 @@ export default function HomeScreen() {
       >
         🔒 Private and safe. Only you can see this.
       </motion.p>
-
-      <MoodCheckinDialog
-        open={checkinOpen}
-        onOpenChange={setCheckinOpen}
-        initialMood={preselect.mood}
-        initialIntensity={preselect.intensity}
-      />
     </div>
   );
 }
@@ -258,3 +290,4 @@ function SparkleDecor() {
     </div>
   );
 }
+

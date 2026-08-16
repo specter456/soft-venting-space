@@ -1,6 +1,7 @@
 import { Loader2, Lock } from "lucide-react";
 import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router";
+import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
 import { LockScreen } from "@/components/LockScreen";
 import {
@@ -24,9 +25,27 @@ const TITLES: Record<string, string> = {
   "/dashboard/stickers": "Stickers",
   "/dashboard/gif-studio": "GIF Studio",
   "/dashboard/vault": "Private vault",
-  "/dashboard/calm": "Calm",
+  "/dashboard/games": "Games",
+  "/dashboard/settings": "Settings",
   "/dashboard/diary": "Diary",
 };
+
+/** Exactly three tabs — Home, Games, Settings. Settings is never a hidden tab. */
+const TABS = [
+  { to: "/dashboard", label: "Home", emoji: "🏠" },
+  { to: "/dashboard/games", label: "Games", emoji: "🫧" },
+  { to: "/dashboard/settings", label: "Settings", emoji: "⚙️" },
+];
+
+/** Main screens that show the soft bottom taskbar. */
+const BAR_ROUTES = [
+  "/dashboard",
+  "/dashboard/record",
+  "/dashboard/create",
+  "/dashboard/diary",
+  "/dashboard/games",
+  "/dashboard/settings",
+];
 
 /**
  * The app shell. Every room lives inside this mobile-width column behind the
@@ -103,6 +122,7 @@ export default function Dashboard() {
 
   const isHome = location.pathname === "/dashboard";
   const title = TITLES[location.pathname] ?? "Venting";
+  const showBar = BAR_ROUTES.includes(location.pathname);
 
   return (
     <div className="relative min-h-dvh overflow-hidden bg-gradient-to-b from-cream-soft via-cream to-lavender-50 text-ink">
@@ -176,9 +196,54 @@ export default function Dashboard() {
         </header>
 
         {/* ─── Current room ───────────────────────────────────────── */}
-        <main className="flex-1 px-5 pb-14">
+        <main className={cn("flex-1 px-5", showBar ? "pb-32" : "pb-14")}>
           <Outlet />
         </main>
+
+        {/* ─── Bottom taskbar — Home | Games | Settings ───────────── */}
+        {showBar && (
+          <nav
+            aria-label="Main"
+            className="fixed right-0 bottom-4 left-0 z-40 flex justify-center px-5"
+          >
+            <div className="clay-card flex w-full max-w-[420px] items-center gap-1 rounded-full p-1.5">
+              {TABS.map((tab) => {
+                const active = location.pathname === tab.to;
+                return (
+                  <Link
+                    key={tab.to}
+                    to={tab.to}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "flex flex-1 flex-col items-center gap-0.5 rounded-full py-2 transition-all",
+                      active
+                        ? "bg-lavender-400/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
+                        : "hover:bg-lavender-100/60",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "text-lg leading-none transition-transform",
+                        active ? "scale-110" : "opacity-75",
+                      )}
+                      aria-hidden
+                    >
+                      {tab.emoji}
+                    </span>
+                    <span
+                      className={cn(
+                        "text-[10px] font-bold",
+                        active ? "text-ink-deep" : "text-ink-soft",
+                      )}
+                    >
+                      {tab.label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+        )}
       </div>
     </div>
   );

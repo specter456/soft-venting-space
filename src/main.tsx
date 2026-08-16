@@ -27,7 +27,8 @@ const VaultScreen = lazy(() => import("./pages/app/VaultScreen.tsx"));
 const ScribbleScreen = lazy(() => import("./pages/app/ScribbleScreen.tsx"));
 const StickerStudio = lazy(() => import("./pages/app/StickerStudio.tsx"));
 const GifStudio = lazy(() => import("./pages/app/GifStudio.tsx"));
-const CalmScreen = lazy(() => import("./pages/app/CalmScreen.tsx"));
+const GamesScreen = lazy(() => import("./pages/app/GamesScreen.tsx"));
+const SettingsScreen = lazy(() => import("./pages/app/SettingsScreen.tsx"));
 const DiaryScreen = lazy(() => import("./pages/app/DiaryScreen.tsx"));
 
 // Simple loading fallback for route transitions
@@ -144,7 +145,8 @@ createRoot(document.getElementById("root")!).render(
               <Route path="stickers" element={<StickerStudio />} />
               <Route path="gif-studio" element={<GifStudio />} />
               <Route path="vault" element={<VaultScreen />} />
-              <Route path="calm" element={<CalmScreen />} />
+              <Route path="games" element={<GamesScreen />} />
+              <Route path="settings" element={<SettingsScreen />} />
               <Route path="diary" element={<DiaryScreen />} />
             </Route>
             <Route path="*" element={<NotFound />} />

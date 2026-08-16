@@ -1,7 +1,5 @@
 import React from "react";
 import {
-  Animated,
-  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,12 +14,10 @@ import {
   CHECKIN_OPTIONS,
   greetingEmoji,
   greetingText,
-  INTENSITY_LABELS,
-  MOODS,
   moodById,
   todayDateKey,
 } from "../data";
-import { getKvFromCache, hasPasscodeLocally, saveCheckin, setKv, useTable } from "../db";
+import { clearCheckin, getKvFromCache, hasPasscodeLocally, saveCheckin, setKv, useTable } from "../db";
 import { useLock } from "../lock-context";
 import { useThemeColors } from "../theme-context";
 import { MOOD_COLORS, MOOD_TEXT, palette, clayShadow, radius } from "../theme";
@@ -31,22 +27,36 @@ import type { DiaryEntry, KVPair, MoodCheckin, Note, Recording } from "../types"
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
-const CARDS = [
-  { name: "Record", emoji: "🎙️", bg: palette.blush, route: "Record" as const, line: "Voice & video vents" },
-  { name: "Create", emoji: "🎨", bg: palette.peach, route: "Create" as const, line: "Photos, scribbles & stickers" },
-  { name: "Calm", emoji: "🫧", bg: palette.mint, route: "Calm" as const, line: "Breathe, pop, float" },
-  { name: "Diary", emoji: "📖", bg: palette.lavender, route: "Diary" as const, line: "Your private little book" },
+/** Exactly four quick moods — one tap selects only that one. */
+const QUICK_MOODS = ["happy", "sad", "angry", "nervous"] as const;
+
+/** Main features, exactly two per row. */
+const FEATURES: {
+  emoji: string;
+  title: string;
+  line: string;
+  bg: string;
+  go: (n: Props["navigation"]) => void;
+}[] = [
+  { emoji: "🎙️", title: "Voice Vent", line: "say it out loud", bg: palette.sky, go: (n) => n.navigate("Record", { mode: "voice" }) },
+  { emoji: "🎥", title: "Video Vent", line: "express with your face", bg: palette.blush, go: (n) => n.navigate("Record", { mode: "video" }) },
+  { emoji: "📝", title: "Notes", line: "write it down softly", bg: palette.peach, go: (n) => n.navigate("Notes") },
+  { emoji: "🖍️", title: "Scribble", line: "draw how it feels", bg: palette.lavender, go: (n) => n.navigate("Scribble") },
+  { emoji: "🖼️", title: "Photo Doodle", line: "doodle on your photos", bg: palette.mint, go: (n) => n.navigate("Photos") },
+  { emoji: "🧸", title: "Stickers", line: "make cute feelings", bg: palette.blush, go: (n) => n.navigate("Stickers") },
+  { emoji: "🎞️", title: "GIF Studio", line: "soft little animations", bg: palette.sky, go: (n) => n.navigate("GifStudio") },
+  { emoji: "📖", title: "Diary", line: "your private little book", bg: palette.lavender, go: (n) => n.navigate("Diary") },
 ];
 
 const SUGGESTIONS: Record<string, { emoji: string; text: string; route: keyof RootStackParamList }> = {
   calm: { emoji: "🌸", text: "Keep the stillness — maybe make a soft sticker.", route: "Stickers" },
   sad: { emoji: "🖍️", text: "A gentle scribble might help — let it out in colors.", route: "Scribble" },
   angry: { emoji: "🎙️", text: "Vent it out — your voice is safe here.", route: "Record" },
-  nervous: { emoji: "🫧", text: "Let's breathe together, slowly.", route: "Calm" },
-  irritated: { emoji: "💭", text: "Pop a worry bubble or two.", route: "Calm" },
+  nervous: { emoji: "🫧", text: "Let's breathe together, slowly.", route: "Games" },
+  irritated: { emoji: "💭", text: "Pop a worry bubble or two.", route: "Games" },
   happy: { emoji: "📖", text: "Catch this light in your diary.", route: "Diary" },
   tired: { emoji: "📝", text: "Rest is brave. Maybe a soft note.", route: "Notes" },
-  overwhelmed: { emoji: "🫧", text: "One breath at a time — let's float.", route: "Calm" },
+  overwhelmed: { emoji: "🫧", text: "One breath at a time — let's float.", route: "Games" },
 };
 
 export default function HomeScreen({ navigation }: Props) {
@@ -59,7 +69,7 @@ export default function HomeScreen({ navigation }: Props) {
   const colors = useThemeColors();
 
   const today = checkins.find((c) => c.dateKey === todayDateKey());
-  const [checkinOpen, setCheckinOpen] = React.useState(false);
+  const [feelingText, setFeelingText] = React.useState("");
 
   const profileName = getKvFromCache("profileName");
   const greeted = profileName ? `${greetingText()}, ${profileName}` : greetingText();
@@ -99,8 +109,9 @@ export default function HomeScreen({ navigation }: Props) {
   const suggestion = moodSource ? SUGGESTIONS[moodSource.mood] : undefined;
 
   // ── gentle evening reminder (opt-in) ──
-  const eveningReminder =
-    getKvFromCache("gentleReminders") === "true" && new Date().getHours() >= 20;
+  const eveningReminder = getKvFromCache("gentleReminders") === "true" && new Date().getHours() >= 20;
+
+  const todayMood = today ? moodById(today.mood) : undefined;
 
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: colors.bg }]} edges={["top", "bottom"]}>
@@ -135,38 +146,73 @@ export default function HomeScreen({ navigation }: Props) {
         </View>
 
         {/* daily check-in checklist */}
-        {!checklistDone ? (
-          <DailyChecklist key={todayDateKey()} />
-        ) : null}
+        {!checklistDone ? <DailyChecklist key={todayDateKey()} /> : null}
 
-        {/* mood check-in card */}
-        <ClayCard
-          style={{ marginTop: 14 }}
-          bg={today ? MOOD_COLORS[today.mood] ?? palette.lavender : colors.card}
-        >
-          <Text style={[styles.question, { color: colors.ink }]}>How are you feeling today?</Text>
-          <Text style={styles.questionHint}>
-            {today
-              ? `${moodById(today.mood)?.emoji ?? "💛"} ${moodById(today.mood)?.label ?? "Checked in"} · ${INTENSITY_LABELS[today.intensity] ?? ""}`
-              : "Tap a bubble — this is just for you."}
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.bubbles}>
-            {MOODS.map((m) => (
-              <MoodBubble
-                key={m.id}
-                emoji={m.emoji}
-                label={m.label}
-                bg={MOOD_COLORS[m.id]}
-                selected={today?.mood === m.id}
-                onPress={() => setCheckinOpen(true)}
+        {/* mood typing box + 4 quick moods */}
+        <ClayCard style={{ marginTop: 14 }} bg={colors.card}>
+          {todayMood && today ? (
+            <View style={{ alignItems: "center" }}>
+              <Text style={styles.checkedEmoji}>{todayMood.emoji}</Text>
+              <Text style={[styles.question, { color: colors.ink }]}>
+                You&apos;re feeling {todayMood.label.toLowerCase()}
+              </Text>
+              <Text style={[styles.checkedAffirm, { color: colors.inkSoft }]}>{todayMood.affirmation}</Text>
+              {today.note ? (
+                <Text style={[styles.todayNote, { color: MOOD_TEXT[today.mood] }]} numberOfLines={2}>
+                  “{today.note}”
+                </Text>
+              ) : null}
+              <ClayButton
+                label="I feel differently now"
+                color="ghost"
+                onPress={() => clearCheckin(today.dateKey)}
+                textStyle={{ color: palette.inkSoft }}
+                style={{ marginTop: 12 }}
               />
-            ))}
-          </ScrollView>
-          {today?.note ? (
-            <Text style={[styles.todayNote, { color: MOOD_TEXT[today.mood] }]} numberOfLines={2}>
-              “{today.note}”
-            </Text>
-          ) : null}
+            </View>
+          ) : (
+            <View>
+              <Text style={[styles.question, { color: colors.ink }]}>How are you feeling today?</Text>
+              <Text style={[styles.questionHint, { color: colors.inkSoft }]}>
+                Type your exact feeling, then tap one mood.
+              </Text>
+              <TextInput
+                value={feelingText}
+                onChangeText={setFeelingText}
+                placeholder="Type how you feel… (slightly happy, extremely sad, a little nervous…)"
+                placeholderTextColor={palette.inkFaint}
+                autoCorrect={false}
+                spellCheck={false}
+                style={[styles.moodInput, { borderColor: colors.accent }]}
+              />
+              <View style={styles.quickMoods}>
+                {QUICK_MOODS.map((id) => {
+                  const m = moodById(id);
+                  if (!m) return null;
+                  return (
+                    <MoodBubble
+                      key={m.id}
+                      emoji={m.emoji}
+                      label={m.label}
+                      bg={MOOD_COLORS[m.id]}
+                      selected={false}
+                      onPress={() => {
+                        saveCheckin({
+                          dateKey: todayDateKey(),
+                          mood: m.id,
+                          intensity: 3,
+                          note: feelingText.trim() || undefined,
+                        });
+                      }}
+                    />
+                  );
+                })}
+              </View>
+              <Text style={[styles.oneTapHint, { color: colors.inkSoft }]}>
+                One tap, one mood — no wrong answers here.
+              </Text>
+            </View>
+          )}
         </ClayCard>
 
         {/* gentle suggestion */}
@@ -216,18 +262,18 @@ export default function HomeScreen({ navigation }: Props) {
           </ClayCard>
         ) : null}
 
-        {/* the four rooms */}
+        {/* feature grid — exactly two per row */}
         <View style={styles.grid}>
-          {CARDS.map((card) => (
+          {FEATURES.map((f) => (
             <ClayCard
-              key={card.name}
-              style={{ width: "47.5%", minHeight: 130, justifyContent: "center", alignItems: "center", paddingVertical: 20 }}
-              bg={card.bg}
-              onPress={() => navigation.navigate(card.route)}
+              key={f.title}
+              style={styles.featureCard}
+              bg={f.bg}
+              onPress={() => f.go(navigation)}
             >
-              <Text style={styles.cardEmoji}>{card.emoji}</Text>
-              <Text style={styles.cardName}>{card.name}</Text>
-              <Text style={styles.cardLine}>{card.line}</Text>
+              <Text style={styles.featureEmoji}>{f.emoji}</Text>
+              <Text style={styles.featureTitle}>{f.title}</Text>
+              <Text style={styles.featureLine}>{f.line}</Text>
             </ClayCard>
           ))}
         </View>
@@ -237,7 +283,6 @@ export default function HomeScreen({ navigation }: Props) {
         </Text>
       </ScrollView>
 
-      <CheckinModal visible={checkinOpen} onClose={() => setCheckinOpen(false)} today={today} />
       <TaskBar />
     </SafeAreaView>
   );
@@ -282,145 +327,6 @@ function DailyChecklist() {
         <ClayButton label="Done 💛" color="primary" onPress={done} />
       </View>
     </ClayCard>
-  );
-}
-
-/* ─── Mood check-in modal ──────────────────────────────────────────── */
-
-function CheckinModal({
-  visible,
-  onClose,
-  today,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  today?: MoodCheckin;
-}) {
-  const [step, setStep] = React.useState<"mood" | "intensity" | "note" | "done">("mood");
-  const [mood, setMood] = React.useState<string | undefined>(today?.mood);
-  const [intensity, setIntensity] = React.useState(today?.intensity ?? 3);
-  const [note, setNote] = React.useState(today?.note ?? "");
-  const sparkle = React.useRef(new Animated.Value(0)).current;
-
-  React.useEffect(() => {
-    if (visible) {
-      setStep("mood");
-      setMood(today?.mood);
-      setIntensity(today?.intensity ?? 3);
-      setNote(today?.note ?? "");
-    }
-  }, [visible, today]);
-
-  const finish = () => {
-    if (mood) {
-      saveCheckin({ dateKey: todayDateKey(), mood, intensity, note: note.trim() || undefined });
-    }
-    sparkle.setValue(0);
-    Animated.timing(sparkle, { toValue: 1, duration: 700, useNativeDriver: true }).start();
-    setStep("done");
-  };
-
-  const def = moodById(mood);
-  const moodColor = mood ? MOOD_COLORS[mood] : palette.lavender;
-
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.modalBackdrop}>
-        <View style={[styles.modalCard, { backgroundColor: step === "done" ? moodColor : palette.surface }]}>
-          {step === "mood" && (
-            <>
-              <Text style={styles.modalTitle}>How are you feeling?</Text>
-              <View style={styles.modalBubbles}>
-                {MOODS.map((m) => (
-                  <MoodBubble
-                    key={m.id}
-                    emoji={m.emoji}
-                    label={m.label}
-                    bg={MOOD_COLORS[m.id]}
-                    selected={mood === m.id}
-                    onPress={() => {
-                      setMood(m.id);
-                      setStep("intensity");
-                    }}
-                  />
-                ))}
-              </View>
-              <ClayButton label="Close" color="ghost" onPress={onClose} textStyle={{ color: palette.inkSoft }} />
-            </>
-          )}
-
-          {step === "intensity" && (
-            <>
-              <Text style={styles.modalTitle}>
-                {def?.emoji} How strong is it?
-              </Text>
-              <View style={styles.intensityCol}>
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <ClayChip
-                    key={i}
-                    label={`${INTENSITY_LABELS[i]}${i === 1 ? " ·" : ""}`}
-                    selected={intensity === i}
-                    onPress={() => setIntensity(i)}
-                    bg={moodColor}
-                  />
-                ))}
-              </View>
-              <View style={styles.modalRow}>
-                <ClayButton label="Back" color="cream" onPress={() => setStep("mood")} />
-                <ClayButton label="Next" color="primary" onPress={() => setStep("note")} />
-              </View>
-            </>
-          )}
-
-          {step === "note" && (
-            <>
-              <Text style={styles.modalTitle}>Anything you want to say? (optional)</Text>
-              <TextInput
-                value={note}
-                onChangeText={setNote}
-                placeholder="A word, a sentence, or nothing at all…"
-                placeholderTextColor={palette.inkFaint}
-                multiline
-                autoCorrect={false}
-                spellCheck={false}
-                style={[styles.modalInput, { borderColor: moodColor }]}
-              />
-              <View style={styles.modalRow}>
-                <ClayButton label="Back" color="cream" onPress={() => setStep("intensity")} />
-                <ClayButton label="Done" color="primary" onPress={finish} />
-              </View>
-            </>
-          )}
-
-          {step === "done" && (
-            <View style={{ alignItems: "center", paddingVertical: 10 }}>
-              <Animated.Text
-                style={[
-                  styles.sparkle,
-                  {
-                    opacity: sparkle,
-                    transform: [{ scale: sparkle.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.2] }) }],
-                  },
-                ]}
-              >
-                {def?.emoji}
-              </Animated.Text>
-              <Text style={[styles.doneTitle, { color: MOOD_TEXT[mood ?? "calm"] }]}>Thank you for sharing.</Text>
-              <Text style={[styles.doneAffirm, { color: MOOD_TEXT[mood ?? "calm"] }]}>{def?.affirmation}</Text>
-              <ClayButton
-                label="I feel differently now"
-                color="surface"
-                onPress={() => setStep("mood")}
-                textStyle={{ color: palette.inkSoft }}
-              />
-              <Pressable onPress={onClose} style={{ marginTop: 14 }}>
-                <Text style={{ color: palette.inkSoft, fontWeight: "700" }}>Close</Text>
-              </Pressable>
-            </View>
-          )}
-        </View>
-      </View>
-    </Modal>
   );
 }
 
@@ -469,9 +375,26 @@ const styles = StyleSheet.create({
   checklistOptions: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   checklistActions: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 14 },
   question: { fontSize: 16, fontWeight: "800" },
-  questionHint: { marginTop: 2, fontSize: 12.5, color: palette.inkSoft },
-  bubbles: { gap: 6, paddingVertical: 12 },
-  todayNote: { marginTop: 6, fontSize: 13, fontWeight: "600", fontStyle: "italic" },
+  questionHint: { marginTop: 2, fontSize: 12.5 },
+  moodInput: {
+    marginTop: 14,
+    backgroundColor: palette.cream,
+    borderRadius: radius.md,
+    padding: 13,
+    fontSize: 13.5,
+    color: palette.ink,
+    borderWidth: 2,
+  },
+  quickMoods: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 16,
+    gap: 4,
+  },
+  oneTapHint: { marginTop: 14, fontSize: 12, textAlign: "center" },
+  checkedEmoji: { fontSize: 48 },
+  checkedAffirm: { marginTop: 8, fontSize: 13.5, textAlign: "center", lineHeight: 20 },
+  todayNote: { marginTop: 10, fontSize: 13, fontWeight: "600", fontStyle: "italic" },
   suggestionEmoji: { fontSize: 28 },
   suggestionTitle: { fontSize: 13, fontWeight: "800" },
   suggestionText: { fontSize: 12.5, marginTop: 2, lineHeight: 17 },
@@ -495,44 +418,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     rowGap: 14,
   },
-  cardEmoji: { fontSize: 34 },
-  cardName: { marginTop: 8, fontSize: 18, fontWeight: "800", color: palette.ink },
-  cardLine: { marginTop: 2, fontSize: 12, color: palette.inkSoft, textAlign: "center" },
+  featureCard: { width: "48%", alignItems: "center", paddingVertical: 18 },
+  featureEmoji: { fontSize: 30 },
+  featureTitle: { marginTop: 7, fontSize: 14.5, fontWeight: "800", color: palette.ink, textAlign: "center" },
+  featureLine: { marginTop: 2, fontSize: 10.5, color: palette.inkSoft, textAlign: "center" },
   privacy: {
     marginTop: 26,
     textAlign: "center",
     fontSize: 12.5,
     fontWeight: "700",
   },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(74, 68, 88, 0.35)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-  },
-  modalCard: {
-    width: "100%",
-    maxWidth: 420,
-    borderRadius: radius.xl,
-    padding: 22,
-    ...clayShadow(true),
-  },
-  modalTitle: { fontSize: 17, fontWeight: "800", color: palette.ink, marginBottom: 16 },
-  modalBubbles: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 10, marginBottom: 16 },
-  intensityCol: { gap: 10, marginBottom: 18 },
-  modalRow: { flexDirection: "row", justifyContent: "space-between", gap: 12 },
-  modalInput: {
-    backgroundColor: palette.cream,
-    borderRadius: radius.md,
-    padding: 14,
-    minHeight: 90,
-    fontSize: 14,
-    color: palette.ink,
-    borderWidth: 2,
-    textAlignVertical: "top",
-  },
-  sparkle: { fontSize: 56, marginBottom: 8 },
-  doneTitle: { fontSize: 20, fontWeight: "800", textAlign: "center" },
-  doneAffirm: { fontSize: 14, textAlign: "center", marginTop: 8, marginBottom: 18, lineHeight: 20 },
 });

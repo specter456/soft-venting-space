@@ -431,6 +431,13 @@ export function removeItem(name: TableName, id: string): void {
   removeCache(name, id);
 }
 
+/** Remove today's check-in (the check-ins table is keyed by dateKey, not id). */
+export function clearCheckin(dateKey: string): void {
+  openDb().runSync("DELETE FROM moodCheckins WHERE dateKey = ?", dateKey);
+  cache.moodCheckins = (cache.moodCheckins as MoodCheckin[]).filter((c) => c.dateKey !== dateKey);
+  notify();
+}
+
 export function attachRecordingToNote(recordingId: string, noteId: string): void {
   openDb().runSync("UPDATE recordings SET noteId = ? WHERE id = ?", noteId, recordingId);
   const rec = (cache.recordings as Recording[]).find((r) => r.id === recordingId);

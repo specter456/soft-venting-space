@@ -1,6 +1,7 @@
 import React from "react";
 import { Modal, Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { Screen } from "../components/Screen";
+import { TaskBar } from "../components/TaskBar";
 import { ClayButton, ClayCard, ClayChip, hexWithAlpha } from "../components/Clay";
 import { LockPad } from "../components/LockPad";
 import { ACCENTS, useTheme } from "../theme-context";
@@ -83,7 +84,7 @@ export default function SettingsScreen({ navigation }: Props) {
   };
 
   return (
-    <Screen title="Settings" subtitle="Your space, your rules">
+    <Screen title="Settings" subtitle="Your space, your rules" bottomBar={<TaskBar />}>
       {/* ── Profile / Account ── */}
       <Section title="Profile & Account" emoji="👤">
         <Row label="Email">

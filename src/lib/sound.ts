@@ -4,9 +4,17 @@
  * if audio isn't available (autoplay policies, old browsers, etc.).
  */
 
+import { getKvFromCache } from "./db";
+
+/** Sounds on/off — read from on-device prefs (default on). */
+export function soundsEnabled(): boolean {
+  return getKvFromCache("soundsEnabled") !== "false";
+}
+
 let audioCtx: AudioContext | null = null;
 
 export function playPageTurn(): void {
+  if (!soundsEnabled()) return;
   try {
     const Ctor =
       window.AudioContext ??

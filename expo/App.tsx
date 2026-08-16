@@ -29,7 +29,7 @@ import ScribbleScreen from "./src/screens/Scribble";
 import StickerStudioScreen from "./src/screens/Stickers";
 import GifStudioScreen from "./src/screens/GifStudio";
 import VaultScreen from "./src/screens/Vault";
-import CalmScreen from "./src/screens/Calm";
+import GamesScreen from "./src/screens/Games";
 import DiaryScreen from "./src/screens/Diary";
 
 import type { RootStackParamList } from "./src/nav";
@@ -293,7 +293,7 @@ function MainNavigator() {
         <Stack.Screen name="Stickers" component={StickerStudioScreen} />
         <Stack.Screen name="GifStudio" component={GifStudioScreen} />
         <Stack.Screen name="Vault" component={VaultScreen} />
-        <Stack.Screen name="Calm" component={CalmScreen} />
+        <Stack.Screen name="Games" component={GamesScreen} />
         <Stack.Screen name="Diary" component={DiaryScreen} />
       </Stack.Navigator>
     </NavigationContainer>

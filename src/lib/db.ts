@@ -327,3 +327,28 @@ export function getPasscodeLocally(): { hash: string; salt: string } | null {
   const salt = kv.find((k) => k.key === KV_PASSCODE_SALT)?.value;
   return hash && salt ? { hash, salt } : null;
 }
+
+/**
+ * Gentle full wipe: clears every store (including the lock) on this device.
+ * Used by Settings → "Delete everything" after confirmation. Never touches
+ * anything outside this device.
+ */
+export async function wipeAll(): Promise<void> {
+  try {
+    const db = await openDb();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE_NAMES, "readwrite");
+      for (const name of STORE_NAMES) {
+        tx.objectStore(name).clear();
+      }
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch {
+    /* in-memory mode — nothing persisted to clear */
+  }
+  for (const name of STORE_NAMES) {
+    cache[name] = [];
+  }
+  notify();
+}
