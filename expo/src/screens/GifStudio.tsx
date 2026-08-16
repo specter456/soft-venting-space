@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Screen } from "../components/Screen";
 import { ClayButton, ClayChip, hexWithAlpha } from "../components/Clay";
+import { captureViewToFile } from "../capture";
 import { GIFT_STAMPS } from "../data";
 import { createVaultItem } from "../db";
 import { palette, radius, TILE_BGS } from "../theme";
@@ -35,6 +36,7 @@ export default function GifStudioScreen({ navigation, route }: Props) {
   const [playing, setPlaying] = React.useState(false);
   const [stageSize, setStageSize] = React.useState({ w: 320, h: 320 });
   const anim = React.useRef(new Animated.Value(0)).current;
+  const frameCaptureRef = React.useRef<View>(null);
 
   const onStageLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -83,6 +85,25 @@ export default function GifStudioScreen({ navigation, route }: Props) {
     setFrameIndex((prev) => Math.max(0, Math.min(prev, frames.length - 2)));
   };
 
+  // Clear just this frame's doodles (the base stays the same).
+  const clearFrame = () => {
+    setFrames((prev) => {
+      const next = [...prev];
+      next[frameIndex] = { stamps: [], text: undefined };
+      return next;
+    });
+    setText("");
+  };
+
+  // Remove the last stamp placed on this frame — one gentle step back.
+  const undoStamp = () => {
+    setFrames((prev) => {
+      const next = [...prev];
+      next[frameIndex] = { ...next[frameIndex], stamps: next[frameIndex].stamps.slice(0, -1) };
+      return next;
+    });
+  };
+
   const play = () => {
     if (playing || frames.length < 2) return;
     setPlaying(true);
@@ -99,13 +120,17 @@ export default function GifStudioScreen({ navigation, route }: Props) {
     setPlaying(false);
   };
 
-  const save = () => {
+  const save = async () => {
+    // Capture the current frame as a real PNG so the vault shows an actual
+    // image of the GIF (the frames still power the in-app animated preview).
+    const fileUri = await captureViewToFile(frameCaptureRef);
     createVaultItem({
       kind: "gif",
       art: baseArt,
       bg: baseBg,
       caption: "made GIF",
       frames: frames.map((f) => ({ stamps: f.stamps, text: f.text })),
+      fileUri: fileUri ?? undefined,
     });
     navigation.goBack();
   };
@@ -144,7 +169,9 @@ export default function GifStudioScreen({ navigation, route }: Props) {
             })}
           </Animated.View>
         ) : (
-          <FrameArt baseArt={baseArt} frame={frame} />
+          <View ref={frameCaptureRef} style={styles.stageFill} pointerEvents="none">
+            <FrameArt baseArt={baseArt} frame={frame} />
+          </View>
         )}
 
         {!playing && frames.length > 1 ? (
@@ -190,6 +217,12 @@ export default function GifStudioScreen({ navigation, route }: Props) {
         spellCheck={false}
         style={styles.textInput}
       />
+
+      {/* frame controls */}
+      <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>
+        <ClayButton label="↩️ Undo stamp" color="cream" onPress={undoStamp} style={{ flex: 1 }} />
+        <ClayButton label="🧹 Clear frame" color="cream" onPress={clearFrame} style={{ flex: 1 }} />
+      </View>
 
       {/* frames */}
       <View style={styles.frameRow}>

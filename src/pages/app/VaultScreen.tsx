@@ -4,10 +4,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import {
   Clapperboard,
-  Fingerprint,
   ImageIcon,
   LockKeyhole,
-  ScanFace,
   Sticker,
   Trash2,
 } from "lucide-react";
@@ -20,10 +18,8 @@ import {
   type KVPair,
   type VaultItem,
 } from "@/lib/db";
+import { isImageArt } from "@/lib/canvas-art";
 import { cn } from "@/lib/utils";
-import { safeSessionGetItem, safeSessionSetItem } from "@/lib/safe-storage";
-
-const VAULT_SESSION_KEY = "venting-vault-unlocked";
 
 type Filter = "all" | "photo" | "video" | "gif" | "doodle" | "sticker";
 
@@ -49,15 +45,16 @@ export default function VaultScreen() {
   const kv = useTable<KVPair>("kv");
   const items = useTable<VaultItem>("vaultItems");
 
-  // the second (vault) lock reads the same on-device passcode
+  // the second (vault) lock reads the same on-device passcode and really
+  // verifies it — wrong or empty codes never open the vault
   const passcodeHash = kv.find((k) => k.key === KV_PASSCODE_HASH)?.value;
   const passcodeSalt = kv.find((k) => k.key === KV_PASSCODE_SALT)?.value;
   const stored =
     passcodeHash && passcodeSalt ? { hash: passcodeHash, salt: passcodeSalt } : null;
 
-  const [unlocked, setUnlocked] = useState(
-    () => safeSessionGetItem(VAULT_SESSION_KEY) === "1",
-  );
+  // memory-only: the vault re-locks after a refresh — the double-locked state
+  // is always kept, and only a correct passcode opens it
+  const [unlocked, setUnlocked] = useState(false);
   // the vault's second lock can be switched off in Settings (default on)
   const doubleLock =
     kv.find((k) => k.key === "vaultDoubleLock")?.value !== "false";
@@ -65,7 +62,6 @@ export default function VaultScreen() {
   const [openId, setOpenId] = useState<string | null>(null);
 
   const handleUnlock = () => {
-    safeSessionSetItem(VAULT_SESSION_KEY, "1");
     setUnlocked(true);
   };
 
@@ -114,20 +110,15 @@ export default function VaultScreen() {
 
   return (
     <div className="space-y-5">
-      {/* ─── Auth indicators ──────────────────────────────────────── */}
+      {/* ─── Auth indicator ───────────────────────────────────────── */}
       <div className="clay-card flex items-center justify-between gap-2 rounded-3xl px-4 py-3">
         <p className="flex items-center gap-2 text-xs font-bold text-ink-deep">
           <LockKeyhole className="size-4 text-lavender-600" />
           {doubleLock ? "double-locked" : "vault lock off — turn it on in Settings"}
         </p>
-        <div className="flex items-center gap-2 text-ink-soft">
-          <span className="clay-chip flex h-8 w-8 items-center justify-center rounded-full" title="Face ID ready">
-            <ScanFace className="size-4" />
-          </span>
-          <span className="clay-chip flex h-8 w-8 items-center justify-center rounded-full" title="Fingerprint ready">
-            <Fingerprint className="size-4" />
-          </span>
-        </div>
+        <span className="clay-chip flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold text-ink-soft">
+          🔐 passcode protected
+        </span>
       </div>
 
       {/* ─── Filters ──────────────────────────────────────────────── */}
@@ -173,6 +164,7 @@ export default function VaultScreen() {
           {shown.map((item, i) => {
             const meta = KIND_META[item.kind];
             const Icon = meta.icon;
+            const image = isImageArt(item.art);
             return (
               <motion.button
                 key={item._id}
@@ -185,14 +177,25 @@ export default function VaultScreen() {
               >
                 <div
                   className={cn(
-                    "absolute inset-2 flex flex-col items-center justify-center gap-1 rounded-3xl transition-transform group-hover:scale-105",
+                    "absolute inset-2 flex flex-col items-center justify-center gap-1 overflow-hidden rounded-3xl transition-transform group-hover:scale-105",
                     item.bg || "tile-lavender",
                   )}
                 >
-                  <span className="text-4xl drop-shadow-sm">{item.art}</span>
-                  <span className="max-w-full truncate px-2 text-[9px] font-bold text-ink-deep/70">
-                    {item.caption ?? meta.label}
-                  </span>
+                  {image ? (
+                    <img
+                      src={item.art}
+                      alt={item.caption ?? meta.label}
+                      draggable={false}
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  ) : (
+                    <>
+                      <span className="text-4xl drop-shadow-sm">{item.art}</span>
+                      <span className="max-w-full truncate px-2 text-[9px] font-bold text-ink-deep/70">
+                        {item.caption ?? meta.label}
+                      </span>
+                    </>
+                  )}
                 </div>
                 <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-ink-deep/60">
                   <LockKeyhole className="size-2 text-cream-soft" />
@@ -226,11 +229,20 @@ export default function VaultScreen() {
           >
             <div
               className={cn(
-                "mx-auto flex aspect-[4/3] w-full items-center justify-center rounded-3xl",
+                "mx-auto flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-3xl",
                 openItem.bg || "tile-lavender",
               )}
             >
-              <span className="text-6xl drop-shadow-md">{openItem.art}</span>
+              {isImageArt(openItem.art) ? (
+                <img
+                  src={openItem.art}
+                  alt={openItem.caption ?? KIND_META[openItem.kind].label}
+                  draggable={false}
+                  className="h-full w-full object-contain"
+                />
+              ) : (
+                <span className="text-6xl drop-shadow-md">{openItem.art}</span>
+              )}
             </div>
             <p className="mt-4 text-base font-bold tracking-tight text-ink-deep">
               {openItem.caption ?? KIND_META[openItem.kind].label}

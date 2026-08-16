@@ -1,9 +1,11 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { Loader2, Pause, Play, Plus, Save, Trash2 } from "lucide-react";
+import { Loader2, Pause, Play, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
 import { createVaultItem } from "@/lib/db";
 import { GIFT_STAMPS, PHOTO_SCENES, VIDEO_AVATARS } from "@/lib/art";
+import { fillTileGradient, loadImageToCanvas } from "@/lib/canvas-art";
+import { gifDataUrlFromCanvases } from "@/lib/gif";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -15,17 +17,19 @@ interface Stamp {
   size: number; // px
 }
 
+/** A frame is its own separate picture — a full composite PNG, like a flipbook page. */
 interface Frame {
-  bg: (typeof PHOTO_SCENES)[number] | "avatar";
-  img?: string;
-  stamps: Stamp[];
-  text?: string;
+  img: string;
 }
+
+const SIZE = 700;
 
 export default function GifStudio() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const lastPoint = useRef<{ x: number; y: number } | null>(null);
+  const undoStack = useRef<string[]>([]);
+  const [canUndo, setCanUndo] = useState(false);
 
   const [bg, setBg] = useState<(typeof PHOTO_SCENES)[number] | "avatar">(PHOTO_SCENES[0]);
   const [avatar] = useState(() => VIDEO_AVATARS[Math.floor(Math.random() * VIDEO_AVATARS.length)]);
@@ -42,8 +46,8 @@ export default function GifStudio() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = 700 * dpr;
-    canvas.height = 700 * dpr;
+    canvas.width = SIZE * dpr;
+    canvas.height = SIZE * dpr;
     const ctx = canvas.getContext("2d");
     if (ctx) ctx.scale(dpr, dpr);
   }, []);
@@ -57,12 +61,14 @@ export default function GifStudio() {
     return () => window.clearInterval(t);
   }, [playing, frames.length]);
 
+  /* ─── Drawing ───────────────────────────────────────────────────── */
+
   const pos = (e: ReactPointerEvent) => {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
     return {
-      x: ((e.clientX - rect.left) / rect.width) * 700,
-      y: ((e.clientY - rect.top) / rect.height) * 700,
+      x: ((e.clientX - rect.left) / rect.width) * SIZE,
+      y: ((e.clientY - rect.top) / rect.height) * SIZE,
     };
   };
 
@@ -88,6 +94,38 @@ export default function GifStudio() {
     lastPoint.current = p;
   };
 
+  /** One undo step per completed stroke. */
+  const pushUndo = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    undoStack.current.push(canvas.toDataURL());
+    if (undoStack.current.length > 30) undoStack.current.shift();
+    setCanUndo(undoStack.current.length > 0);
+  };
+
+  const undoLast = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    const prev = undoStack.current.pop();
+    setCanUndo(undoStack.current.length > 0);
+    if (!canvas || !ctx || !prev) return;
+    const img = new Image();
+    img.onload = () => {
+      ctx.clearRect(0, 0, SIZE, SIZE);
+      ctx.drawImage(img, 0, 0, SIZE, SIZE);
+    };
+    img.src = prev;
+  };
+
+  const clearDoodles = (pushHistory = true) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    if (pushHistory) pushUndo();
+    ctx.clearRect(0, 0, SIZE, SIZE);
+    if (!pushHistory) setCanUndo(false);
+  };
+
   const addStamp = (emoji: string) => {
     stampIdRef.current += 1;
     const id = `stamp-${stampIdRef.current}`;
@@ -103,41 +141,122 @@ export default function GifStudio() {
     ]);
   };
 
-  const clearDoodles = () => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
-    if (!canvas || !ctx) return;
-    ctx.clearRect(0, 0, 700, 700);
+  /* ─── Frames (flipbook) ─────────────────────────────────────────── */
+
+  /**
+   * Composite the current canvas state (base + doodles + stamps + text) into
+   * one full picture — this is what a frame really is.
+   */
+  const composeFrame = (): string => {
+    const canvas = document.createElement("canvas");
+    canvas.width = SIZE;
+    canvas.height = SIZE;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "";
+
+    // base
+    if (bg === "avatar") {
+      const grad = ctx.createLinearGradient(0, 0, 0, SIZE);
+      grad.addColorStop(0, "#dcf1e5");
+      grad.addColorStop(0.5, "#fdf6ec");
+      grad.addColorStop(1, "#efe7fa");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, SIZE, SIZE);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `${Math.round(SIZE * 0.4)}px serif`;
+      ctx.fillText(avatar, SIZE / 2, SIZE / 2);
+    } else {
+      fillTileGradient(ctx, bg.bg, SIZE, SIZE);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `${Math.round(SIZE * 0.34)}px serif`;
+      ctx.fillText(bg.emoji, SIZE / 2, SIZE / 2);
+    }
+
+    // doodles
+    const doodle = canvasRef.current;
+    if (doodle) ctx.drawImage(doodle, 0, 0, SIZE, SIZE);
+
+    // stamps — fixed exactly where placed, never drifting
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    for (const s of stamps) {
+      ctx.font = `${s.size}px serif`;
+      ctx.fillText(s.emoji, (s.x / 100) * SIZE, (s.y / 100) * SIZE);
+    }
+
+    // text
+    if (text.trim()) {
+      ctx.font = `bold ${Math.round(SIZE * 0.045)}px sans-serif`;
+      ctx.fillStyle = "rgba(90,84,112,0.95)";
+      ctx.fillText(text.trim(), SIZE / 2, SIZE * 0.06);
+    }
+
+    return canvas.toDataURL("image/png");
   };
 
   const addFrame = () => {
-    const canvas = canvasRef.current;
-    const img = canvas?.toDataURL("image/png");
-    setFrames((prev) => [...prev, { bg, img, stamps, text: text.trim() || undefined }]);
+    const img = composeFrame();
+    if (!img) return;
+    setFrames((prev) => [...prev, { img }]);
+    // next frame starts clean — same base, fresh doodle layer
     setStamps([]);
     setText("");
-    clearDoodles();
+    clearDoodles(false);
+    undoStack.current = [];
+    setCanUndo(false);
+    setPlaying(false);
     setPlayIdx(0);
-    toast("Frame added", { description: `${frames.length + 1} frame${frames.length === 0 ? "" : "s"} so far.` });
+    toast("Frame added", { description: "Your canvas is clear for the next flipbook page." });
   };
 
   const removeFrame = (i: number) => {
     setFrames((prev) => prev.filter((_, idx) => idx !== i));
-    if (playIdx >= frames.length - 1) setPlayIdx(0);
+    if (playIdx >= frames.length - 1) setPlayIdx(Math.max(0, frames.length - 2));
   };
+
+  const previewFrame = (i: number) => {
+    setPlaying(false);
+    setPlayIdx(i);
+  };
+
+  /** Change base → start clean (old scribbles never carry over). */
+  const changeBase = (next: (typeof PHOTO_SCENES)[number] | "avatar") => {
+    if (next === bg) return;
+    setBg(next);
+    setStamps([]);
+    setText("");
+    clearDoodles(false);
+    undoStack.current = [];
+    setCanUndo(false);
+  };
+
+  /* ─── Save a real animated GIF ──────────────────────────────────── */
 
   const save = async () => {
     if (saving) return;
     setSaving(true);
     try {
-      // stored on this device only
+      let gifUrl = "";
+      if (frames.length > 0) {
+        // load every flipbook page and encode a true looping GIF
+        const canvases = await Promise.all(
+          frames.map((f) => loadImageToCanvas(f.img, SIZE, SIZE)),
+        );
+        gifUrl = gifDataUrlFromCanvases(canvases, 650);
+      } else {
+        // no frames yet — save the current canvas as a single doodle
+        gifUrl = composeFrame();
+      }
+      if (!gifUrl) throw new Error("could not render gif");
       createVaultItem({
         kind: "gif",
-        art: "🎞️",
+        art: gifUrl,
         bg: "tile-blush",
         caption: frames.length > 0 ? `a ${frames.length}-frame gif` : "a doodled gif",
       });
-      toast("GIF saved", { description: "Locked into your vault, frames and all." });
+      toast("GIF saved", { description: "Locked into your vault — frames play in order." });
     } catch (error) {
       console.error(error);
       toast("Couldn't save your GIF", { description: "Please try again in a moment." });
@@ -149,37 +268,14 @@ export default function GifStudio() {
   const renderFrame = (frame: Frame, keyPrefix: string) => (
     <div
       key={keyPrefix}
-      className={cn(
-        "relative h-full w-full overflow-hidden rounded-[1.6rem]",
-        frame.bg === "avatar"
-          ? "bg-gradient-to-b from-mint-100 via-cream-soft to-lavender-50"
-          : frame.bg.bg,
-      )}
+      className="relative h-full w-full overflow-hidden rounded-[1.6rem] bg-cream"
     >
-      <span
-        className="absolute inset-0 flex items-center justify-center text-6xl drop-shadow-sm sm:text-7xl"
-        aria-hidden
-      >
-        {frame.bg === "avatar" ? avatar : frame.bg.emoji}
-      </span>
-      {frame.img && (
-        <img src={frame.img} alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-90" />
-      )}
-      {frame.stamps.map((s) => (
-        <span
-          key={s.id}
-          aria-hidden
-          className="absolute drop-shadow-sm"
-          style={{ left: `${s.x}%`, top: `${s.y}%`, fontSize: s.size }}
-        >
-          {s.emoji}
-        </span>
-      ))}
-      {frame.text && (
-        <span className="absolute top-3 left-1/2 w-full -translate-x-1/2 px-4 text-center text-lg font-bold text-ink-deep drop-shadow-sm">
-          {frame.text}
-        </span>
-      )}
+      <img
+        src={frame.img}
+        alt=""
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+        draggable={false}
+      />
     </div>
   );
 
@@ -193,7 +289,7 @@ export default function GifStudio() {
         <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
           <button
             type="button"
-            onClick={() => setBg("avatar")}
+            onClick={() => changeBase("avatar")}
             className={cn(
               "flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-2xl transition-transform",
               bg === "avatar" ? "ring-2 ring-lavender-400 ring-offset-2 ring-offset-cream" : "",
@@ -207,7 +303,7 @@ export default function GifStudio() {
             <button
               key={scene.emoji}
               type="button"
-              onClick={() => setBg(scene)}
+              onClick={() => changeBase(scene)}
               className={cn(
                 "flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-2xl transition-transform",
                 scene.bg,
@@ -222,6 +318,9 @@ export default function GifStudio() {
             </button>
           ))}
         </div>
+        <p className="mt-1.5 text-[10px] font-semibold text-ink-soft">
+          changing the base starts a fresh page — old scribbles are cleared
+        </p>
       </section>
 
       {/* ─── Editor canvas ────────────────────────────────────────── */}
@@ -249,6 +348,7 @@ export default function GifStudio() {
             onPointerUp={(e) => {
               drawing.current = false;
               lastPoint.current = null;
+              pushUndo();
               (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
             }}
             onPointerLeave={() => {
@@ -276,6 +376,29 @@ export default function GifStudio() {
             </span>
           )}
         </div>
+      </div>
+
+      {/* ─── Clear & undo ─────────────────────────────────────────── */}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            setStamps([]);
+            setText("");
+            clearDoodles();
+          }}
+          className="clay-btn-soft flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-ink-deep"
+        >
+          🗑️ Clear canvas
+        </button>
+        <button
+          type="button"
+          onClick={undoLast}
+          disabled={!canUndo}
+          className="clay-btn-soft flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-ink-deep disabled:opacity-40"
+        >
+          <RotateCcw className="size-4" /> Undo last stroke
+        </button>
       </div>
 
       {/* ─── Stamps & text ────────────────────────────────────────── */}
@@ -307,7 +430,7 @@ export default function GifStudio() {
         <Plus className="size-4" /> Add this as a frame
       </button>
 
-      {/* ─── Frames + GIF preview ─────────────────────────────────── */}
+      {/* ─── Frames strip + GIF preview ───────────────────────────── */}
       {frames.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center justify-between">
@@ -326,18 +449,15 @@ export default function GifStudio() {
 
           <div className="clay-card rounded-[2rem] p-2.5">
             <div className="relative aspect-square overflow-hidden rounded-[1.6rem]">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={playIdx}
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 1.03 }}
-                  transition={{ duration: 0.3 }}
-                  className="h-full w-full"
-                >
-                  {renderFrame(frames[playIdx], `preview-${playIdx}`)}
-                </motion.div>
-              </AnimatePresence>
+              <motion.div
+                key={playIdx}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.18 }}
+                className="h-full w-full"
+              >
+                {renderFrame(frames[playIdx], `preview-${playIdx}`)}
+              </motion.div>
               <span className="absolute top-2 right-2 rounded-full bg-ink-deep/60 px-2 py-0.5 text-[9px] font-bold text-cream-soft">
                 frame {playIdx + 1}/{frames.length}
               </span>
@@ -347,7 +467,20 @@ export default function GifStudio() {
           <div className="flex gap-2 overflow-x-auto pb-1">
             {frames.map((frame, i) => (
               <div key={i} className="relative shrink-0">
-                <div className="h-16 w-16 overflow-hidden rounded-2xl">{renderFrame(frame, `thumb-${i}`)}</div>
+                <button
+                  type="button"
+                  onClick={() => previewFrame(i)}
+                  className={cn(
+                    "block h-16 w-16 overflow-hidden rounded-2xl transition-transform",
+                    playIdx === i && !playing && "ring-2 ring-lavender-400 ring-offset-2 ring-offset-cream",
+                  )}
+                  aria-label={`Preview frame ${i + 1}`}
+                >
+                  {renderFrame(frame, `thumb-${i}`)}
+                </button>
+                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-1.5 py-0.5 text-[8px] font-bold text-ink-soft">
+                  {i + 1}
+                </span>
                 <button
                   type="button"
                   onClick={() => removeFrame(i)}

@@ -29,6 +29,7 @@ export default function VaultScreen({ navigation }: Props) {
   const [locked, setLocked] = React.useState(vaultDoubleLockEnabled());
   const [code, setCode] = React.useState("");
   const [shake, setShake] = React.useState(0);
+  const [wrong, setWrong] = React.useState(false);
   const [biometric, setBiometric] = React.useState<"face" | "fingerprint" | null>(null);
 
   React.useEffect(() => {
@@ -38,13 +39,17 @@ export default function VaultScreen({ navigation }: Props) {
   }, []);
 
   const tryUnlock = async (candidate: string) => {
+    // the vault second lock really verifies — wrong or empty codes never open it
     const ok = await verifyPasscode(candidate);
     if (ok) {
       setLocked(false);
       setCode("");
+      setWrong(false);
     } else {
       setCode("");
       setShake((s) => s + 1);
+      setWrong(true);
+      setTimeout(() => setWrong(false), 2600);
     }
   };
 
@@ -65,6 +70,9 @@ export default function VaultScreen({ navigation }: Props) {
           <Text style={styles.lockSub}>
             Photos, video vents, doodles, stickers & GIFs wait behind this. Only you can open it.
           </Text>
+          {wrong ? (
+            <Text style={styles.lockError}>That code didn&apos;t match. Try again.</Text>
+          ) : null}
           <LockPad
             value={code}
             onChange={(c) => {
@@ -237,6 +245,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 19,
     paddingHorizontal: 24,
+  },
+  lockError: {
+    marginTop: 10,
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#b0707e",
+    textAlign: "center",
   },
   bioBtn: {
     paddingHorizontal: 10,

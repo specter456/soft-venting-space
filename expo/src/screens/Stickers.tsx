@@ -9,6 +9,7 @@ import {
   STICKER_EYES,
   STICKER_MOUTHS,
 } from "../data";
+import { captureViewToFile } from "../capture";
 import { createVaultItem } from "../db";
 import { clayShadow, palette, radius } from "../theme";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -35,18 +36,23 @@ export default function StickerStudio({ navigation }: Props) {
     tear: STICKER_EXPRESSIONS[0].tear,
   });
   const [saved, setSaved] = React.useState(false);
+  const faceRef = React.useRef<View>(null);
 
   const pickExpression = (exp: (typeof STICKER_EXPRESSIONS)[number]) => {
     setConfig((c) => ({ ...c, eyes: exp.eyes, mouth: exp.mouth, blush: exp.blush, tear: exp.tear }));
   };
 
-  const save = () => {
+  const save = async () => {
+    // Capture the real sticker face as a PNG so the vault shows the image,
+    // not a placeholder emoji. Falls back to the art tile if capture fails.
+    const fileUri = await captureViewToFile(faceRef);
     createVaultItem({
       kind: "sticker",
       art: "🧸",
       bg: "tile-cream",
       caption: "made sticker",
       data: JSON.stringify(config),
+      fileUri: fileUri ?? undefined,
     });
     setSaved(true);
     setTimeout(() => {
@@ -59,7 +65,7 @@ export default function StickerStudio({ navigation }: Props) {
     <Screen title="Sticker Studio" subtitle="Make a tiny feeling you can keep">
       {/* live preview */}
       <View style={styles.previewWrap}>
-        <View style={[styles.stickerFace, { backgroundColor: config.color }, clayShadow(true)]}>
+        <View ref={faceRef} style={[styles.stickerFace, { backgroundColor: config.color }, clayShadow(true)]}>
           <View style={styles.eyesRow}>
             {STICKER_EYES.find((e) => e.id === config.eyes)?.render.split(" ")?.map((part, i) => (
               <Text key={i} style={styles.eyeGlyph}>

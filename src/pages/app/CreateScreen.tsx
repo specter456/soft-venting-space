@@ -5,6 +5,7 @@ import { Link } from "react-router";
 import { ArrowLeft, Check, Images, Loader2, Lock, Palette, Sparkles } from "lucide-react";
 import { createVaultItem } from "@/lib/db";
 import { PHOTO_SCENES } from "@/lib/art";
+import { renderPhotoScene } from "@/lib/canvas-art";
 import { cn } from "@/lib/utils";
 
 const TOOLS = [
@@ -46,8 +47,14 @@ export default function CreateScreen() {
       for (const emoji of selected) {
         const scene = PHOTO_SCENES.find((s) => s.emoji === emoji);
         if (!scene) continue;
-        // stored on this device only
-        createVaultItem({ kind: "photo", art: scene.emoji, bg: scene.bg, caption: scene.label });
+        // capture the scene as a real PNG — the vault shows the picture,
+        // not a raw emoji. Stored on this device only.
+        createVaultItem({
+          kind: "photo",
+          art: renderPhotoScene(scene.emoji, scene.bg) || scene.emoji,
+          bg: scene.bg,
+          caption: scene.label,
+        });
       }
       toast("Saved to your vault", {
         description: `${selected.length} photo${selected.length > 1 ? "s" : ""} tucked behind the double lock.`,

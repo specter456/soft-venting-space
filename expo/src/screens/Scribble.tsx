@@ -3,6 +3,7 @@ import { PanResponder, Pressable, StyleSheet, Text, View, useWindowDimensions } 
 import Svg, { Polyline } from "react-native-svg";
 import { Screen } from "../components/Screen";
 import { ClayButton, ClayChip, hexWithAlpha } from "../components/Clay";
+import { captureViewToFile } from "../capture";
 import { createVaultItem } from "../db";
 import { palette, radius } from "../theme";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -52,6 +53,7 @@ export default function ScribbleScreen({ navigation }: Props) {
   const [saved, setSaved] = React.useState(false);
 
   const current = React.useRef<Stroke | null>(null);
+  const canvasRef = React.useRef<View>(null);
 
   const pan = React.useRef(
     PanResponder.create({
@@ -97,13 +99,17 @@ export default function ScribbleScreen({ navigation }: Props) {
   const undo = () => setStrokes((prev) => prev.slice(0, -1));
   const clear = () => setStrokes([]);
 
-  const save = () => {
+  const save = async () => {
+    // Capture the real drawing as a PNG so the vault shows the actual
+    // scribble, not a placeholder emoji.
+    const fileUri = await captureViewToFile(canvasRef);
     createVaultItem({
       kind: "doodle",
       art: "🎨",
       bg: BG_TILE[bg.id],
       caption: "scribbled feeling",
       data: JSON.stringify({ bg: bg.id, strokes }),
+      fileUri: fileUri ?? undefined,
     });
     setSaved(true);
     setTimeout(() => {
@@ -116,6 +122,7 @@ export default function ScribbleScreen({ navigation }: Props) {
     <Screen title="Scribble" subtitle="Draw how it feels — no one will judge">
       <View style={styles.canvasWrap}>
         <View
+          ref={canvasRef}
           {...pan.panHandlers}
           style={[styles.canvas, { width: canvasSize, height: canvasSize, backgroundColor: bg.hex }]}
         >

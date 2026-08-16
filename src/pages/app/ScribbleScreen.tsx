@@ -41,6 +41,24 @@ const BACKGROUNDS = [
   { id: "night", label: "night", cls: "bg-[#3f3a52]" },
 ];
 
+/** Compose the scribble canvas over its pastel background → PNG data URL. */
+function captureScribble(
+  canvas: HTMLCanvasElement | null,
+  bgClass: string,
+): string {
+  if (!canvas) return "";
+  const hex = bgClass.match(/#[0-9a-fA-F]{6}/)?.[0] ?? "#fdf6ea";
+  const out = document.createElement("canvas");
+  out.width = 700;
+  out.height = 900;
+  const ctx = out.getContext("2d");
+  if (!ctx) return "";
+  ctx.fillStyle = hex;
+  ctx.fillRect(0, 0, 700, 900);
+  ctx.drawImage(canvas, 0, 0, 700, 900);
+  return out.toDataURL("image/png");
+}
+
 export default function ScribbleScreen() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
@@ -108,11 +126,13 @@ export default function ScribbleScreen() {
     if (saving) return;
     setSaving(true);
     try {
-      // stored on this device only
+      // capture the real drawing as a PNG (background + strokes) so the
+      // vault shows the actual picture. Stored on this device only.
+      const art = captureScribble(canvasRef.current, bg.cls);
       createVaultItem({
         kind: "doodle",
-        art: "🖍️",
-        bg: "tile-lavender",
+        art: art || "🖍️",
+        bg: bg.id === "night" ? "tile-lavender" : "tile-peach",
         caption: "a scribble",
       });
       toast("Scribble saved", {

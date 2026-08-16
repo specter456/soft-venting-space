@@ -11,6 +11,7 @@ import {
   STICKER_EXPRESSIONS,
   STICKER_MOUTHS,
 } from "@/lib/art";
+import { renderStickerArt } from "@/lib/canvas-art";
 import { cn } from "@/lib/utils";
 
 const COLOR_TO_TILE: Record<string, string> = {
@@ -47,10 +48,19 @@ export default function StickerStudio() {
     if (saving) return;
     setSaving(true);
     try {
-      // stored on this device only
+      // capture the real sticker as a PNG — the vault shows the picture,
+      // never a raw emoji. Stored on this device only.
+      const art = renderStickerArt({
+        color: color.hex,
+        eyes: eyes.render,
+        mouth: mouth.render,
+        blush,
+        tear,
+        accessory,
+      });
       createVaultItem({
         kind: "sticker",
-        art: accessory ?? "🧸",
+        art: art || accessory || "🧸",
         bg: COLOR_TO_TILE[color.id] ?? "tile-peach",
         caption: name.trim() || `a ${expression.label} sticker`,
       });

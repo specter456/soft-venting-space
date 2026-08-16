@@ -170,29 +170,55 @@
       "Quicksand", system-ui, -apple-system, "Segoe UI", Roboto,
       "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
+    /* stable scrolling: no ghost/overscroll bounce while swiping through
+       the app's screens */
+    overscroll-behavior-y: contain;
   }
   button:not([disabled]),
   [role="button"]:not([disabled]) {
     cursor: pointer;
   }
 
-  /* One tap = one action. No accidental text selection on press, no
-     highlight flash, no double-tap zoom re-firing clicks. */
-  button,
-  [role="button"],
-  a,
-  label {
+  /* ─── No accidental text selection anywhere in the UI ───────────────
+     Everything (buttons, cards, chips, headings, toasts, sliders, the
+     taskbar, emoji rows) is non-selectable. Only real inputs and textareas
+     keep full text selection & editing. */
+  *,
+  *::before,
+  *::after {
     -webkit-user-select: none;
+    -moz-user-select: none;
     user-select: none;
+    -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
   }
   /* Typing stays untouched — inputs keep full text selection & editing. */
   input,
   textarea,
   [contenteditable] {
     -webkit-user-select: text;
+    -moz-user-select: text;
     user-select: text;
+  }
+  /* Icons, emojis and canvases must never be draggable — no ghost drags
+     while scrolling or tapping. */
+  img,
+  svg,
+  canvas,
+  video {
+    -webkit-user-drag: none;
+    user-drag: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  /* Taps respond instantly: no double-tap zoom delay on interactive bits. */
+  button,
+  [role="button"],
+  a,
+  label,
+  input,
+  textarea {
+    touch-action: manipulation;
   }
 }
 

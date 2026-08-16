@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { useState } from "react";
 import { Link } from "react-router";
 
@@ -105,11 +104,7 @@ export default function HomeScreen() {
   return (
     <div className="space-y-6">
       {/* ─── Greeting ─────────────────────────────────────────────── */}
-      <motion.section
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45 }}
-      >
+      <section>
         <p className="text-2xl font-bold tracking-tight text-ink-deep">
           {greet.emoji} {greet.text}, friend
         </p>
@@ -120,27 +115,18 @@ export default function HomeScreen() {
             day: "numeric",
           })}
         </p>
-      </motion.section>
+      </section>
 
       {/* ─── Mood typing box + 4 quick moods ──────────────────────── */}
-      <motion.section
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.08 }}
-      >
+      <section>
         <div className="clay-card relative overflow-hidden rounded-[2rem] px-5 py-6">
           <SparkleDecor />
 
           {todayMood && today ? (
             <div className="text-center">
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: "spring", stiffness: 200, damping: 16 }}
-                className="mx-auto w-fit"
-              >
+              <div className="mx-auto w-fit">
                 <MoodBubble mood={todayMood} size="lg" />
-              </motion.div>
+              </div>
               <p className="mt-3 text-lg font-bold tracking-tight text-ink-deep">
                 You&apos;re feeling {todayMood.label.toLowerCase()}
               </p>
@@ -208,22 +194,13 @@ export default function HomeScreen() {
             </div>
           )}
         </div>
-      </motion.section>
+      </section>
 
       {/* ─── Feature grid — exactly two per row ───────────────────── */}
-      <motion.section
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.16 }}
-      >
+      <section>
         <div className="grid grid-cols-2 gap-3">
-          {FEATURES.map((f, i) => (
-            <motion.div
-              key={f.to + f.title}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.18 + i * 0.04 }}
-            >
+          {FEATURES.map((f) => (
+            <div key={f.to + f.title}>
               <Link
                 to={f.to}
                 className="clay-card group flex h-full flex-col items-center gap-2 rounded-[1.8rem] px-4 py-5 text-center transition-transform hover:-translate-y-0.5"
@@ -245,20 +222,15 @@ export default function HomeScreen() {
                   {f.line}
                 </span>
               </Link>
-            </motion.div>
+            </div>
           ))}
         </div>
-      </motion.section>
+      </section>
 
       {/* ─── Tiny privacy footer ──────────────────────────────────── */}
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.4 }}
-        className="pt-1 text-center text-[11px] font-semibold text-ink-soft"
-      >
+      <p className="pt-1 text-center text-[11px] font-semibold text-ink-soft">
         🔒 Private and safe. Only you can see this.
-      </motion.p>
+      </p>
     </div>
   );
 }
@@ -266,27 +238,10 @@ export default function HomeScreen() {
 function SparkleDecor() {
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0">
-      <motion.span
-        className="absolute top-4 left-6 text-sm text-lavender-300"
-        animate={{ y: [0, -6, 0], opacity: [0.4, 1, 0.4] }}
-        transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-      >
-        ✦
-      </motion.span>
-      <motion.span
-        className="absolute top-10 right-8 text-xs text-blush-300"
-        animate={{ y: [0, -8, 0], opacity: [0.4, 1, 0.4] }}
-        transition={{ duration: 3.8, repeat: Infinity, ease: "easeInOut", delay: 0.7 }}
-      >
-        ✦
-      </motion.span>
-      <motion.span
-        className="absolute bottom-6 left-10 text-xs text-mint-300"
-        animate={{ y: [0, -5, 0], opacity: [0.3, 0.9, 0.3] }}
-        transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut", delay: 1.3 }}
-      >
-        ✧
-      </motion.span>
+      {/* static sparkles — gentle and stable, never moving on their own */}
+      <span className="absolute top-4 left-6 text-sm text-lavender-300/70">✦</span>
+      <span className="absolute top-10 right-8 text-xs text-blush-300/70">✦</span>
+      <span className="absolute bottom-6 left-10 text-xs text-mint-300/70">✧</span>
     </div>
   );
 }

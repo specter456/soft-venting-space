@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
-import { Delete, Fingerprint, LockKeyhole, ScanFace, Sparkles } from "lucide-react";
+import { Delete, LockKeyhole, Sparkles } from "lucide-react";
 import { KV_PASSCODE_HASH, KV_PASSCODE_SALT, setKv } from "@/lib/db";
 import { hashPasscode, randomSalt } from "@/lib/passcode";
 import { cn } from "@/lib/utils";
@@ -261,43 +261,9 @@ export function LockScreen({
             </button>
           </div>
 
-          {/* biometric option — a soft, on-device unlock */}
-          {mode === "unlock" && (
-            <div className="mt-6 flex items-center justify-center gap-3">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => {
-                  toast("Face ID ready", {
-                    description: "Welcome back — your space is open.",
-                  });
-                  setDigits("");
-                  onUnlock?.();
-                }}
-                className="clay-chip flex h-12 w-12 items-center justify-center rounded-full text-ink-deep transition-transform hover:scale-105 active:scale-95 disabled:opacity-50"
-                aria-label="Unlock with Face ID"
-                title="Face ID"
-              >
-                <ScanFace className="size-5" />
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => {
-                  toast("Fingerprint matched", {
-                    description: "Welcome back — your space is open.",
-                  });
-                  setDigits("");
-                  onUnlock?.();
-                }}
-                className="clay-chip flex h-12 w-12 items-center justify-center rounded-full text-ink-deep transition-transform hover:scale-105 active:scale-95 disabled:opacity-50"
-                aria-label="Unlock with fingerprint"
-                title="Fingerprint"
-              >
-                <Fingerprint className="size-5" />
-              </button>
-            </div>
-          )}
+          {/* On web there is no Face ID or fingerprint — the only way to
+              unlock is the correct passcode, so the vault can never be
+              opened on a wrong or empty code. */}
 
           {/* escape hatch */}
           {onClose && (
