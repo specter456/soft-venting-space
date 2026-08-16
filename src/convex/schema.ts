@@ -30,6 +30,10 @@ const schema = defineSchema(
       isAnonymous: v.optional(v.boolean()), // is the user anonymous. do not remove
 
       role: v.optional(roleValidator), // role of the user. do not remove
+
+      // passcode lock: salted SHA-256 hash, never the raw code.
+      passcodeHash: v.optional(v.string()),
+      passcodeSalt: v.optional(v.string()),
     }).index("email", ["email"]), // index for the email. do not remove or modify
 
     // a single gentle check-in per user per day. dateKey is the user's local

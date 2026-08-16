@@ -1,23 +1,29 @@
 import { motion } from "framer-motion";
 import { useQuery } from "convex/react";
 import { toast } from "sonner";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import {
   BookHeart,
   Brush,
   CloudSun,
+  HeartHandshake,
+  Images,
   Loader2,
+  Lock,
   LockKeyhole,
   LogOut,
   Mic,
   NotebookPen,
+  ShieldCheck,
   Sticker,
 } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { Logo } from "@/components/Logo";
+import { LockScreen } from "@/components/LockScreen";
 import { MoodBubble } from "@/components/MoodBubble";
 import { MoodCheckinDialog } from "@/components/MoodCheckinDialog";
+import { VaultDialog } from "@/components/VaultDialog";
 import { useAuth } from "@/hooks/use-auth";
 import {
   MOODS,
@@ -27,6 +33,8 @@ import {
 } from "@/lib/moods";
 import { cn } from "@/lib/utils";
 
+const LOCK_DISMISSED_KEY = "venting-lock-dismissed";
+
 const TOOLKIT = [
   { label: "Voice Vent", icon: Mic, tile: "tile-mist", emoji: "🎙️" },
   { label: "Notes", icon: NotebookPen, tile: "tile-blush", emoji: "📝" },
@@ -34,6 +42,21 @@ const TOOLKIT = [
   { label: "Stickers", icon: Sticker, tile: "tile-peach", emoji: "🧸" },
   { label: "Calm Game", icon: CloudSun, tile: "tile-mint", emoji: "🌬️" },
   { label: "Diary", icon: BookHeart, tile: "tile-lavender", emoji: "📖" },
+];
+
+const PRIVACY_POINTS = [
+  {
+    icon: "🚫",
+    text: "No social feed, no comments, no likes, no followers — this app has no community at all.",
+  },
+  {
+    icon: "📭",
+    text: "Nothing is ever posted or shared. There is no posting button anywhere.",
+  },
+  {
+    icon: "🔒",
+    text: "Voice notes, videos, photos, scribbles, stickers & diary entries stay only with you.",
+  },
 ];
 
 function greeting(): { text: string; emoji: string } {
@@ -58,12 +81,29 @@ export default function Dashboard() {
   const dateKey = todayDateKey();
   const today = useQuery(api.moods.todayMood, { dateKey });
   const recent = useQuery(api.moods.recentMoods, {});
+  const hasPasscode = useQuery(api.passcode.hasPasscode);
+  const passcodeData = useQuery(api.passcode.getPasscode);
 
   const [checkinOpen, setCheckinOpen] = useState(false);
+  const [vaultOpen, setVaultOpen] = useState(false);
   const [preselect, setPreselect] = useState<{
     mood: MoodId | null;
     intensity: number | null;
   }>({ mood: null, intensity: null });
+
+  // ─── App lock state ──────────────────────────────────────────────
+  const [lock, setLock] = useState<"setup" | "unlock" | "unlocked">("unlocked");
+  const [lockInitDone, setLockInitDone] = useState(false);
+
+  useEffect(() => {
+    if (lockInitDone || hasPasscode === undefined) return;
+    setLockInitDone(true);
+    if (hasPasscode) {
+      setLock("unlock");
+    } else if (sessionStorage.getItem(LOCK_DISMISSED_KEY) !== "1") {
+      setLock("setup");
+    }
+  }, [hasPasscode, lockInitDone]);
 
   const days = useMemo(() => {
     const out: { key: string; label: string; isToday: boolean }[] = [];
@@ -109,6 +149,52 @@ export default function Dashboard() {
   const todayMood = today ? moodById(today.mood) : undefined;
   const loading = today === undefined || recent === undefined;
 
+  // ─── Lock overlays ───────────────────────────────────────────────
+  if (hasPasscode === undefined || (lock !== "unlocked" && passcodeData === undefined && lock !== "setup")) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-cream-soft via-cream to-lavender-50">
+        <div className="flex flex-col items-center gap-3">
+          <Logo className="h-12 w-12 animate-pulse" />
+          <Loader2 className="size-4 animate-spin text-lavender-400" />
+        </div>
+      </div>
+    );
+  }
+
+  if (lock === "setup") {
+    return (
+      <LockScreen
+        mode="setup"
+        title="Lock your space"
+        subtitle="A four-digit passcode keeps your feelings safe behind a soft lock."
+        closeLabel="Maybe later"
+        onComplete={() => setLock("unlocked")}
+        onClose={() => {
+          sessionStorage.setItem(LOCK_DISMISSED_KEY, "1");
+          setLock("unlocked");
+        }}
+      />
+    );
+  }
+
+  if (lock === "unlock") {
+    if (!passcodeData) {
+      return (
+        <div className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-cream-soft via-cream to-lavender-50">
+          <Loader2 className="size-5 animate-spin text-lavender-400" />
+        </div>
+      );
+    }
+    return (
+      <LockScreen
+        mode="unlock"
+        storedHash={passcodeData.hash}
+        storedSalt={passcodeData.salt}
+        onUnlock={() => setLock("unlocked")}
+      />
+    );
+  }
+
   return (
     <main className="relative min-h-dvh overflow-hidden bg-gradient-to-b from-cream-soft via-cream to-lavender-50 text-ink">
       {/* dreamy background blobs */}
@@ -140,6 +226,17 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {hasPasscode && (
+              <button
+                type="button"
+                onClick={() => setLock("unlock")}
+                className="clay-chip flex h-10 w-10 items-center justify-center rounded-full text-ink-soft transition-transform hover:scale-105 hover:text-ink-deep"
+                aria-label="Lock your space now"
+                title="Lock now"
+              >
+                <Lock className="size-4" />
+              </button>
+            )}
             <button
               type="button"
               onClick={handleSignOut}
@@ -298,8 +395,11 @@ export default function Dashboard() {
                       "This little room opens in the next version of Venting.",
                   })
                 }
-                className="clay-chip group flex flex-col items-center gap-2 rounded-3xl px-2 py-4 transition-transform hover:-translate-y-1"
+                className="clay-chip group relative flex flex-col items-center gap-2 rounded-3xl px-2 py-4 transition-transform hover:-translate-y-1"
               >
+                <span className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-lavender-100 text-lavender-500">
+                  <Lock className="size-2.5" />
+                </span>
                 <div
                   className={cn(
                     "flex h-11 w-11 items-center justify-center rounded-2xl text-ink-deep transition-transform group-hover:scale-110",
@@ -319,11 +419,95 @@ export default function Dashboard() {
           </div>
         </motion.section>
 
-        {/* ─── Week strip ────────────────────────────────────────── */}
+        {/* ─── Photo Vault (double-locked) ────────────────────────── */}
+        <motion.section
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.25 }}
+          className="mt-4"
+        >
+          <button
+            type="button"
+            onClick={() => setVaultOpen(true)}
+            className="clay-card group relative block w-full overflow-hidden rounded-[2rem] px-5 py-5 text-left transition-transform hover:-translate-y-1"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-lavender-100 text-ink-deep transition-transform group-hover:scale-110">
+                  <Images className="size-5" strokeWidth={2.2} />
+                </div>
+                <div>
+                  <p className="text-base font-bold tracking-tight text-ink-deep">
+                    Photo Vault
+                  </p>
+                  <p className="text-[11px] font-medium text-ink-soft">
+                    photos, videos & voice expressions, kept closest
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1" aria-hidden>
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-lavender-100 text-lavender-600">
+                  <Lock className="size-3" />
+                </span>
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blush-100 text-blush-500">
+                  <Lock className="size-3" />
+                </span>
+              </div>
+            </div>
+            <p className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-lavender-600">
+              <LockKeyhole className="size-3" /> double-locked · opens in a
+              future version
+            </p>
+          </button>
+        </motion.section>
+
+        {/* ─── Privacy promise ────────────────────────────────────── */}
         <motion.section
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
+          className="mt-6"
+        >
+          <h2 className="text-sm font-bold tracking-tight text-ink-deep">
+            Only you can access your feelings
+          </h2>
+          <div className="clay-card mt-3 rounded-[2rem] px-5 py-5">
+            <ul className="space-y-3.5">
+              {PRIVACY_POINTS.map((point) => (
+                <li key={point.text} className="flex items-start gap-3">
+                  <span className="mt-0.5 text-lg" aria-hidden>
+                    {point.icon}
+                  </span>
+                  <p className="text-[13px] leading-relaxed text-ink">
+                    {point.text}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-5 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setLock("setup")}
+                className="clay-btn-soft flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold text-ink-deep"
+              >
+                <LockKeyhole className="size-3.5" />
+                {hasPasscode ? "Change passcode" : "Set a passcode"}
+              </button>
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold text-ink-soft">
+                <ShieldCheck className="size-3.5 text-mint-500" />
+                {hasPasscode
+                  ? "your space is locked"
+                  : "your space is waiting for a lock"}
+              </span>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* ─── Week strip ────────────────────────────────────────── */}
+        <motion.section
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.35 }}
           className="mt-6"
         >
           <h2 className="text-sm font-bold tracking-tight text-ink-deep">
@@ -380,6 +564,7 @@ export default function Dashboard() {
         initialMood={preselect.mood}
         initialIntensity={preselect.intensity}
       />
+      <VaultDialog open={vaultOpen} onClose={() => setVaultOpen(false)} />
     </main>
   );
 }

@@ -5,11 +5,15 @@ import {
   Brush,
   CloudSun,
   HeartHandshake,
+  Images,
+  Lock,
   LockKeyhole,
   Mic,
   NotebookPen,
+  ShieldCheck,
   Sparkles,
   Sticker,
+  Video,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { Logo } from "@/components/Logo";
@@ -54,6 +58,19 @@ const TOOLS = [
     icon: BookHeart,
     tile: "tile-lavender",
     blurb: "a cozy book that turns its own pages",
+  },
+  {
+    label: "Photo Vault",
+    icon: Images,
+    tile: "tile-lavender",
+    blurb: "photos & videos under a double lock",
+    doubleLocked: true,
+  },
+  {
+    label: "Video Vents",
+    icon: Video,
+    tile: "tile-blush",
+    blurb: "express feelings on camera, privately",
   },
 ];
 
@@ -181,7 +198,7 @@ export default function Landing() {
           </div>
           <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-semibold text-ink-soft">
             <span className="flex items-center gap-1.5">
-              <LockKeyhole className="size-3.5" /> private by default
+              <LockKeyhole className="size-3.5" /> passcode-locked & private
             </span>
             <span className="flex items-center gap-1.5">
               <HeartHandshake className="size-3.5" /> no judgment, ever
@@ -270,14 +287,15 @@ export default function Landing() {
             your full safe space is blooming
           </p>
           <h2 className="mx-auto mt-3 max-w-xl text-3xl font-bold tracking-tight text-ink-deep sm:text-4xl">
-            Six soft ways to let it out — coming soon
+            Eight soft rooms, all coming soon
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-ink">
             Version one starts gentle: home and the daily mood check-in. The
-            rest of the toolkit is on its way, one soft corner at a time.
+            rest of the toolkit is on its way, one soft corner at a time —
+            every room locked, every room only yours.
           </p>
         </motion.div>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {TOOLS.map((tool, i) => (
             <motion.div
               key={tool.label}
@@ -294,9 +312,25 @@ export default function Landing() {
                 >
                   <tool.icon className="size-5" strokeWidth={2.2} />
                 </div>
-                <span className="rounded-full bg-lavender-100/80 px-2.5 py-1 text-[10px] font-bold tracking-wide text-lavender-600 uppercase">
-                  soon
-                </span>
+                <div className="flex items-center gap-1.5">
+                  {tool.doubleLocked ? (
+                    <span className="flex items-center" aria-hidden>
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-lavender-100 text-lavender-600">
+                        <Lock className="size-3" />
+                      </span>
+                      <span className="-ml-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-blush-100 text-blush-500">
+                        <Lock className="size-3" />
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-lavender-100 text-lavender-600">
+                      <Lock className="size-3" />
+                    </span>
+                  )}
+                  <span className="rounded-full bg-lavender-100/80 px-2.5 py-1 text-[10px] font-bold tracking-wide text-lavender-600 uppercase">
+                    soon
+                  </span>
+                </div>
               </div>
               <h3 className="mt-4 text-lg font-bold tracking-tight text-ink-deep">
                 {tool.label}
@@ -307,6 +341,123 @@ export default function Landing() {
             </motion.div>
           ))}
         </div>
+      </section>
+
+      {/* ─── Private by design ──────────────────────────────────────── */}
+      <section className="relative z-10 mx-auto w-full max-w-6xl px-5 pb-20 sm:px-8">
+        <motion.div {...fadeUp} className="text-center">
+          <p className="text-sm font-bold tracking-wide text-lavender-500 uppercase">
+            private by design
+          </p>
+          <h2 className="mx-auto mt-3 max-w-xl text-3xl font-bold tracking-tight text-ink-deep sm:text-4xl">
+            No sharing. No feed. No audience.
+          </h2>
+          <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-ink">
+            Venting isn&apos;t social — it&apos;s a tiny safe room. Nothing you
+            express here is posted, seen, liked, or shared with anyone. Ever.
+          </p>
+        </motion.div>
+
+        <div className="mt-10 grid gap-4 lg:grid-cols-2">
+          <motion.div
+            {...fadeUp}
+            className="clay-card rounded-[2rem] p-7"
+          >
+            <div className="flex items-center gap-3">
+              <span className="clay-chip flex h-12 w-12 items-center justify-center rounded-full text-lavender-600">
+                <ShieldCheck className="size-5" />
+              </span>
+              <div>
+                <h3 className="text-lg font-bold tracking-tight text-ink-deep">
+                  What Venting has
+                </h3>
+                <p className="text-sm text-ink-soft">
+                  a lock on every room, and a double lock on your vault
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {[
+                "Voice Vent",
+                "Notes",
+                "Scribble",
+                "Stickers",
+                "Calm Game",
+                "Diary",
+                "Photo Vault",
+                "Video Vents",
+              ].map((room) => (
+                <span
+                  key={room}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-lavender-100/70 px-3 py-1.5 text-xs font-bold text-ink"
+                >
+                  <Lock className="size-3 text-lavender-500" />
+                  {room}
+                </span>
+              ))}
+            </div>
+          </motion.div>
+
+          <motion.div
+            {...fadeUp}
+            transition={{ duration: 0.55, delay: 0.08, ease: "easeOut" }}
+            className="clay-card rounded-[2rem] p-7"
+          >
+            <div className="flex items-center gap-3">
+              <span className="clay-chip flex h-12 w-12 items-center justify-center rounded-full text-blush-500">
+                <HeartHandshake className="size-5" />
+              </span>
+              <div>
+                <h3 className="text-lg font-bold tracking-tight text-ink-deep">
+                  What Venting never has
+                </h3>
+                <p className="text-sm text-ink-soft">
+                  the things that make social media feel unsafe
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {[
+                "No social feed",
+                "No comments",
+                "No likes",
+                "No followers",
+                "No posting",
+                "No community",
+                "No sharing",
+              ].map((item) => (
+                <span
+                  key={item}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-blush-100/70 px-3 py-1.5 text-xs font-bold text-ink"
+                >
+                  <span aria-hidden className="text-sm">
+                    🚫
+                  </span>
+                  {item}
+                </span>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+
+        <motion.div
+          {...fadeUp}
+          transition={{ duration: 0.55, delay: 0.12, ease: "easeOut" }}
+          className="clay-card mt-4 flex flex-col items-center gap-2 rounded-[2rem] px-6 py-6 text-center sm:flex-row sm:justify-center sm:gap-4"
+        >
+          <div className="flex items-center gap-1.5" aria-hidden>
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-lavender-100 text-lavender-600">
+              <Lock className="size-4" />
+            </span>
+            <span className="-ml-2 flex h-9 w-9 items-center justify-center rounded-full bg-blush-100 text-blush-500">
+              <Lock className="size-4" />
+            </span>
+          </div>
+          <p className="text-sm font-bold text-ink-deep">
+            One lock opens the app — a second, separate lock opens your private
+            vault.
+          </p>
+        </motion.div>
       </section>
 
       {/* ─── Final CTA ───────────────────────────────────────────────── */}

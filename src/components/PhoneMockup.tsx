@@ -3,6 +3,7 @@ import {
   BookHeart,
   Brush,
   CloudSun,
+  Lock,
   LockKeyhole,
   Mic,
   NotebookPen,
@@ -123,8 +124,11 @@ export function PhoneMockup({ className }: { className?: string }) {
               {TOOLS.map((tool) => (
                 <div
                   key={tool.label}
-                  className="clay-chip flex flex-col items-center gap-1.5 rounded-2xl px-1 py-2.5"
+                  className="clay-chip relative flex flex-col items-center gap-1.5 rounded-2xl px-1 py-2.5"
                 >
+                  <span className="absolute top-1.5 right-1.5 flex h-3 w-3 items-center justify-center rounded-full bg-lavender-100 text-lavender-500">
+                    <Lock className="size-2" />
+                  </span>
                   <div
                     className={cn(
                       "flex h-9 w-9 items-center justify-center rounded-xl text-ink-deep",
