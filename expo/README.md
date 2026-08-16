@@ -1,98 +1,123 @@
-# Venting — native app (React Native + Expo + TypeScript)
+# Venting — hybrid app (React Native + Expo + TypeScript)
 
-The standalone **native** version of Venting, ported screen-for-screen from the
-web app at the repo root. Same pastel claymorphism design, same privacy model —
-**everything stays on the device**. No accounts, no cloud, no ads, no tracking,
-no analytics, no network calls for user content.
+**One codebase, two platforms.** The same screens run as a native iOS/Android
+app **and** as an installable web app (PWA) with offline support. Same pastel
+claymorphism design, same privacy model — **everything stays on the device**.
+No accounts, no cloud, no ads, no tracking, no analytics, no network calls for
+user content.
 
 ```
 expo/
-├── App.tsx                    # root: sqlite hydrate → lock gate → navigation
-├── app.json                   # Expo config, camera/mic/Face ID permissions
-├── package.json               # expo-av, expo-camera, expo-sqlite, expo-file-system,
-│                              # expo-local-authentication, react-navigation
+├── App.tsx                    # root: sqlite hydrate → lock gate → auto-lock → navigation
+├── app.json                   # Expo config incl. web/PWA settings + camera/mic/Face ID permissions
+├── metro.config.js            # wasm asset support for expo-sqlite on web
+├── public/                    # PWA static files (copied into the web build)
+│   ├── index.html             # app shell: manifest link, install hook, SW registration
+│   ├── manifest.webmanifest   # PWA manifest (standalone, icons, theme)
+│   ├── sw.js                  # service worker: app-shell precache + offline fallback
+│   └── icons/                 # generated PNG icons (see scripts/make-icons.mjs)
+├── scripts/make-icons.mjs     # pure-Node PNG icon generator (no image tools needed)
 └── src/
-    ├── theme.ts               # pastel clay design system (colors, radii, clay shadows)
-    ├── types.ts               # shared domain types
-    ├── data.ts                # moods, cute art, stickers, worries, diary stickers
-    ├── db.ts                  # expo-sqlite schema + CRUD + expo-file-system file store
-    ├── auth.ts                # salted SHA-256 passcode (expo-crypto) + Face ID/fingerprint
-    ├── sound.ts               # runtime-synthesized page-turn swish (expo-av, no assets)
-    ├── lock-context.ts        # app-lock state shared across screens
-    ├── nav.ts                 # typed react-navigation stack
+    ├── theme.ts               # pastel clay design system
+    ├── theme-context.tsx      # night mode, pastel accent, sounds on/off
+    ├── platform.ts            # web/iOS-Safari detection + PWA install hook
+    ├── types.ts / data.ts     # types + cute art, moods, worries, stickers
+    ├── db.ts                  # expo-sqlite + expo-file-system (web: base64 data-URIs)
+    ├── auth.ts                # salted SHA-256 passcode + Face ID/fingerprint
+    ├── sound.ts               # runtime-synthesized swish/chime (data-URI on web)
+    ├── nav.ts                 # typed stack (incl. Settings)
+    ├── lock-context.tsx       # app-lock state
     ├── components/
     │   ├── Clay.tsx           # ClayCard / ClayButton / ClayChip / MoodBubble
-    │   ├── Screen.tsx         # soft screen wrapper with back header
-    │   ├── LockPad.tsx        # 4-digit soft number pad with shake feedback
-    │   ├── MoodChips.tsx      # mood tag rows
-    │   └── AttachmentChip.tsx # audio waveform chip, video/photo thumbnails
+    │   ├── Screen.tsx         # soft screen wrapper (supports floating bottomBar)
+    │   ├── TaskBar.tsx        # rounded 5-tab bottom bar: Home · Record · Create · Calm · Diary
+    │   ├── LockPad.tsx        # 4-digit soft number pad
+    │   ├── MoodChips.tsx / AttachmentChip.tsx
     └── screens/
         ├── Welcome.tsx        # entry: optional email (validated) or guest
-        ├── WelcomeCheckin.tsx # day checklist + "what now" actions + skip
-        ├── Home.tsx           # mood check-in + 4 cards: Record · Create · Calm · Diary
-        ├── Record.tsx         # Recording Box: Voice | Video
-        ├── Notes.tsx          # reflection journal
-        ├── NoteEditor.tsx     # write + optional attachments
-        ├── Create.tsx         # Photos · Scribble · Stickers · GIF Studio + Vault
-        ├── Photos.tsx         # device photos or pastel scenes → vault
-        ├── Scribble.tsx       # canvas: pencil/crayon/brush/marker/eraser (react-native-svg)
-        ├── Stickers.tsx       # expressions, eyes, mouths, blush, tears, accessories
-        ├── GifStudio.tsx      # stamps + text + multi-frame loop preview
-        ├── Vault.tsx          # double-locked gallery (passcode + Face ID/fingerprint)
-        ├── Calm.tsx           # breathing bubbles, worry pops, dandelion wishes
-        └── Diary.tsx          # customizable cover, 3D page-turn + soft swish, entries
+        ├── WelcomeCheckin.tsx # day checklist + what-to-do-now + skip
+        ├── Home.tsx           # greeting, mood bubbles, daily checklist, pick-up row,
+        │                      # mood suggestion, privacy chip, settings gear, 4 room cards
+        ├── Settings.tsx       # Profile · Security & Privacy · Appearance · Install · General
+        ├── Record.tsx         # Recording Box: Voice | Video (+ TaskBar)
+        ├── Create.tsx         # Photos · Scribble · Stickers · GIF Studio · Vault (+ TaskBar)
+        ├── Calm.tsx           # breathe, worry pops, dandelion (+ TaskBar)
+        ├── Diary.tsx          # cover, page-turn, entries (+ TaskBar)
+        ├── Notes.tsx / NoteEditor.tsx / Photos.tsx / Scribble.tsx / Stickers.tsx
+        ├── GifStudio.tsx / Vault.tsx
 ```
 
-## Install & run
+## Run
 
 ```bash
 cd expo
-bun install        # or: npm install / yarn
-bun run start      # Expo Dev Server → press i / a for iOS/Android simulators
-# or scan the QR code with Expo Go
+bun install
+
+# native (iOS/Android)
+bun run start                # Expo Dev Server → i / a for simulators, or scan with Expo Go
+
+# web (PWA)
+bun run web                  # dev server on web
+bun run build:web            # production PWA build → dist/ (host it anywhere static)
 ```
 
-> The web app at the repo root is a separate project — this folder is fully
-> independent (own `package.json`, own lockfile, own toolchain).
+> The PWA build is a real installable app: `dist/index.html` links the
+> manifest, `dist/sw.js` gives offline support, and `dist/icons/` provides the
+> app icons. Serve `dist/` over HTTPS to unlock add-to-home-screen.
+
+## What's new in the hybrid upgrade
+
+- **Bottom taskbar** — soft rounded pill with exactly five tabs (Home, Record,
+  Create, Calm, Diary). Settings is deliberately *not* a tab: it opens from the
+  gear at Home's top-right.
+- **Home** — greeting + mood bubbles, the skippable **daily check-in
+  checklist** (once per day), a **“Pick up where you left off”** row (latest
+  note / vent / diary page), a gentle **suggestion card** matched to the
+  selected mood, the **“Private · Only you”** chip, and the settings gear.
+- **Settings** — profile & account (email / Guest mode, display name, avatar,
+  log out), security & privacy (change passcode, Face ID/fingerprint toggle,
+  vault double-lock toggle, auto-lock timer, “Delete everything” with gentle
+  two-step confirmation), appearance (pastel accents, night mode, sounds),
+  **Install & Devices** (PWA install button, iOS “Add to Home Screen”
+  instructions, native store note), and general (language, gentle reminders
+  off by default, local-only always-on, about, safety resources).
 
 ## Privacy model
 
-- **expo-sqlite** (`venting.db`) holds structured data: notes, recordings,
-  diary pages, vault items, mood check-ins, and the passcode lock.
-- **expo-file-system** stores binary files (voice notes, video vents, picked
-  photos, GIF frames) under the app's private `documentDirectory/venting/`.
-- **Passcode**: never stored. A per-device random salt plus a SHA-256 digest
-  (expo-crypto) live in sqlite. Verification happens on-device only.
-- **Face ID / fingerprint** (expo-local-authentication): the OS verifies
-  locally; the app never sees biometric data.
-- **Double lock**: the app opens with the passcode gate; the Private Vault
-  asks for the passcode (or biometrics) again before showing anything.
-- No `fetch`, no sockets, no analytics SDKs, no ad SDKs, no social features.
+- **expo-sqlite** (`venting.db`) stores structured data; **expo-file-system**
+  stores binaries under the private document directory on native. On **web**,
+  binaries are kept as base64 data-URIs inside the same local sqlite store —
+  either way nothing leaves the device.
+- Passcode: salted SHA-256 only (expo-crypto). Face ID/fingerprint go through
+  the OS (expo-local-authentication). Double-lock and auto-lock are on-device.
+- No `fetch` to your own backend, no analytics SDKs, no ad SDKs, no social
+  features. The only network the web build makes is fetching its own static
+  files (and those get cached by the service worker for offline use).
 
 ## Real recording
 
-- **Voice** uses `expo-av` `Audio.Recording` (needs mic permission — declared
-  in `app.json`). If the mic is unavailable (web preview / simulator), the app
-  gracefully simulates: timer, waveform, metadata — so the flow still works.
-- **Video** uses `expo-camera` `CameraView` (front camera, kept on-device).
-  The default is an **illustrated avatar** mode — a private emotional mirror
-  with cute characters, never a real identifiable face. Camera mode is opt-in.
-- Simulated recordings play a local synthesized chime instead of real audio.
+- **Voice** uses `expo-av` `Audio.Recording` (mic permission in `app.json`).
+  Without a mic (some web browsers), the app gracefully simulates: timer,
+  waveform, metadata — the flow still works.
+- **Video** uses `expo-camera` `CameraView` (front camera, on-device). The
+  default is an **illustrated avatar** mode — a private emotional mirror with
+  cute characters, never a real face. Camera mode is opt-in.
 
-## Honest scope notes
-
-- GIF Studio saves animated frames privately and plays them with a looping
-  preview. Encoding to a true `.gif` file is a straightforward addition
-  (e.g. `expo-media-library` + an encoder) if you want shareable files later.
-- The page-turn sound is synthesized at runtime (a soft pink-noise swish) so
-  the project ships with zero binary assets; drop a real audio file into
-  `assets/` and `require()` it if you'd like a richer sound.
-- Sticker/doodle art is rendered from data (emoji + soft shapes) rather than
-  rasterized PNGs, keeping the studio fully local and dependency-light.
-
-## Typecheck
+## Typecheck & PWA verification
 
 ```bash
 cd expo
-bun run typecheck    # tsc --noEmit (expo/tsconfig.json, strict)
+bun run typecheck      # tsc --noEmit (strict)
+bun run build:web      # bundles the app + PWA assets; verify dist/
 ```
+
+Regenerate icons after design changes: `node scripts/make-icons.mjs`.
+
+## Honest scope notes
+
+- GIF Studio stores animated frames and previews them with a looping
+  animation; encoding a true `.gif` file is a listed follow-up.
+- The diary page-turn sound is synthesized at runtime (no binary assets);
+  drop a real audio file in and `require()` it for a richer swish.
+- Native store publishing (App Store / Google Play) isn't included — the
+  Settings screen shows the state for the Expo Go development build.

@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { Screen } from "../components/Screen";
+import { TaskBar } from "../components/TaskBar";
 import { ClayButton, ClayCard, ClayChip, hexWithAlpha } from "../components/Clay";
 import { AttachmentChip } from "../components/AttachmentChip";
 import { MoodTag } from "../components/MoodChips";
@@ -78,7 +79,7 @@ export default function DiaryScreen({ navigation, route }: Props) {
 
   if (view === "cover") {
     return (
-      <Screen title="Diary" subtitle="Make it yours — it's only for you">
+      <Screen title="Diary" subtitle="Make it yours — it's only for you" bottomBar={<TaskBar />}>
         <View style={styles.coverWrap}>
           <View style={[styles.bookCover, { backgroundColor: cover.color }, clayShadow(true)]}>
             <Text style={styles.bookEmblem}>{cover.emblem}</Text>
@@ -146,6 +147,7 @@ export default function DiaryScreen({ navigation, route }: Props) {
       title="Diary"
       subtitle={`${entries.length} ${entries.length === 1 ? "page" : "pages"} · all yours`}
       onBack={() => setView("cover")}
+      bottomBar={<TaskBar />}
       footer={
         <ClayButton label="✍️ New entry" color="primary" size="lg" onPress={() => setView("editor")} />
       }

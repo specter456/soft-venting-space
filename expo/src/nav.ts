@@ -3,6 +3,7 @@
 export type RootStackParamList = {
   Welcome: undefined;
   Checkin: undefined;
+  Settings: undefined;
   Home: undefined;
   Record: { mode?: "voice" | "video" } | undefined;
   Notes: undefined;

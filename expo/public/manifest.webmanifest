@@ -1,0 +1,26 @@
+{
+  "name": "Venting — a tiny safe room in your phone",
+  "short_name": "Venting",
+  "description": "A private, cozy emotional-wellness app. Voice vents, notes, scribbles, stickers, calming games and a diary — everything stays on your device.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f0fc",
+  "theme_color": "#d9c8f2",
+  "categories": ["health", "lifestyle", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

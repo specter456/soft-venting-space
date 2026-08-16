@@ -8,7 +8,10 @@
 
 import { Audio } from "expo-av";
 import * as FileSystem from "expo-file-system";
+import { Platform } from "react-native";
+import { soundEffectsEnabled } from "./theme-context";
 
+const IS_WEB = Platform.OS === "web";
 let swishUri: string | null = null;
 
 const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -82,6 +85,11 @@ function buildWav(seconds: number, toneHz: number, noise: boolean): string {
 
 async function ensureSwish(): Promise<string | null> {
   if (swishUri) return swishUri;
+  // Web has no document directory — play straight from a data URI.
+  if (IS_WEB) {
+    swishUri = `data:audio/wav;base64,${buildWav(0.5, 0, true)}`;
+    return swishUri;
+  }
   try {
     const dir = `${FileSystem.documentDirectory ?? ""}venting/`;
     const info = await FileSystem.getInfoAsync(dir);
@@ -103,6 +111,7 @@ async function ensureSwish(): Promise<string | null> {
 
 /** Soft paper swish for diary page turns. Returns true if a sound played. */
 export async function playPageTurn(): Promise<boolean> {
+  if (!soundEffectsEnabled()) return false;
   const uri = await ensureSwish();
   if (!uri) return false;
   try {
@@ -122,16 +131,11 @@ export async function playPageTurn(): Promise<boolean> {
 
 /** Gentle chime for simulated recording previews. */
 export async function playSoftChime(): Promise<boolean> {
+  if (!soundEffectsEnabled()) return false;
   try {
-    const dir = `${FileSystem.documentDirectory ?? ""}venting/`;
-    const uri = `${dir}chime.wav`;
-    const exists = await FileSystem.getInfoAsync(uri);
-    if (!exists.exists) {
-      const b64 = buildWav(0.7, 523.25, false);
-      await FileSystem.writeAsStringAsync(uri, b64, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-    }
+    const uri = IS_WEB
+      ? `data:audio/wav;base64,${buildWav(0.7, 523.25, false)}`
+      : await ensureChimeFile();
     const { sound } = await Audio.Sound.createAsync({ uri }, { volume: 0.4 });
     await sound.playAsync();
     sound.setOnPlaybackStatusUpdate((status) => {
@@ -143,4 +147,19 @@ export async function playSoftChime(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+async function ensureChimeFile(): Promise<string> {
+  const dir = `${FileSystem.documentDirectory ?? ""}venting/`;
+  const info = await FileSystem.getInfoAsync(dir);
+  if (!info.exists) await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+  const uri = `${dir}chime.wav`;
+  const exists = await FileSystem.getInfoAsync(uri);
+  if (!exists.exists) {
+    const b64 = buildWav(0.7, 523.25, false);
+    await FileSystem.writeAsStringAsync(uri, b64, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+  }
+  return uri;
 }

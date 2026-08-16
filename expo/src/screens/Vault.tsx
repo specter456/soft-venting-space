@@ -3,8 +3,8 @@ import { Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { Screen } from "../components/Screen";
 import { ClayButton, ClayChip, hexWithAlpha } from "../components/Clay";
 import { LockPad } from "../components/LockPad";
-import { authenticateBiometric, biometricStatus, verifyPasscode } from "../auth";
-import { deleteFile, removeItem, useTable } from "../db";
+import { authenticateBiometric, biometricAllowed, biometricStatus, verifyPasscode } from "../auth";
+import { deleteFile, removeItem, useTable, vaultDoubleLockEnabled } from "../db";
 import { palette, radius, TILE_BGS, clayShadow } from "../theme";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../nav";
@@ -26,13 +26,15 @@ const FILTERS: { id: "all" | VaultKind; label: string }[] = [
  * passcode (or Face ID / fingerprint) again before anything is shown.
  */
 export default function VaultScreen({ navigation }: Props) {
-  const [locked, setLocked] = React.useState(true);
+  const [locked, setLocked] = React.useState(vaultDoubleLockEnabled());
   const [code, setCode] = React.useState("");
   const [shake, setShake] = React.useState(0);
   const [biometric, setBiometric] = React.useState<"face" | "fingerprint" | null>(null);
 
   React.useEffect(() => {
-    void biometricStatus().then((s) => setBiometric(s.enrolled ? s.type : null));
+    void biometricStatus().then((s) => {
+      if (s.enrolled && biometricAllowed()) setBiometric(s.type);
+    });
   }, []);
 
   const tryUnlock = async (candidate: string) => {

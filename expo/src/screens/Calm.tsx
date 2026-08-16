@@ -1,6 +1,7 @@
 import React from "react";
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from "react-native";
 import { Screen } from "../components/Screen";
+import { TaskBar } from "../components/TaskBar";
 import { ClayCard, ClayChip, hexWithAlpha } from "../components/Clay";
 import { WORRY_BUBBLES } from "../data";
 import { clayShadow, palette, radius } from "../theme";
@@ -15,7 +16,7 @@ export default function CalmScreen() {
 
   if (game === "pick") {
     return (
-      <Screen title="Calm" subtitle="A soft place to land">
+      <Screen title="Calm" subtitle="A soft place to land" bottomBar={<TaskBar />}>
         <ClayCard bg={palette.surface} style={{ alignItems: "center", marginTop: 4 }}>
           <Text style={styles.bear}>🐻</Text>
           <Text style={styles.bearTitle}>How are you feeling right now?</Text>
@@ -41,6 +42,30 @@ export default function CalmScreen() {
   if (game === "breathe") return <BreatheGame onBack={() => setGame("pick")} />;
   if (game === "worries") return <WorryGame onBack={() => setGame("pick")} />;
   return <DandelionGame onBack={() => setGame("pick")} />;
+}
+
+/* ─── shared bits ──────────────────────────────────────────────────── */
+
+function GameCard({
+  emoji,
+  title,
+  subtitle,
+  bg,
+  onPress,
+}: {
+  emoji: string;
+  title: string;
+  subtitle: string;
+  bg: string;
+  onPress: () => void;
+}) {
+  return (
+    <ClayCard style={{ width: "31%", alignItems: "center", paddingVertical: 16 }} bg={bg} onPress={onPress}>
+      <Text style={styles.gameEmoji}>{emoji}</Text>
+      <Text style={styles.gameTitle}>{title}</Text>
+      <Text style={styles.gameSub}>{subtitle}</Text>
+    </ClayCard>
+  );
 }
 
 /* ─── Breathing bubbles ────────────────────────────────────────────── */
@@ -231,30 +256,6 @@ const WISHES = [
   "a warm hug",
   "peace, even for a minute",
 ];
-
-/* ─── shared bits ──────────────────────────────────────────────────── */
-
-function GameCard({
-  emoji,
-  title,
-  subtitle,
-  bg,
-  onPress,
-}: {
-  emoji: string;
-  title: string;
-  subtitle: string;
-  bg: string;
-  onPress: () => void;
-}) {
-  return (
-    <ClayCard style={{ width: "31%", alignItems: "center", paddingVertical: 16 }} bg={bg} onPress={onPress}>
-      <Text style={styles.gameEmoji}>{emoji}</Text>
-      <Text style={styles.gameTitle}>{title}</Text>
-      <Text style={styles.gameSub}>{subtitle}</Text>
-    </ClayCard>
-  );
-}
 
 const styles = StyleSheet.create({
   bear: { fontSize: 56 },

@@ -12,10 +12,13 @@ This repo contains **two projects**:
 | Project | Stack | Storage | Location |
 |---|---|---|---|
 | **Web app** (this workspace preview) | React + TypeScript + Vite, mobile-first phone-frame UI | IndexedDB (fully local) | `src/` |
-| **Native app** | React Native + Expo + TypeScript | expo-sqlite + expo-file-system (fully local) | `expo/` |
+| **Hybrid app** (native + PWA) | React Native + Expo + TypeScript, one codebase | expo-sqlite + expo-file-system (fully local) | `expo/` |
 
-Both share the same pastel claymorphism design, the same screens, and the same
-privacy model. See `expo/README.md` for the native project's install & run
+The **hybrid app** in `expo/` is the single codebase that runs as a native
+iOS/Android app **and** as an installable PWA (manifest, service worker,
+offline, add-to-home-screen). It includes the bottom taskbar (Home · Record ·
+Create · Calm · Diary), the Settings screen (profile, security, appearance,
+install), and the upgraded Home. See `expo/README.md` for full run
 instructions.
 
 ## Web app
@@ -57,18 +60,21 @@ bun tsc -b --noEmit   # typecheck
 bun run lint          # eslint
 ```
 
-## Native app (`expo/`)
+## Hybrid app (`expo/`) — native + PWA from one codebase
 
-A standalone React Native + Expo + TypeScript project ported screen-for-screen:
-expo-av (voice/video recording), expo-camera (private front-camera video),
-expo-file-system + expo-sqlite (local storage), expo-local-authentication
-(Face ID / fingerprint), react-native-svg (scribble canvas), and a realistic
-diary page-turn animation.
+React Native + Expo + TypeScript with expo-av (voice/video), expo-camera
+(private front camera), expo-file-system + expo-sqlite (local storage),
+expo-local-authentication (Face ID / fingerprint), react-native-svg
+(scribble), react-navigation, and a 3D diary page-turn. The same screens build
+to native apps and to an offline-capable PWA.
 
 ```bash
 cd expo
 bun install
-bun run start        # Expo Dev Server → i / a for simulators, or scan with Expo Go
+bun run start        # native: i / a for simulators, or scan with Expo Go
+bun run web          # web: PWA dev server
+bun run build:web    # web: production PWA → dist/ (manifest, sw.js, icons)
+bun run typecheck    # strict TS check
 ```
 
 Full details, architecture, and honest scope notes: **`expo/README.md`**.

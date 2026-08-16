@@ -10,6 +10,17 @@
       "backgroundColor": "#f5f0fc",
       "resizeMode": "contain"
     },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./public/icons/favicon-32.png",
+      "name": "Venting",
+      "shortName": "Venting",
+      "backgroundColor": "#f5f0fc",
+      "themeColor": "#d9c8f2",
+      "description": "Venting — a private, cozy emotional-wellness app. Everything stays on your device.",
+      "startUrl": "/"
+    },
     "ios": {
       "supportsTablet": true,
       "infoPlist": {

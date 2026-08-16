@@ -1,14 +1,15 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { AppState, Pressable, StyleSheet, Text, View } from "react-native";
 import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 
-import { hydrate, hasPasscodeLocally, getKvFromCache, setKv } from "./src/db";
+import { autoLockMinutes, hasPasscodeLocally, getKvFromCache, hydrate, setKv } from "./src/db";
 import { KV_ONBOARDING_DONE, KV_LOCK_SKIPPED } from "./src/db";
-import { authenticateBiometric, biometricStatus, setPasscode, verifyPasscode } from "./src/auth";
+import { authenticateBiometric, biometricAllowed, biometricStatus, setPasscode, verifyPasscode } from "./src/auth";
 import { LockContext, type LockPhase } from "./src/lock-context";
+import { ThemeProvider, useThemeColors } from "./src/theme-context";
 import { clayShadow, palette, radius } from "./src/theme";
 import { LockPad } from "./src/components/LockPad";
 import { ClayButton } from "./src/components/Clay";
@@ -16,6 +17,7 @@ import { ClayButton } from "./src/components/Clay";
 import WelcomeScreen from "./src/screens/Welcome";
 import WelcomeCheckinScreen from "./src/screens/WelcomeCheckin";
 import HomeScreen from "./src/screens/Home";
+import SettingsScreen from "./src/screens/Settings";
 import RecordScreen from "./src/screens/Record";
 import NotesScreen from "./src/screens/Notes";
 import NoteEditorScreen from "./src/screens/NoteEditor";
@@ -45,6 +47,7 @@ const navTheme = {
 
 export default function App() {
   const [phase, setPhase] = React.useState<LockPhase>("boot");
+  const lastActive = React.useRef(Date.now());
 
   React.useEffect(() => {
     void (async () => {
@@ -61,6 +64,28 @@ export default function App() {
       }
     })();
   }, []);
+
+  // Auto-lock: if a timer is set and the app goes quiet, ask for the passcode again.
+  React.useEffect(() => {
+    if (phase !== "open") return;
+    const touch = () => {
+      lastActive.current = Date.now();
+    };
+    touch();
+    const interval = setInterval(() => {
+      const mins = autoLockMinutes();
+      if (mins > 0 && hasPasscodeLocally() && Date.now() - lastActive.current > mins * 60_000) {
+        setPhase("unlock");
+      }
+    }, 15_000);
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") touch();
+    });
+    return () => {
+      clearInterval(interval);
+      sub.remove();
+    };
+  }, [phase]);
 
   const lockApi = React.useMemo(
     () => ({
@@ -84,14 +109,21 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <LockContext.Provider value={lockApi}>
-        <StatusBar style="dark" />
-        {phase === "setup" ? <LockSetup onDone={() => setPhase("open")} /> : null}
-        {phase === "unlock" ? <UnlockGate onUnlocked={() => setPhase("open")} /> : null}
-        {phase === "open" ? <MainNavigator /> : null}
-      </LockContext.Provider>
+      <ThemeProvider>
+        <LockContext.Provider value={lockApi}>
+          <ThemedStatusBar />
+          {phase === "setup" ? <LockSetup onDone={() => setPhase("open")} /> : null}
+          {phase === "unlock" ? <UnlockGate onUnlocked={() => setPhase("open")} /> : null}
+          {phase === "open" ? <MainNavigator /> : null}
+        </LockContext.Provider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
+}
+
+function ThemedStatusBar() {
+  const colors = useThemeColors();
+  return <StatusBar style={colors.mode === "night" ? "light" : "dark"} />;
 }
 
 /* ─── First-run passcode setup ─────────────────────────────────────── */
@@ -153,12 +185,15 @@ function LockSetup({ onDone }: { onDone: () => void }) {
 /* ─── Unlock gate ──────────────────────────────────────────────────── */
 
 function UnlockGate({ onUnlocked }: { onUnlocked: () => void }) {
+  const colors = useThemeColors();
   const [code, setCode] = React.useState("");
   const [shake, setShake] = React.useState(0);
   const [bio, setBio] = React.useState<"face" | "fingerprint" | null>(null);
 
   React.useEffect(() => {
-    void biometricStatus().then((s) => setBio(s.enrolled ? s.type : null));
+    void biometricStatus().then((s) => {
+      if (s.enrolled && biometricAllowed()) setBio(s.type);
+    });
   }, []);
 
   const tryUnlock = async (c: string) => {
@@ -183,8 +218,8 @@ function UnlockGate({ onUnlocked }: { onUnlocked: () => void }) {
         <View style={[styles.lockSeal, clayShadow(true)]}>
           <Text style={styles.lockSealEmoji}>🔒</Text>
         </View>
-        <Text style={styles.gateTitle}>Welcome back</Text>
-        <Text style={styles.gateSub}>Only you can access your feelings.</Text>
+        <Text style={[styles.gateTitle, { color: colors.ink }]}>Welcome back</Text>
+        <Text style={[styles.gateSub, { color: colors.inkSoft }]}>Only you can access your feelings.</Text>
         <View style={styles.padWrap}>
           <LockPad
             value={code}
@@ -202,7 +237,7 @@ function UnlockGate({ onUnlocked }: { onUnlocked: () => void }) {
             }
           />
         </View>
-        <Text style={styles.privacy}>Private and safe. Only you can see this.</Text>
+        <Text style={[styles.privacy, { color: colors.inkSoft }]}>Private and safe. Only you can see this.</Text>
       </View>
     </SafeAreaFill>
   );
@@ -222,18 +257,24 @@ function SafeAreaFill({ children }: { children: React.ReactNode }) {
 /* ─── Main navigator ───────────────────────────────────────────────── */
 
 function MainNavigator() {
+  const colors = useThemeColors();
+  const theme = {
+    ...navTheme,
+    colors: { ...navTheme.colors, background: colors.bg, card: colors.bg },
+  };
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer theme={theme}>
       <Stack.Navigator
         initialRouteName={getKvFromCache(KV_ONBOARDING_DONE) === "true" ? "Home" : "Welcome"}
         screenOptions={{
           headerShown: false,
           animation: "slide_from_right",
-          contentStyle: { backgroundColor: palette.bg },
+          contentStyle: { backgroundColor: colors.bg },
         }}
       >
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
         <Stack.Screen name="Checkin" component={WelcomeCheckinScreen} />
+        <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Record" component={RecordScreen} />
         <Stack.Screen name="Notes" component={NotesScreen} />

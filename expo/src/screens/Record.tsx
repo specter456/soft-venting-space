@@ -10,6 +10,7 @@ import {
 import { Audio } from "expo-av";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Screen } from "../components/Screen";
+import { TaskBar } from "../components/TaskBar";
 import { ClayButton, ClayCard, hexWithAlpha } from "../components/Clay";
 import { MoodChips, MoodTag } from "../components/MoodChips";
 import { MOODS, VIDEO_AVATARS, VOICE_COMPANION } from "../data";
@@ -86,7 +87,7 @@ export default function RecordScreen({ navigation, route }: Props) {
   };
 
   return (
-    <Screen title="Recording Box" subtitle="Private. Safe. Just for you.">
+    <Screen title="Recording Box" subtitle="Private. Safe. Just for you." bottomBar={<TaskBar />}>
       {/* Voice | Video toggle */}
       <View style={[styles.toggle, clayShadow(false)]}>
         <ToggleButton active={mode === "voice"} label="🎙️ Voice" onPress={() => setMode("voice")} />

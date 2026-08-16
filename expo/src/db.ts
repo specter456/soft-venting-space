@@ -42,8 +42,23 @@ export const KV_PASSCODE_HASH = "passcodeHash";
 export const KV_PASSCODE_SALT = "passcodeSalt";
 export const KV_ONBOARDING_DONE = "onboardingDone";
 export const KV_PROFILE_EMAIL = "profileEmail";
+export const KV_PROFILE_NAME = "profileName";
+export const KV_PROFILE_AVATAR = "profileAvatar";
 export const KV_DIARY_COVER = "diaryCover";
 export const KV_LOCK_SKIPPED = "lockSkipped";
+export const KV_BIOMETRIC = "biometricEnabled";
+export const KV_VAULT_DOUBLE_LOCK = "vaultDoubleLock";
+export const KV_AUTO_LOCK_MIN = "autoLockMinutes";
+export const KV_GENTLE_REMINDERS = "gentleReminders";
+export const KV_LANGUAGE = "language";
+
+export const biometricEnabled = (): boolean => getKvFromCache(KV_BIOMETRIC) !== "false";
+export const vaultDoubleLockEnabled = (): boolean => getKvFromCache(KV_VAULT_DOUBLE_LOCK) !== "false";
+export const autoLockMinutes = (): number => {
+  const v = Number(getKvFromCache(KV_AUTO_LOCK_MIN));
+  return Number.isFinite(v) && v > 0 ? v : 0;
+};
+export const gentleRemindersEnabled = (): boolean => getKvFromCache(KV_GENTLE_REMINDERS) === "true";
 
 /* ─── SQLite plumbing ──────────────────────────────────────────────── */
 
@@ -180,7 +195,26 @@ export async function hydrate(): Promise<void> {
   notify();
 }
 
-/* ─── File storage (expo-file-system) ──────────────────────────────── */
+/* ─── File storage ─────────────────────────────────────────────────── */
+/*
+ * Native: files live under expo-file-system's private document directory.
+ * Web:   the platform has no document directory, so binary data is kept as
+ *        base64 data-URIs inside the same local sqlite store. Either way
+ *        nothing leaves the device.
+ */
+
+import { Platform } from "react-native";
+const IS_WEB = Platform.OS === "web";
+
+const MIME: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  wav: "audio/wav",
+  m4a: "audio/m4a",
+  mp4: "video/mp4",
+  mov: "video/quicktime",
+};
 
 async function ensureDir(): Promise<string> {
   const dir = `${FileSystem.documentDirectory ?? ""}${DIR_NAME}/`;
@@ -191,8 +225,26 @@ async function ensureDir(): Promise<string> {
   return dir;
 }
 
-/** Copy a picked/temporary file (camera, picker) into private app storage. */
+function blobToBase64(blob: Blob): Promise<{ base64: string; mime: string }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("read failed"));
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve({ base64: result.split(",")[1] ?? "", mime: blob.type });
+    };
+    reader.readAsDataURL(blob);
+  });
+}
+
+/** Copy a picked/temporary file (camera, picker) into private storage. */
 export async function storeFile(uri: string, ext: string): Promise<string> {
+  if (IS_WEB) {
+    const res = await fetch(uri);
+    const blob = await res.blob();
+    const { base64, mime } = await blobToBase64(blob);
+    return `data:${mime || MIME[ext] || "application/octet-stream"};base64,${base64}`;
+  }
   const dir = await ensureDir();
   const dest = `${dir}${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   await FileSystem.copyAsync({ from: uri, to: dest });
@@ -201,6 +253,9 @@ export async function storeFile(uri: string, ext: string): Promise<string> {
 
 /** Persist a base64 payload (doodles/gif frames as png if provided) as a file. */
 export async function storeBase64File(base64: string, ext: string): Promise<string> {
+  if (IS_WEB) {
+    return `data:${MIME[ext] ?? "application/octet-stream"};base64,${base64}`;
+  }
   const dir = await ensureDir();
   const dest = `${dir}${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   await FileSystem.writeAsStringAsync(dest, base64, {
@@ -211,6 +266,7 @@ export async function storeBase64File(base64: string, ext: string): Promise<stri
 
 export async function fileExists(uri?: string): Promise<boolean> {
   if (!uri) return false;
+  if (IS_WEB) return uri.startsWith("data:");
   try {
     const info = await FileSystem.getInfoAsync(uri);
     return info.exists;
@@ -220,7 +276,7 @@ export async function fileExists(uri?: string): Promise<boolean> {
 }
 
 export async function deleteFile(uri?: string): Promise<void> {
-  if (!uri) return;
+  if (!uri || IS_WEB) return; // data-URIs need no cleanup
   try {
     const info = await FileSystem.getInfoAsync(uri);
     if (info.exists) await FileSystem.deleteAsync(uri, { idempotent: true });
@@ -407,4 +463,34 @@ export function getPasscodeLocally(): { hash: string; salt: string } | null {
   const hash = kv.find((k) => k.key === KV_PASSCODE_HASH)?.value;
   const salt = kv.find((k) => k.key === KV_PASSCODE_SALT)?.value;
   return hash && salt ? { hash, salt } : null;
+}
+
+/* ─── Delete everything ────────────────────────────────────────────── */
+
+/**
+ * Gentle full wipe: clears every table (including the lock) and removes all
+ * stored files. Used by Settings → “Delete everything” after confirmation.
+ */
+export async function wipeAll(): Promise<void> {
+  try {
+    const d = openDb();
+    for (const table of ["notes", "recordings", "diaryEntries", "vaultItems", "moodCheckins", "kv"]) {
+      d.execSync(`DELETE FROM ${table}`);
+    }
+  } catch (err) {
+    console.warn("[venting] wipe failed partially", err);
+  }
+  // native: also remove binary files
+  try {
+    const dir = `${FileSystem.documentDirectory ?? ""}${DIR_NAME}`;
+    const info = await FileSystem.getInfoAsync(dir);
+    if (info.exists) await FileSystem.deleteAsync(dir, { idempotent: true });
+  } catch {
+    /* ignore */
+  }
+  for (const name of STORES) {
+    cache[name] = [];
+  }
+  hydrated = true;
+  notify();
 }

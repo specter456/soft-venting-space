@@ -9,7 +9,7 @@
 
 import * as Crypto from "expo-crypto";
 import * as LocalAuthentication from "expo-local-authentication";
-import { getPasscodeLocally, hasPasscodeLocally, setKv, deleteKv } from "./db";
+import { biometricEnabled, getPasscodeLocally, hasPasscodeLocally, setKv, deleteKv } from "./db";
 import { KV_PASSCODE_HASH, KV_PASSCODE_SALT } from "./db";
 
 function randomSalt(): string {
@@ -86,3 +86,6 @@ export async function authenticateBiometric(): Promise<boolean> {
     return false;
   }
 }
+
+/** Whether biometric unlock is allowed (user toggle in Settings). */
+export const biometricAllowed = (): boolean => biometricEnabled();

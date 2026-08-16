@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Screen } from "../components/Screen";
+import { TaskBar } from "../components/TaskBar";
 import { ClayCard } from "../components/Clay";
 import { useTable } from "../db";
 import { palette } from "../theme";
@@ -21,7 +22,7 @@ export default function CreateScreen({ navigation }: Props) {
   const vaultItems = useTable<VaultItem>("vaultItems");
 
   return (
-    <Screen title="Create" subtitle="Your playful, private studio">
+    <Screen title="Create" subtitle="Your playful, private studio" bottomBar={<TaskBar />}>
       <View style={styles.grid}>
         {TOOLS.map((tool) => (
           <ClayCard

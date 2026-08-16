@@ -27,6 +27,7 @@ export function Screen({
   onBack,
   scroll = true,
   footer,
+  bottomBar,
   style,
 }: {
   children: React.ReactNode;
@@ -36,6 +37,8 @@ export function Screen({
   onBack?: () => void;
   scroll?: boolean;
   footer?: React.ReactNode;
+  /** Floating overlay rendered at the bottom (e.g. the TaskBar). */
+  bottomBar?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
 }) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -92,16 +95,17 @@ export function Screen({
       {header}
       {scroll ? (
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, bottomBar ? styles.contentWithBar : null]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
           {children}
         </ScrollView>
       ) : (
-        <View style={[styles.content, { flex: 1 }]}>{children}</View>
+        <View style={[styles.content, { flex: 1 }, bottomBar ? styles.contentWithBar : null]}>{children}</View>
       )}
-      {footer ? <View style={styles.footer}>{footer}</View> : null}
+      {footer ? <View style={[styles.footer, bottomBar ? styles.footerWithBar : null]}>{footer}</View> : null}
+      {bottomBar ? <View pointerEvents="box-none" style={styles.bottomBar}>{bottomBar}</View> : null}
     </SafeAreaView>
   );
 }
@@ -153,8 +157,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingBottom: 40,
   },
+  contentWithBar: {
+    paddingBottom: 120,
+  },
   footer: {
     paddingHorizontal: 18,
     paddingBottom: 8,
+  },
+  footerWithBar: {
+    paddingBottom: 96,
+  },
+  bottomBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 50,
   },
 });
