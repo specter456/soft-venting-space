@@ -2,6 +2,7 @@ import React from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import { clayShadow, palette, radius } from "../theme";
 import { hexWithAlpha } from "./Clay";
+import { usePressGuard } from "../hooks";
 
 /**
  * Soft 4-digit passcode pad. Gentle shake on wrong code, springy dots,
@@ -43,6 +44,7 @@ export function LockPad({
     if (!value) return;
     onChange(value.slice(0, -1));
   };
+  const guardedRemove = usePressGuard(remove, 220);
 
   return (
     <View>
@@ -69,7 +71,7 @@ export function LockPad({
         <View style={styles.keyWrap}>{biometricNode}</View>
         <PadKey label="0" onPress={() => press("0")} />
         <View style={styles.keyWrap}>
-          <Pressable onPress={remove} style={({ pressed }) => [styles.key, styles.ghost, pressed && { opacity: 0.6 }]}>
+          <Pressable onPress={guardedRemove} style={({ pressed }) => [styles.key, styles.ghost, pressed && { opacity: 0.6 }]}>
             <Text style={styles.ghostText}>⌫</Text>
           </Pressable>
         </View>
@@ -79,10 +81,11 @@ export function LockPad({
 }
 
 function PadKey({ label, onPress }: { label: string; onPress: () => void }) {
+  const guarded = usePressGuard(onPress, 220);
   return (
     <View style={styles.keyWrap}>
       <Pressable
-        onPress={onPress}
+        onPress={guarded}
         style={({ pressed }) => [
           styles.key,
           clayShadow(true),

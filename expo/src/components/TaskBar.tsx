@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useThemeColors } from "../theme-context";
 import { clayShadow, radius } from "../theme";
 import { hexWithAlpha } from "./Clay";
+import { usePressGuard } from "../hooks";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../nav";
 
@@ -33,30 +34,47 @@ export function TaskBar() {
       style={[styles.wrap, { bottom: insets.bottom + 10 }]}
     >
       <View style={[styles.bar, { backgroundColor: colors.card }, clayShadow(true)]}>
-        {MAIN_TABS.map((tab) => {
-          const isActive = active === tab.name;
-          return (
-            <Pressable
-              key={tab.name}
-              onPress={() => navigation.navigate(tab.route)}
-              style={({ pressed }) => [
-                styles.tab,
-                isActive && { backgroundColor: hexWithAlpha(colors.accent, 0.55) },
-                pressed && { transform: [{ scale: 0.92 }] },
-              ]}
-              accessibilityLabel={tab.label}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isActive }}
-            >
-              <Text style={[styles.tabEmoji, isActive && styles.tabEmojiActive]}>{tab.emoji}</Text>
-              <Text style={[styles.tabLabel, { color: isActive ? colors.ink : colors.inkSoft }]}>
-                {tab.label}
-              </Text>
-            </Pressable>
-          );
-        })}
+        {MAIN_TABS.map((tab) => (
+          <TabButton
+            key={tab.name}
+            tab={tab}
+            active={active === tab.name}
+            onPress={() => navigation.navigate(tab.route)}
+          />
+        ))}
       </View>
     </View>
+  );
+}
+
+function TabButton({
+  tab,
+  active,
+  onPress,
+}: {
+  tab: (typeof MAIN_TABS)[number];
+  active: boolean;
+  onPress: () => void;
+}) {
+  const colors = useThemeColors();
+  const guarded = usePressGuard(onPress);
+  return (
+    <Pressable
+      onPress={guarded}
+      style={({ pressed }) => [
+        styles.tab,
+        active && { backgroundColor: hexWithAlpha(colors.accent, 0.55) },
+        pressed && { transform: [{ scale: 0.92 }] },
+      ]}
+      accessibilityLabel={tab.label}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+    >
+      <Text style={[styles.tabEmoji, active && styles.tabEmojiActive]}>{tab.emoji}</Text>
+      <Text style={[styles.tabLabel, { color: active ? colors.ink : colors.inkSoft }]}>
+        {tab.label}
+      </Text>
+    </Pressable>
   );
 }
 

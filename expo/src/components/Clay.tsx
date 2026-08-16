@@ -9,6 +9,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { clayShadow, palette, radius } from "../theme";
+import { usePressGuard } from "../hooks";
 
 /* ─── ClayCard: the inflated pastel surface ────────────────────────── */
 
@@ -30,9 +31,10 @@ export function ClayCard({
       {children}
     </View>
   );
+  const guarded = usePressGuard(onPress);
   if (!onPress) return content;
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => (pressed ? { opacity: 0.9, transform: [{ scale: 0.985 }] } : undefined)}>
+    <Pressable onPress={guarded} style={({ pressed }) => (pressed ? { opacity: 0.9, transform: [{ scale: 0.985 }] } : undefined)}>
       {content}
     </Pressable>
   );
@@ -88,10 +90,11 @@ export function ClayButton({
 
   const pad = size === "sm" ? 10 : size === "lg" ? 18 : 14;
   const fontSz = size === "sm" ? 13 : size === "lg" ? 17 : 15;
+  const guarded = usePressGuard(onPress);
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={guarded}
       disabled={disabled || loading}
       style={({ pressed }) => [
         styles.btn,
@@ -135,9 +138,10 @@ export function ClayChip({
   bg?: string;
   icon?: React.ReactNode;
 }) {
+  const guarded = usePressGuard(onPress);
   return (
     <Pressable
-      onPress={onPress}
+      onPress={guarded}
       style={({ pressed }) => [
         styles.chip,
         {
@@ -172,8 +176,9 @@ export function MoodBubble({
   onPress?: () => void;
   size?: number;
 }) {
+  const guarded = usePressGuard(onPress);
   return (
-    <Pressable onPress={onPress} style={{ alignItems: "center", width: size + 12 }}>
+    <Pressable onPress={guarded} style={{ alignItems: "center", width: size + 12 }}>
       <View
         style={[
           styles.bubble,

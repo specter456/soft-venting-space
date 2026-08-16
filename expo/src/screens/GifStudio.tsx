@@ -186,6 +186,8 @@ export default function GifStudioScreen({ navigation, route }: Props) {
         onChangeText={setFrameText}
         placeholder="Add a word to this frame (optional)"
         placeholderTextColor={palette.inkFaint}
+        autoCorrect={false}
+        spellCheck={false}
         style={styles.textInput}
       />
 

@@ -21,6 +21,7 @@ import {
   type VaultItem,
 } from "@/lib/db";
 import { cn } from "@/lib/utils";
+import { safeSessionGetItem, safeSessionSetItem } from "@/lib/safe-storage";
 
 const VAULT_SESSION_KEY = "venting-vault-unlocked";
 
@@ -55,13 +56,13 @@ export default function VaultScreen() {
     passcodeHash && passcodeSalt ? { hash: passcodeHash, salt: passcodeSalt } : null;
 
   const [unlocked, setUnlocked] = useState(
-    () => sessionStorage.getItem(VAULT_SESSION_KEY) === "1",
+    () => safeSessionGetItem(VAULT_SESSION_KEY) === "1",
   );
   const [filter, setFilter] = useState<Filter>("all");
   const [openId, setOpenId] = useState<string | null>(null);
 
   const handleUnlock = () => {
-    sessionStorage.setItem(VAULT_SESSION_KEY, "1");
+    safeSessionSetItem(VAULT_SESSION_KEY, "1");
     setUnlocked(true);
   };
 

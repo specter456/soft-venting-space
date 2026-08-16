@@ -1,6 +1,8 @@
 import '@vly-ai/integrations';
 import { Toaster } from "@/components/ui/sonner";
 import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
+import { AppErrorBoundary, installGlobalErrorHandlers } from "@/components/AppErrorBoundary";
+import { OfflineNotice } from "@/components/Friendly";
 import { hydrate } from "@/lib/db";
 import React, { Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
@@ -37,46 +39,7 @@ function RouteLoading() {
   );
 }
 
-/** Hard guard so runtime errors never leave the preview as a blank page. */
-class RootErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; message: string; stack: string }
-> {
-  state = { hasError: false, message: "", stack: "" };
-  static getDerivedStateFromError(error: Error) {
-    return {
-      hasError: true,
-      message: error.message || "Unknown runtime error",
-      stack: error.stack || "",
-    };
-  }
-  componentDidCatch(err: Error) {
-    console.error("[WebContainer preview] Root crash:", err);
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-6">
-          <div className="max-w-lg text-center">
-            <p className="text-sm font-semibold">Preview runtime error</p>
-            <p className="mt-2 text-xs text-muted-foreground break-words">
-              {this.state.message}
-            </p>
-            {this.state.stack && (
-              <pre className="mt-3 text-left text-[10px] leading-4 text-muted-foreground/80 max-h-40 overflow-auto rounded border border-border/60 p-2">
-                {this.state.stack}
-              </pre>
-            )}
-          </div>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-/** Silent error boundary — if VlyToolbar crashes it renders nothing instead of
- *  crashing the whole app (e.g. hook errors in WebContainer environment). */
+/** Guard so runtime errors never leave the app as a blank page. */
 class ToolbarErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean }
@@ -91,6 +54,15 @@ class ToolbarErrorBoundary extends React.Component<
   render() {
     return this.state.hasError ? null : this.props.children;
   }
+}
+
+/** Small per-route boundary so one broken screen never blanks the whole app. */
+function RouteShell({ children }: { children: React.ReactNode }) {
+  return (
+    <AppErrorBoundary onContinue={() => (window.location.href = "/")}>
+      {children}
+    </AppErrorBoundary>
+  );
 }
 
 function RouteSyncer() {
@@ -116,19 +88,53 @@ function RouteSyncer() {
   return null;
 }
 
+// Global safety net for errors that happen outside React (runs once).
+installGlobalErrorHandlers();
+
+// Gentle offline notice pinned to the top of the app — never blocking.
+function GlobalNotice() {
+  return (
+    <div className="pointer-events-none fixed inset-x-0 top-2 z-[60] flex justify-center px-4">
+      <OfflineNotice />
+    </div>
+  );
+}
+
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <RootErrorBoundary>
+    <AppErrorBoundary onContinue={() => (window.location.href = "/")}>
       <ToolbarErrorBoundary>
         <VlyToolbar />
       </ToolbarErrorBoundary>
       <BrowserRouter>
         <RouteSyncer />
+        <GlobalNotice />
         <Suspense fallback={<RouteLoading />}>
           <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/welcome" element={<WelcomeCheckin />} />
-            <Route path="/dashboard" element={<Dashboard />}>
+            <Route
+              path="/"
+              element={
+                <RouteShell>
+                  <Landing />
+                </RouteShell>
+              }
+            />
+            <Route
+              path="/welcome"
+              element={
+                <RouteShell>
+                  <WelcomeCheckin />
+                </RouteShell>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <RouteShell>
+                  <Dashboard />
+                </RouteShell>
+              }
+            >
               <Route index element={<HomeScreen />} />
               <Route path="record" element={<RecordScreen />} />
               <Route path="notes" element={<NotesScreen />} />
@@ -146,6 +152,6 @@ createRoot(document.getElementById("root")!).render(
         </Suspense>
       </BrowserRouter>
       <Toaster />
-    </RootErrorBoundary>
+    </AppErrorBoundary>
   </React.StrictMode>,
 );

@@ -88,16 +88,22 @@ function Carousel({
 
   React.useEffect(() => {
     if (!api || !setApi) return
-    setApi(api)
+    // Lift the embla instance to the parent after mount (next frame) — kept
+    // async so the initial sync can never cascade renders.
+    const id = requestAnimationFrame(() => setApi(api))
+    return () => cancelAnimationFrame(id)
   }, [api, setApi])
 
   React.useEffect(() => {
     if (!api) return
-    onSelect(api)
+    // First sync happens next frame (async) so it can't cascade renders;
+    // subsequent selects flow through embla's own events.
+    const id = requestAnimationFrame(() => onSelect(api))
     api.on("reInit", onSelect)
     api.on("select", onSelect)
 
     return () => {
+      cancelAnimationFrame(id)
       api?.off("select", onSelect)
     }
   }, [api, onSelect])

@@ -350,6 +350,9 @@ function DiaryEditor({
           onChangeText={setTitle}
           placeholder="Title of this page (optional)"
           placeholderTextColor={palette.inkFaint}
+          autoCapitalize="sentences"
+          autoCorrect={false}
+          spellCheck={false}
           style={[styles.titleInput, { borderColor: cover.color }]}
         />
         <TextInput
@@ -358,6 +361,8 @@ function DiaryEditor({
           placeholder="Dear diary…"
           placeholderTextColor={palette.inkFaint}
           multiline
+          autoCorrect={false}
+          spellCheck={false}
           style={[styles.bodyInput, { borderColor: cover.color }]}
         />
 

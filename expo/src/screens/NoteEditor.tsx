@@ -101,6 +101,8 @@ export default function NoteEditorScreen({ navigation, route }: Props) {
           placeholder="Let it out — a sentence, a page, or a single word…"
           placeholderTextColor={palette.inkFaint}
           multiline
+          autoCorrect={false}
+          spellCheck={false}
           style={styles.input}
         />
       </ClayCard>

@@ -13,6 +13,8 @@ import { ThemeProvider, useThemeColors } from "./src/theme-context";
 import { clayShadow, palette, radius } from "./src/theme";
 import { LockPad } from "./src/components/LockPad";
 import { ClayButton } from "./src/components/Clay";
+import { AppErrorBoundary, installGlobalErrorHandlers } from "./src/components/AppErrorBoundary";
+import { OfflineBanner } from "./src/components/OfflineBanner";
 
 import WelcomeScreen from "./src/screens/Welcome";
 import WelcomeCheckinScreen from "./src/screens/WelcomeCheckin";
@@ -44,6 +46,9 @@ const navTheme = {
     primary: palette.lavenderDeep,
   },
 };
+
+// Global safety net for errors outside React — runs once at startup.
+installGlobalErrorHandlers();
 
 export default function App() {
   const [phase, setPhase] = React.useState<LockPhase>("boot");
@@ -108,16 +113,19 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <LockContext.Provider value={lockApi}>
-          <ThemedStatusBar />
-          {phase === "setup" ? <LockSetup onDone={() => setPhase("open")} /> : null}
-          {phase === "unlock" ? <UnlockGate onUnlocked={() => setPhase("open")} /> : null}
-          {phase === "open" ? <MainNavigator /> : null}
-        </LockContext.Provider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <AppErrorBoundary>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <LockContext.Provider value={lockApi}>
+            <ThemedStatusBar />
+            <OfflineBanner />
+            {phase === "setup" ? <LockSetup onDone={() => setPhase("open")} /> : null}
+            {phase === "unlock" ? <UnlockGate onUnlocked={() => setPhase("open")} /> : null}
+            {phase === "open" ? <MainNavigator /> : null}
+          </LockContext.Provider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </AppErrorBoundary>
   );
 }
 

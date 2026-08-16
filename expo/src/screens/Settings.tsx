@@ -94,6 +94,8 @@ export default function SettingsScreen({ navigation }: Props) {
             placeholderTextColor={palette.inkFaint}
             keyboardType="email-address"
             autoCapitalize="none"
+            autoCorrect={false}
+            spellCheck={false}
             style={styles.input}
           />
         </Row>
@@ -104,6 +106,8 @@ export default function SettingsScreen({ navigation }: Props) {
             onChangeText={setName}
             placeholder="What should Venting call you?"
             placeholderTextColor={palette.inkFaint}
+            autoCorrect={false}
+            spellCheck={false}
             style={styles.input}
           />
         </Row>

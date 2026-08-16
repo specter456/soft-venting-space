@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Navigate, useNavigate } from "react-router";
 import { Logo } from "@/components/Logo";
 import { todayDateKey } from "@/lib/moods";
+import { safeGetItem, safeSetItem } from "@/lib/safe-storage";
+import { useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
 
 /** Local-only onboarding flags — never sent anywhere. */
@@ -64,24 +66,27 @@ const ACTIONS = [
 export default function WelcomeCheckin() {
   const navigate = useNavigate();
   const [checked, setChecked] = useState<string[]>([]);
-  // local-only gate: this screen shows once, ever, per device
-  const [alreadyDone] = useState(() => localStorage.getItem(DONE_KEY) === "1");
-
-  if (alreadyDone) return <Navigate to="/dashboard" replace />;
+  // local-only gate: this screen shows once, ever, per device (never throws)
+  const [alreadyDone] = useState(() => safeGetItem(DONE_KEY) === "1");
 
   const toggle = (id: string) => {
     setChecked((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
+  // one tap toggles exactly one option — held/double presses are ignored
+  const guardedToggle = useTapGuard(toggle, 300);
 
   const finish = (to?: string) => {
     // answers live only on this device — never sent to any server
-    localStorage.setItem(
+    safeSetItem(
       CHECKIN_KEY,
       JSON.stringify({ date: todayDateKey(), answers: checked }),
     );
-    localStorage.setItem(DONE_KEY, "1");
+    safeSetItem(DONE_KEY, "1");
     navigate(to ?? "/dashboard");
   };
+  const guardedFinish = useTapGuard(finish, 400);
+
+  if (alreadyDone) return <Navigate to="/dashboard" replace />;
 
   return (
     <div className="relative min-h-dvh overflow-hidden bg-gradient-to-b from-cream-soft via-cream to-lavender-50 text-ink">
@@ -139,7 +144,7 @@ export default function WelcomeCheckin() {
                   initial={{ opacity: 0, scale: 0.96 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3, delay: 0.12 + i * 0.03 }}
-                  onClick={() => toggle(item.id)}
+                  onClick={() => guardedToggle(item.id)}
                   aria-pressed={active}
                   className={cn(
                     "flex items-center gap-2 rounded-2xl px-3.5 py-3 text-left text-[13px] font-bold transition-all",
@@ -173,7 +178,7 @@ export default function WelcomeCheckin() {
               <button
                 key={action.to}
                 type="button"
-                onClick={() => finish(action.to)}
+                onClick={() => guardedFinish(action.to)}
                 className="clay-card group flex flex-col items-start gap-2 rounded-[1.6rem] px-4 py-4 text-left transition-transform hover:-translate-y-1"
               >
                 <span
@@ -201,7 +206,7 @@ export default function WelcomeCheckin() {
         <div className="mt-8 flex flex-col items-center gap-2">
           <button
             type="button"
-            onClick={() => finish()}
+            onClick={() => guardedFinish()}
             className="text-xs font-bold text-ink-soft underline-offset-4 transition-colors hover:text-ink-deep hover:underline"
           >
             Skip for now

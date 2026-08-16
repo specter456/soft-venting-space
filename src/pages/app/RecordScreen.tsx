@@ -8,6 +8,7 @@ import { createRecording, removeItem, useTable, type Recording } from "@/lib/db"
 import { VIDEO_AVATARS, VOICE_COMPANION } from "@/lib/art";
 import { MOODS, type MoodId, moodById } from "@/lib/moods";
 import { cn } from "@/lib/utils";
+import { useTapGuard } from "@/lib/useTapGuard";
 
 type Mode = "voice" | "video";
 type Stage = "idle" | "recording" | "done";
@@ -39,14 +40,16 @@ export default function RecordScreen() {
     };
   }, []);
 
-  const startRecording = () => {
+  // Guarded so a double-tap or held press can't start two timers at once.
+  const startRecording = useTapGuard(() => {
+    if (stage === "recording") return;
     setStage("recording");
     setSeconds(0);
     setSavedId(null);
     timerRef.current = window.setInterval(() => {
       setSeconds((s) => s + 1);
     }, 1000);
-  };
+  }, 400);
 
   const stopRecording = () => {
     if (timerRef.current) window.clearInterval(timerRef.current);
@@ -467,6 +470,8 @@ function RecordingRow({
 }) {
   const [playing, setPlaying] = useState(false);
   const moodInfo = moodById(mood);
+  // Guarded so a double-tap can't toggle play/pause twice in a row.
+  const togglePlay = useTapGuard(() => setPlaying((p) => !p), 400);
 
   useEffect(() => {
     if (!playing) return;
@@ -478,7 +483,7 @@ function RecordingRow({
     <div className="clay-card flex items-center gap-3 rounded-3xl px-4 py-3">
       <button
         type="button"
-        onClick={() => setPlaying((p) => !p)}
+        onClick={togglePlay}
         className="clay-chip flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lavender-600 transition-transform hover:scale-105 active:scale-95"
         aria-label={playing ? "Pause" : "Play recording"}
       >

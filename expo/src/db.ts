@@ -16,6 +16,7 @@ import { useSyncExternalStore } from "react";
 import type {
   Attachment,
   DiaryEntry,
+  GifFrame,
   KVPair,
   MoodCheckin,
   Note,
@@ -167,6 +168,22 @@ export function useHydrated(): boolean {
 
 /* ─── Load everything into memory once at startup ──────────────────── */
 
+/**
+ * Safe JSON parsing: one corrupted row must never crash the whole app. If a
+ * row's JSON is missing, empty, or malformed, it falls back to an empty
+ * array / undefined instead of throwing — the rest of the data loads fine.
+ */
+function safeParseArray(raw: unknown): unknown[] {
+  if (raw === null || raw === undefined || raw === "") return [];
+  if (Array.isArray(raw)) return raw;
+  try {
+    const parsed = JSON.parse(raw as string);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function hydrate(): Promise<void> {
   if (hydrated) return;
   try {
@@ -177,16 +194,19 @@ export async function hydrate(): Promise<void> {
     cache.vaultItems = d.getAllSync<VaultItem>("SELECT * FROM vaultItems ORDER BY at DESC");
     cache.moodCheckins = d.getAllSync<MoodCheckin>("SELECT * FROM moodCheckins ORDER BY at DESC");
     cache.kv = d.getAllSync<KVPair>("SELECT * FROM kv");
-    // parse JSON columns
-    cache.notes = (cache.notes as Note[]).map((n) => ({ ...n, attachments: JSON.parse(n.attachments as unknown as string) }));
+    // parse JSON columns — row by row, never crashing on a bad cell
+    cache.notes = (cache.notes as Note[]).map((n) => ({
+      ...n,
+      attachments: safeParseArray((n as unknown as { attachments?: unknown }).attachments) as Attachment[],
+    }));
     cache.diaryEntries = (cache.diaryEntries as DiaryEntry[]).map((e) => ({
       ...e,
-      stickers: JSON.parse(e.stickers as unknown as string),
-      attachments: JSON.parse(e.attachments as unknown as string),
+      stickers: safeParseArray((e as unknown as { stickers?: unknown }).stickers) as string[],
+      attachments: safeParseArray((e as unknown as { attachments?: unknown }).attachments) as Attachment[],
     }));
     cache.vaultItems = (cache.vaultItems as VaultItem[]).map((v) => ({
       ...v,
-      frames: v.frames ? JSON.parse(v.frames as unknown as string) : undefined,
+      frames: safeParseArray((v as unknown as { frames?: unknown }).frames) as GifFrame[] | undefined,
     }));
   } catch (err) {
     console.warn("[venting] sqlite unavailable — in-memory only for this session", err);

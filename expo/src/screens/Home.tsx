@@ -77,9 +77,12 @@ export default function HomeScreen({ navigation }: Props) {
   // ── pick up where you left off ──
   const latest = React.useMemo(() => {
     const items: { at: number; kind: "note" | "recording" | "diary"; label: string; emoji: string }[] = [];
-    if (notes[0]) items.push({ at: notes[0].at, kind: "note", label: notes[0].body.slice(0, 42) || "your reflection", emoji: "📝" });
-    if (recordings[0]) items.push({ at: recordings[0].at, kind: "recording", label: recordings[0].kind === "voice" ? "a voice vent" : "a video vent", emoji: recordings[0].kind === "voice" ? "🎙️" : "🎥" });
-    if (diaries[0]) items.push({ at: diaries[0].at, kind: "diary", label: diaries[0].title || "a diary page", emoji: "📖" });
+    const firstNote = notes[0];
+    const firstRec = recordings[0];
+    const firstDiary = diaries[0];
+    if (firstNote) items.push({ at: firstNote.at, kind: "note", label: (firstNote.body ?? "").slice(0, 42) || "your reflection", emoji: "📝" });
+    if (firstRec) items.push({ at: firstRec.at, kind: "recording", label: firstRec.kind === "voice" ? "a voice vent" : "a video vent", emoji: firstRec.kind === "voice" ? "🎙️" : "🎥" });
+    if (firstDiary) items.push({ at: firstDiary.at, kind: "diary", label: firstDiary.title || "a diary page", emoji: "📖" });
     items.sort((a, b) => b.at - a.at);
     return items[0];
   }, [notes, recordings, diaries]);
@@ -378,6 +381,8 @@ function CheckinModal({
                 placeholder="A word, a sentence, or nothing at all…"
                 placeholderTextColor={palette.inkFaint}
                 multiline
+                autoCorrect={false}
+                spellCheck={false}
                 style={[styles.modalInput, { borderColor: moodColor }]}
               />
               <View style={styles.modalRow}>

@@ -271,6 +271,9 @@ export function MoodCheckinDialog({
               <Textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
+                autoCorrect="off"
+                autoCapitalize="sentences"
+                spellCheck={false}
                 placeholder="This note is only ever yours…"
                 className="mt-5 min-h-28 rounded-2xl border-lavender-200/70 bg-cream-soft text-sm leading-relaxed text-ink-deep shadow-[inset_0_2px_6px_rgba(99,82,150,0.08)] placeholder:text-ink-soft/70 focus-visible:ring-lavender-300"
               />

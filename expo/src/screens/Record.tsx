@@ -16,6 +16,7 @@ import { MoodChips, MoodTag } from "../components/MoodChips";
 import { MOODS, VIDEO_AVATARS, VOICE_COMPANION } from "../data";
 import { createRecording, deleteFile, removeItem, useTable } from "../db";
 import { playSoftChime } from "../sound";
+import { useAsyncPressGuard } from "../hooks";
 import { palette, radius, TILE_BGS, clayShadow } from "../theme";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../nav";
@@ -237,6 +238,8 @@ function VoiceRecorder({
   };
 
   const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  // Guarded so a double-tap can't start two timers or double-fire onDone.
+  const onRecordPress = useAsyncPressGuard(active ? stop : start, 300);
 
   return (
     <ClayCard style={{ marginTop: 16, alignItems: "center" }}>
@@ -269,7 +272,7 @@ function VoiceRecorder({
       </View>
 
       <Pressable
-        onPress={active ? stop : start}
+        onPress={onRecordPress}
         style={({ pressed }) => [
           styles.recordBtn,
           { backgroundColor: active ? palette.blushDeep : palette.blush },
@@ -352,6 +355,9 @@ function VideoRecorder({
     onDone({ kind: "video", mood, duration: seconds, fileUri, avatar });
   };
 
+  // Guarded so a double-tap can't start two timers or double-fire onDone.
+  const onRecordPress = useAsyncPressGuard(active ? stop : start, 300);
+
   return (
     <ClayCard style={{ marginTop: 16, alignItems: "center" }}>
       <View style={styles.cameraFrame}>
@@ -414,7 +420,7 @@ function VideoRecorder({
       </View>
 
       <Pressable
-        onPress={active ? stop : start}
+        onPress={onRecordPress}
         style={({ pressed }) => [
           styles.recordBtn,
           { backgroundColor: active ? palette.blushDeep : palette.blush },

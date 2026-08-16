@@ -10,6 +10,7 @@ import {
   useTable,
   type KVPair,
 } from "@/lib/db";
+import { safeSessionGetItem, safeSessionSetItem } from "@/lib/safe-storage";
 
 const LOCK_DISMISSED_KEY = "venting-lock-dismissed";
 
@@ -52,7 +53,7 @@ export default function Dashboard() {
     setLockInitDone(true);
     if (hasPasscode) {
       setLock("unlock");
-    } else if (sessionStorage.getItem(LOCK_DISMISSED_KEY) !== "1") {
+    } else if (safeSessionGetItem(LOCK_DISMISSED_KEY) !== "1") {
       setLock("setup");
     }
   }
@@ -77,7 +78,7 @@ export default function Dashboard() {
         closeLabel="Maybe later"
         onComplete={() => setLock("unlocked")}
         onClose={() => {
-          sessionStorage.setItem(LOCK_DISMISSED_KEY, "1");
+          safeSessionSetItem(LOCK_DISMISSED_KEY, "1");
           setLock("unlocked");
         }}
       />

@@ -175,6 +175,25 @@
   [role="button"]:not([disabled]) {
     cursor: pointer;
   }
+
+  /* One tap = one action. No accidental text selection on press, no
+     highlight flash, no double-tap zoom re-firing clicks. */
+  button,
+  [role="button"],
+  a,
+  label {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  /* Typing stays untouched — inputs keep full text selection & editing. */
+  input,
+  textarea,
+  [contenteditable] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
 }
 
 /* ─── Claymorphism surfaces ─────────────────────────────────────────── */

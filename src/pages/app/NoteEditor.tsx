@@ -88,6 +88,9 @@ export default function NoteEditor() {
       <Textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
+        autoCorrect="off"
+        autoCapitalize="sentences"
+        spellCheck={false}
         placeholder="Let it out, gently. There's no wrong way to write this…"
         className="clay-card min-h-44 resize-none rounded-[2rem] border-0 px-5 py-5 text-[15px] leading-relaxed text-ink-deep shadow-none placeholder:text-ink-soft/70 focus-visible:ring-lavender-300"
       />

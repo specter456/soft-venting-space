@@ -63,6 +63,7 @@ export default function WelcomeScreen({ navigation }: Props) {
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
+              spellCheck={false}
               style={styles.input}
             />
             {error ? <Text style={styles.error}>{error}</Text> : null}

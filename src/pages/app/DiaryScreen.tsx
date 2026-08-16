@@ -18,6 +18,7 @@ import { DIARY_STICKERS, DIARY_WEATHER, VIDEO_AVATARS } from "@/lib/art";
 import { MOODS, type MoodId, moodById } from "@/lib/moods";
 import { playPageTurn } from "@/lib/sound";
 import { cn } from "@/lib/utils";
+import { safeGetItem, safeSetItem } from "@/lib/safe-storage";
 
 const COVER_COLORS = ["#cdb9f2", "#f6cdd5", "#bce3cf", "#f7d8ae", "#c5d9f2"];
 const COVER_EMBLEMS = ["💗", "⭐", "🌙", "🦋", "☁️", "🌸"];
@@ -37,7 +38,7 @@ export default function DiaryScreen() {
 
   const [cover, setCover] = useState(() => {
     try {
-      const raw = localStorage.getItem(COVER_KEY);
+      const raw = safeGetItem(COVER_KEY);
       if (raw) return JSON.parse(raw) as { color: string; emblem: string };
     } catch {
       /* ignore */
@@ -60,7 +61,7 @@ export default function DiaryScreen() {
 
   const saveCover = (next: { color: string; emblem: string }) => {
     setCover(next);
-    localStorage.setItem(COVER_KEY, JSON.stringify(next));
+    safeSetItem(COVER_KEY, JSON.stringify(next));
   };
 
   const save = async () => {
@@ -246,12 +247,18 @@ export default function DiaryScreen() {
         <Input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          autoCorrect="off"
+          autoCapitalize="sentences"
+          spellCheck={false}
           placeholder="Page title (optional)"
           className="rounded-2xl border-lavender-200/70 bg-cream-soft text-base font-bold text-ink-deep placeholder:font-normal placeholder:text-ink-soft/70 focus-visible:ring-lavender-300"
         />
         <Textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
+          autoCorrect="off"
+          autoCapitalize="sentences"
+          spellCheck={false}
           placeholder="Dear diary…"
           className="font-hand min-h-40 resize-none rounded-[2rem] border-lavender-200/70 bg-cream-soft px-5 py-5 text-lg leading-relaxed text-ink-deep placeholder:text-ink-soft/60 focus-visible:ring-lavender-300"
         />
