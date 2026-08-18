@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { Loader2, Pause, Play, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState, useCallback, type PointerEvent as ReactPointerEvent } from "react";
+import { Loader2, Pause, Play, Plus, RotateCcw, Save, Trash2, Download, Share2, Minus, X } from "lucide-react";
 import { createVaultItem } from "@/lib/db";
 import { GIFT_STAMPS, PHOTO_SCENES, VIDEO_AVATARS } from "@/lib/art";
 import { fillTileGradient, loadImageToCanvas } from "@/lib/canvas-art";
@@ -9,20 +9,47 @@ import { gifDataUrlFromCanvases } from "@/lib/gif";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
+/* ─── Types ──────────────────────────────────────────────────────────── */
+
 interface Stamp {
   id: string;
   emoji: string;
-  x: number; // %
-  y: number; // %
-  size: number; // px
+  x: number; // px inside canvas coordinate space
+  y: number;
+  size: number;
 }
 
-/** A frame is its own separate picture — a full composite PNG, like a flipbook page. */
 interface Frame {
   img: string;
 }
 
+type BrushStyle = "pencil" | "crayon" | "marker";
+type InkColor = string;
+
+const INK_COLORS: { name: string; value: InkColor }[] = [
+  { name: "pink", value: "#e88fa5" },
+  { name: "blue", value: "#7caed4" },
+  { name: "mint", value: "#6bc9a0" },
+  { name: "yellow", value: "#e8d56a" },
+  { name: "purple", value: "#a584c8" },
+  { name: "dark", value: "#5a5470" },
+];
+
+const BRUSH_STYLES: { id: BrushStyle; label: string; emoji: string }[] = [
+  { id: "pencil", label: "Pencil", emoji: "✏️" },
+  { id: "crayon", label: "Crayon", emoji: "🖍️" },
+  { id: "marker", label: "Marker", emoji: "🖊️" },
+];
+
+const BRUSH_SIZES = [
+  { label: "Thin", value: 3 },
+  { label: "Medium", value: 7 },
+  { label: "Thick", value: 14 },
+];
+
 const SIZE = 700;
+
+/* ─── Main Component ─────────────────────────────────────────────────── */
 
 export default function GifStudio() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -31,15 +58,27 @@ export default function GifStudio() {
   const undoStack = useRef<string[]>([]);
   const [canUndo, setCanUndo] = useState(false);
 
-  const [bg, setBg] = useState<(typeof PHOTO_SCENES)[number] | "avatar">(PHOTO_SCENES[0]);
-  const [avatar] = useState(() => VIDEO_AVATARS[Math.floor(Math.random() * VIDEO_AVATARS.length)]);
+  const [bg, setBg] = useState<(typeof PHOTO_SCENES)[number] | "avatar">(
+    PHOTO_SCENES[0],
+  );
+  const [avatar] = useState(
+    () => VIDEO_AVATARS[Math.floor(Math.random() * VIDEO_AVATARS.length)],
+  );
   const [stamps, setStamps] = useState<Stamp[]>([]);
-  const [text, setText] = useState("");
+  const [selectedStamp, setSelectedStamp] = useState<string | null>(null);
   const stampIdRef = useRef(0);
+  const [text, setText] = useState("");
   const [frames, setFrames] = useState<Frame[]>([]);
   const [playing, setPlaying] = useState(false);
   const [playIdx, setPlayIdx] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [editingFrameIdx, setEditingFrameIdx] = useState<number | null>(null);
+
+  // Drawing settings
+  const [inkColor, setInkColor] = useState<InkColor>(INK_COLORS[5].value);
+  const [brushStyle, setBrushStyle] = useState<BrushStyle>("pencil");
+  const [brushSize, setBrushSize] = useState(7);
+  const [eraserMode, setEraserMode] = useState(false);
 
   // init doodle canvas
   useEffect(() => {
@@ -61,49 +100,139 @@ export default function GifStudio() {
     return () => window.clearInterval(t);
   }, [playing, frames.length]);
 
-  /* ─── Drawing ───────────────────────────────────────────────────── */
+  /* ─── Smooth drawing with brush styles ─────────────────────────────── */
 
-  const pos = (e: ReactPointerEvent) => {
+  const canvasPos = useCallback((e: ReactPointerEvent) => {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
     return {
       x: ((e.clientX - rect.left) / rect.width) * SIZE,
       y: ((e.clientY - rect.top) / rect.height) * SIZE,
     };
-  };
+  }, []);
 
-  const stroke = (e: ReactPointerEvent) => {
-    const ctx = canvasRef.current?.getContext("2d");
-    if (!ctx) return;
-    const p = pos(e);
-    ctx.strokeStyle = "#5a5470";
-    ctx.lineWidth = 6;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    if (!lastPoint.current) {
-      ctx.beginPath();
-      ctx.moveTo(p.x, p.y);
-      ctx.lineTo(p.x + 0.01, p.y + 0.01);
-      ctx.stroke();
-    } else {
-      ctx.beginPath();
-      ctx.moveTo(lastPoint.current.x, lastPoint.current.y);
-      ctx.lineTo(p.x, p.y);
-      ctx.stroke();
-    }
-    lastPoint.current = p;
-  };
+  const applyBrush = useCallback(
+    (
+      ctx: CanvasRenderingContext2D,
+      x1: number,
+      y1: number,
+      x2: number,
+      y2: number,
+      isEraser: boolean,
+    ) => {
+      if (isEraser) {
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.strokeStyle = "rgba(0,0,0,1)";
+        ctx.lineWidth = brushSize * 2.5;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.globalCompositeOperation = "source-over";
+        return;
+      }
 
-  /** One undo step per completed stroke. */
-  const pushUndo = () => {
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = "source-over";
+      ctx.strokeStyle = inkColor;
+
+      switch (brushStyle) {
+        case "pencil": {
+          // thin, crisp, slightly transparent — like a real pencil
+          ctx.lineWidth = brushSize * 0.7;
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.globalAlpha = 0.85;
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+          break;
+        }
+        case "crayon": {
+          // textured, waxy feel — multiple offset strokes
+          ctx.lineWidth = brushSize;
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.globalAlpha = 0.45;
+          for (let i = 0; i < 3; i++) {
+            const off = (i - 1) * brushSize * 0.3;
+            ctx.beginPath();
+            ctx.moveTo(x1 + off, y1 + off * 0.5);
+            ctx.lineTo(x2 + off, y2 + off * 0.5);
+            ctx.stroke();
+          }
+          ctx.globalAlpha = 1;
+          break;
+        }
+        case "marker": {
+          // thick, smooth, slightly transparent — like a felt pen
+          ctx.lineWidth = brushSize * 1.4;
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.globalAlpha = 0.7;
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+          // second pass for saturation
+          ctx.globalAlpha = 0.35;
+          ctx.lineWidth = brushSize * 0.8;
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+          break;
+        }
+      }
+      ctx.globalAlpha = 1;
+    },
+    [inkColor, brushStyle, brushSize],
+  );
+
+  const stroke = useCallback(
+    (e: ReactPointerEvent) => {
+      const ctx = canvasRef.current?.getContext("2d");
+      if (!ctx) return;
+      const p = canvasPos(e);
+      if (!lastPoint.current) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, (eraserMode ? brushSize * 2.5 : brushSize * 0.35) / 2, 0, Math.PI * 2);
+        if (eraserMode) {
+          ctx.globalCompositeOperation = "destination-out";
+          ctx.fillStyle = "rgba(0,0,0,1)";
+          ctx.fill();
+          ctx.globalCompositeOperation = "source-over";
+        } else {
+          ctx.fillStyle = inkColor;
+          ctx.fill();
+        }
+      } else {
+        // smooth quadratic bezier for soft curves
+        const mid = {
+          x: (lastPoint.current.x + p.x) / 2,
+          y: (lastPoint.current.y + p.y) / 2,
+        };
+        applyBrush(ctx, lastPoint.current.x, lastPoint.current.y, mid.x, mid.y, eraserMode);
+        applyBrush(ctx, mid.x, mid.y, p.x, p.y, eraserMode);
+      }
+      lastPoint.current = p;
+    },
+    [canvasPos, applyBrush, eraserMode, brushSize, inkColor],
+  );
+
+  const pushUndo = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     undoStack.current.push(canvas.toDataURL());
     if (undoStack.current.length > 30) undoStack.current.shift();
     setCanUndo(undoStack.current.length > 0);
-  };
+  }, []);
 
-  const undoLast = () => {
+  const undoLast = useCallback(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     const prev = undoStack.current.pop();
@@ -115,16 +244,21 @@ export default function GifStudio() {
       ctx.drawImage(img, 0, 0, SIZE, SIZE);
     };
     img.src = prev;
-  };
+  }, []);
 
-  const clearDoodles = (pushHistory = true) => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
-    if (!canvas || !ctx) return;
-    if (pushHistory) pushUndo();
-    ctx.clearRect(0, 0, SIZE, SIZE);
-    if (!pushHistory) setCanUndo(false);
-  };
+  const clearDoodles = useCallback(
+    (pushHistory = true) => {
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext("2d");
+      if (!canvas || !ctx) return;
+      if (pushHistory) pushUndo();
+      ctx.clearRect(0, 0, SIZE, SIZE);
+      if (!pushHistory) setCanUndo(false);
+    },
+    [pushUndo],
+  );
+
+  /* ─── Draggable stamps ─────────────────────────────────────────────── */
 
   const addStamp = (emoji: string) => {
     stampIdRef.current += 1;
@@ -134,19 +268,71 @@ export default function GifStudio() {
       {
         id,
         emoji,
-        x: 18 + Math.random() * 64,
-        y: 18 + Math.random() * 64,
+        x: SIZE * 0.3 + Math.random() * SIZE * 0.4,
+        y: SIZE * 0.3 + Math.random() * SIZE * 0.4,
         size: 30 + Math.random() * 18,
       },
     ]);
+    setSelectedStamp(id);
   };
 
-  /* ─── Frames (flipbook) ─────────────────────────────────────────── */
+  const handleStampPointerDown = (
+    e: ReactPointerEvent,
+    stampId: string,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const el = e.currentTarget as HTMLElement;
+    el.setPointerCapture(e.pointerId);
 
-  /**
-   * Composite the current canvas state (base + doodles + stamps + text) into
-   * one full picture — this is what a frame really is.
-   */
+    const stamp = stamps.find((s) => s.id === stampId);
+    if (!stamp) return;
+
+    const container = el.closest(".aspect-square") as HTMLElement;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const origX = stamp.x;
+    const origY = stamp.y;
+
+    const onMove = (ev: PointerEvent) => {
+      const dx = ((ev.clientX - startX) / rect.width) * SIZE;
+      const dy = ((ev.clientY - startY) / rect.height) * SIZE;
+      setStamps((prev) =>
+        prev.map((s) =>
+          s.id === stampId
+            ? {
+                ...s,
+                x: Math.max(0, Math.min(SIZE, origX + dx)),
+                y: Math.max(0, Math.min(SIZE, origY + dy)),
+              }
+            : s,
+        ),
+      );
+    };
+
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  };
+
+  const stampSize = (stampId: string, delta: number) => {
+    setStamps((prev) =>
+      prev.map((s) =>
+        s.id === stampId
+          ? { ...s, size: Math.max(12, Math.min(80, s.size + delta)) }
+          : s,
+      ),
+    );
+  };
+
+  /* ─── Compose frame ───────────────────────────────────────────────── */
+
   const composeFrame = (): string => {
     const canvas = document.createElement("canvas");
     canvas.width = SIZE;
@@ -154,7 +340,6 @@ export default function GifStudio() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return "";
 
-    // base
     if (bg === "avatar") {
       const grad = ctx.createLinearGradient(0, 0, 0, SIZE);
       grad.addColorStop(0, "#dcf1e5");
@@ -174,19 +359,16 @@ export default function GifStudio() {
       ctx.fillText(bg.emoji, SIZE / 2, SIZE / 2);
     }
 
-    // doodles
     const doodle = canvasRef.current;
     if (doodle) ctx.drawImage(doodle, 0, 0, SIZE, SIZE);
 
-    // stamps — fixed exactly where placed, never drifting
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     for (const s of stamps) {
       ctx.font = `${s.size}px serif`;
-      ctx.fillText(s.emoji, (s.x / 100) * SIZE, (s.y / 100) * SIZE);
+      ctx.fillText(s.emoji, s.x, s.y);
     }
 
-    // text
     if (text.trim()) {
       ctx.font = `bold ${Math.round(SIZE * 0.045)}px sans-serif`;
       ctx.fillStyle = "rgba(90,84,112,0.95)";
@@ -196,11 +378,28 @@ export default function GifStudio() {
     return canvas.toDataURL("image/png");
   };
 
+  /* ─── Frame management ─────────────────────────────────────────────── */
+
   const addFrame = () => {
     const img = composeFrame();
     if (!img) return;
-    setFrames((prev) => [...prev, { img }]);
-    // next frame starts clean — same base, fresh doodle layer
+
+    if (editingFrameIdx !== null) {
+      // update existing frame
+      setFrames((prev) =>
+        prev.map((f, i) => (i === editingFrameIdx ? { img } : f)),
+      );
+      setEditingFrameIdx(null);
+      toast("Frame updated", { description: "Your flipbook page has been refreshed." });
+    } else {
+      // add new frame
+      setFrames((prev) => [...prev, { img }]);
+      toast("Frame added", {
+        description: "Your canvas is clear for the next flipbook page.",
+      });
+    }
+
+    // clear canvas for next frame
     setStamps([]);
     setText("");
     clearDoodles(false);
@@ -208,12 +407,39 @@ export default function GifStudio() {
     setCanUndo(false);
     setPlaying(false);
     setPlayIdx(0);
-    toast("Frame added", { description: "Your canvas is clear for the next flipbook page." });
   };
 
   const removeFrame = (i: number) => {
     setFrames((prev) => prev.filter((_, idx) => idx !== i));
+    if (editingFrameIdx === i) setEditingFrameIdx(null);
     if (playIdx >= frames.length - 1) setPlayIdx(Math.max(0, frames.length - 2));
+  };
+
+  const loadFrameToCanvas = (i: number) => {
+    const frame = frames[i];
+    if (!frame) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+
+    const img = new Image();
+    img.onload = () => {
+      // draw the frame onto the canvas so it can be edited
+      ctx.clearRect(0, 0, SIZE, SIZE);
+      ctx.drawImage(img, 0, 0, SIZE, SIZE);
+    };
+    img.src = frame.img;
+
+    setEditingFrameIdx(i);
+    setStamps([]);
+    setText("");
+    undoStack.current = [];
+    setCanUndo(false);
+    setPlaying(false);
+    setPlayIdx(i);
+    toast("Frame loaded", {
+      description: "Edit it and tap 'Update frame' to save changes.",
+    });
   };
 
   const previewFrame = (i: number) => {
@@ -221,7 +447,6 @@ export default function GifStudio() {
     setPlayIdx(i);
   };
 
-  /** Change base → start clean (old scribbles never carry over). */
   const changeBase = (next: (typeof PHOTO_SCENES)[number] | "avatar") => {
     if (next === bg) return;
     setBg(next);
@@ -230,9 +455,10 @@ export default function GifStudio() {
     clearDoodles(false);
     undoStack.current = [];
     setCanUndo(false);
+    setEditingFrameIdx(null);
   };
 
-  /* ─── Save a real animated GIF ──────────────────────────────────── */
+  /* ─── Save to vault ────────────────────────────────────────────────── */
 
   const save = async () => {
     if (saving) return;
@@ -240,13 +466,11 @@ export default function GifStudio() {
     try {
       let gifUrl = "";
       if (frames.length > 0) {
-        // load every flipbook page and encode a true looping GIF
         const canvases = await Promise.all(
           frames.map((f) => loadImageToCanvas(f.img, SIZE, SIZE)),
         );
         gifUrl = gifDataUrlFromCanvases(canvases, 650);
       } else {
-        // no frames yet — save the current canvas as a single doodle
         gifUrl = composeFrame();
       }
       if (!gifUrl) throw new Error("could not render gif");
@@ -264,6 +488,60 @@ export default function GifStudio() {
       setSaving(false);
     }
   };
+
+  /* ─── Download & Share ─────────────────────────────────────────────── */
+
+  const getGifBlob = async (): Promise<Blob | null> => {
+    let gifUrl = "";
+    if (frames.length > 0) {
+      const canvases = await Promise.all(
+        frames.map((f) => loadImageToCanvas(f.img, SIZE, SIZE)),
+      );
+      gifUrl = gifDataUrlFromCanvases(canvases, 650);
+    } else {
+      gifUrl = composeFrame();
+    }
+    if (!gifUrl) return null;
+    const res = await fetch(gifUrl);
+    return res.blob();
+  };
+
+  const downloadGif = async () => {
+    try {
+      const blob = await getGifBlob();
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `venting-gif-${Date.now()}.gif`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast("Downloaded", { description: "Your GIF is saved to your device." });
+    } catch {
+      toast("Download failed", { description: "Please try again." });
+    }
+  };
+
+  const shareGif = async () => {
+    try {
+      const blob = await getGifBlob();
+      if (!blob) return;
+      const file = new File([blob], `venting-gif-${Date.now()}.gif`, {
+        type: "image/gif",
+      });
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: "My Venting GIF" });
+      } else {
+        // fallback: download instead
+        downloadGif();
+        toast("Share not supported", { description: "Downloaded instead — you can share it from your files." });
+      }
+    } catch {
+      // user cancelled or error — ignore
+    }
+  };
+
+  /* ─── Render ───────────────────────────────────────────────────────── */
 
   const renderFrame = (frame: Frame, keyPrefix: string) => (
     <div
@@ -292,7 +570,9 @@ export default function GifStudio() {
             onClick={() => changeBase("avatar")}
             className={cn(
               "flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-2xl transition-transform",
-              bg === "avatar" ? "ring-2 ring-lavender-400 ring-offset-2 ring-offset-cream" : "",
+              bg === "avatar"
+                ? "ring-2 ring-lavender-400 ring-offset-2 ring-offset-cream"
+                : "",
             )}
             style={{ background: "linear-gradient(180deg,#dcf1e5,#c2e5d0)" }}
           >
@@ -307,7 +587,8 @@ export default function GifStudio() {
               className={cn(
                 "flex h-16 w-14 shrink-0 flex-col items-center justify-center rounded-2xl transition-transform",
                 scene.bg,
-                bg !== "avatar" && bg.emoji === scene.emoji &&
+                bg !== "avatar" &&
+                  bg.emoji === scene.emoji &&
                   "ring-2 ring-lavender-400 ring-offset-2 ring-offset-cream",
               )}
             >
@@ -323,6 +604,99 @@ export default function GifStudio() {
         </p>
       </section>
 
+      {/* ─── Helper line ─────────────────────────────────────────── */}
+      <p className="text-center text-[12px] font-medium text-ink-soft italic">
+        doodle, stick, and drag — each frame is one little moment of your GIF.
+      </p>
+
+      {/* ─── Drawing tools ───────────────────────────────────────── */}
+      <section className="space-y-3">
+        {/* brush style */}
+        <div className="flex gap-2">
+          {BRUSH_STYLES.map((b) => (
+            <button
+              key={b.id}
+              type="button"
+              onClick={() => {
+                setBrushStyle(b.id);
+                setEraserMode(false);
+              }}
+              className={cn(
+                "clay-chip flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold transition-all",
+                brushStyle === b.id && !eraserMode
+                  ? "bg-lavender-300/70 text-ink-deep shadow-sm"
+                  : "text-ink-soft",
+              )}
+            >
+              {b.emoji} {b.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setEraserMode((v) => !v)}
+            className={cn(
+              "clay-chip flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold transition-all",
+              eraserMode
+                ? "bg-blush-200/70 text-ink-deep shadow-sm"
+                : "text-ink-soft",
+            )}
+          >
+            🧹 Eraser
+          </button>
+        </div>
+
+        {/* ink colors */}
+        <div className="flex gap-2 items-center">
+          <span className="text-[10px] font-bold text-ink-soft">Color:</span>
+          {INK_COLORS.map((c) => (
+            <button
+              key={c.name}
+              type="button"
+              onClick={() => {
+                setInkColor(c.value);
+                setEraserMode(false);
+              }}
+              className={cn(
+                "h-7 w-7 rounded-full border-2 transition-all",
+                inkColor === c.value && !eraserMode
+                  ? "border-ink-deep scale-110 shadow-md"
+                  : "border-white/70",
+              )}
+              style={{ backgroundColor: c.value }}
+              aria-label={`Ink color ${c.name}`}
+            />
+          ))}
+        </div>
+
+        {/* brush sizes */}
+        <div className="flex gap-2 items-center">
+          <span className="text-[10px] font-bold text-ink-soft">Size:</span>
+          {BRUSH_SIZES.map((s) => (
+            <button
+              key={s.value}
+              type="button"
+              onClick={() => setBrushSize(s.value)}
+              className={cn(
+                "clay-chip flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold transition-all",
+                brushSize === s.value
+                  ? "bg-lavender-300/70 text-ink-deep shadow-sm"
+                  : "text-ink-soft",
+              )}
+            >
+              <span
+                className="rounded-full"
+                style={{
+                  width: Math.max(4, s.value * 0.8),
+                  height: Math.max(4, s.value * 0.8),
+                  backgroundColor: eraserMode ? "#999" : inkColor,
+                }}
+              />
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
       {/* ─── Editor canvas ────────────────────────────────────────── */}
       <div className="clay-card relative overflow-hidden rounded-[2rem] p-2.5">
         <div className="relative aspect-square overflow-hidden rounded-[1.6rem]">
@@ -331,7 +705,12 @@ export default function GifStudio() {
               <span className="animate-floaty text-7xl drop-shadow-md">{avatar}</span>
             </div>
           ) : (
-            <div className={cn("absolute inset-0 flex items-center justify-center", bg.bg)}>
+            <div
+              className={cn(
+                "absolute inset-0 flex items-center justify-center",
+                bg.bg,
+              )}
+            >
               <span className="text-6xl drop-shadow-sm">{bg.emoji}</span>
             </div>
           )}
@@ -344,7 +723,11 @@ export default function GifStudio() {
               (e.target as HTMLElement).setPointerCapture(e.pointerId);
               stroke(e);
             }}
-            onPointerMove={(e) => drawing.current && stroke(e)}
+            onPointerMove={(e) => {
+              if (!drawing.current) return;
+              e.preventDefault();
+              stroke(e);
+            }}
             onPointerUp={(e) => {
               drawing.current = false;
               lastPoint.current = null;
@@ -355,21 +738,82 @@ export default function GifStudio() {
               drawing.current = false;
               lastPoint.current = null;
             }}
-            className="absolute inset-0 h-full w-full cursor-crosshair touch-none"
+            className={cn(
+              "absolute inset-0 h-full w-full touch-none",
+              eraserMode ? "cursor-cell" : "cursor-crosshair",
+            )}
             aria-label="Doodle canvas"
           />
+
+          {/* Draggable stamps */}
           {stamps.map((s) => (
-            <button
+            <div
               key={s.id}
-              type="button"
-              onClick={() => setStamps((prev) => prev.filter((x) => x.id !== s.id))}
-              className="absolute -translate-x-1/2 -translate-y-1/2 drop-shadow-sm transition-transform hover:scale-110"
-              style={{ left: `${s.x}%`, top: `${s.y}%`, fontSize: s.size }}
-              aria-label="Remove stamp"
+              className="absolute touch-none"
+              style={{
+                left: `${(s.x / SIZE) * 100}%`,
+                top: `${(s.y / SIZE) * 100}%`,
+                transform: "translate(-50%, -50%)",
+                fontSize: s.size,
+                lineHeight: 1,
+                zIndex: selectedStamp === s.id ? 20 : 10,
+              }}
+              onPointerDown={(e) => {
+                setSelectedStamp(s.id);
+                handleStampPointerDown(e, s.id);
+              }}
             >
-              {s.emoji}
-            </button>
+              <span className="drop-shadow-sm select-none pointer-events-none">
+                {s.emoji}
+              </span>
+              {/* Selection controls */}
+              {selectedStamp === s.id && (
+                <div
+                  className="absolute -top-9 left-1/2 flex -translate-x-1/2 gap-1"
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      stampSize(s.id, 8);
+                    }}
+                    className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-ink-deep shadow-md transition-transform hover:scale-110"
+                    aria-label="Bigger"
+                  >
+                    <Plus className="size-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      stampSize(s.id, -8);
+                    }}
+                    className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-ink-deep shadow-md transition-transform hover:scale-110"
+                    aria-label="Smaller"
+                  >
+                    <Minus className="size-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setStamps((prev) => prev.filter((x) => x.id !== s.id));
+                      setSelectedStamp(null);
+                    }}
+                    className="flex h-6 w-6 items-center justify-center rounded-full bg-blush-100 text-blush-500 shadow-md transition-transform hover:scale-110"
+                    aria-label="Remove stamp"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </div>
+              )}
+            </div>
           ))}
+
           {text && (
             <span className="absolute top-3 left-1/2 w-full -translate-x-1/2 px-4 text-center text-lg font-bold text-ink-deep drop-shadow-sm">
               {text}
@@ -384,6 +828,7 @@ export default function GifStudio() {
           type="button"
           onClick={() => {
             setStamps([]);
+            setSelectedStamp(null);
             setText("");
             clearDoodles();
           }}
@@ -422,12 +867,21 @@ export default function GifStudio() {
         className="rounded-2xl border-lavender-200/70 bg-cream-soft text-sm text-ink-deep placeholder:text-ink-soft/70 focus-visible:ring-lavender-300"
       />
 
+      {/* ─── Add / Update frame button ───────────────────────────── */}
       <button
         type="button"
         onClick={addFrame}
         className="clay-btn-soft flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-bold text-ink-deep"
       >
-        <Plus className="size-4" /> Add this as a frame
+        {editingFrameIdx !== null ? (
+          <>
+            <Save className="size-4" /> Update frame
+          </>
+        ) : (
+          <>
+            <Plus className="size-4" /> Add this as a frame
+          </>
+        )}
       </button>
 
       {/* ─── Frames strip + GIF preview ───────────────────────────── */}
@@ -464,17 +918,23 @@ export default function GifStudio() {
             </div>
           </div>
 
+          {/* Tappable thumbnails */}
           <div className="flex gap-2 overflow-x-auto pb-1">
             {frames.map((frame, i) => (
               <div key={i} className="relative shrink-0">
                 <button
                   type="button"
-                  onClick={() => previewFrame(i)}
+                  onClick={() => loadFrameToCanvas(i)}
                   className={cn(
                     "block h-16 w-16 overflow-hidden rounded-2xl transition-transform",
-                    playIdx === i && !playing && "ring-2 ring-lavender-400 ring-offset-2 ring-offset-cream",
+                    editingFrameIdx === i &&
+                      "ring-2 ring-lavender-400 ring-offset-2 ring-offset-cream",
+                    playIdx === i &&
+                      editingFrameIdx !== i &&
+                      !playing &&
+                      "ring-2 ring-mint-400 ring-offset-2 ring-offset-cream",
                   )}
-                  aria-label={`Preview frame ${i + 1}`}
+                  aria-label={`Edit or preview frame ${i + 1}`}
                 >
                   {renderFrame(frame, `thumb-${i}`)}
                 </button>
@@ -483,7 +943,10 @@ export default function GifStudio() {
                 </span>
                 <button
                   type="button"
-                  onClick={() => removeFrame(i)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeFrame(i);
+                  }}
                   className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-blush-200 text-blush-500 transition-colors hover:bg-blush-300"
                   aria-label={`Delete frame ${i + 1}`}
                 >
@@ -495,22 +958,38 @@ export default function GifStudio() {
         </section>
       )}
 
-      <button
-        type="button"
-        onClick={save}
-        disabled={saving}
-        className="clay-btn flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-bold text-cream-soft"
-      >
-        {saving ? (
-          <>
-            <Loader2 className="size-4 animate-spin" /> Tucking it away…
-          </>
-        ) : (
-          <>
-            <Save className="size-4" /> Save GIF to vault
-          </>
-        )}
-      </button>
+      {/* ─── Save / Download / Share buttons ──────────────────────── */}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={save}
+          disabled={saving}
+          className="clay-btn flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-sm font-bold text-cream-soft"
+        >
+          {saving ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Save className="size-4" />
+          )}
+          Save to vault
+        </button>
+        <button
+          type="button"
+          onClick={downloadGif}
+          className="clay-btn-soft flex items-center justify-center gap-1.5 rounded-2xl px-4 py-3.5 text-sm font-bold text-ink-deep"
+        >
+          <Download className="size-4" />
+          Download
+        </button>
+        <button
+          type="button"
+          onClick={shareGif}
+          className="clay-btn-soft flex items-center justify-center gap-1.5 rounded-2xl px-4 py-3.5 text-sm font-bold text-ink-deep"
+        >
+          <Share2 className="size-4" />
+          Share
+        </button>
+      </div>
       <p className="text-center text-[11px] font-semibold text-ink-soft">
         🎞️ mix photos, doodle on them, and make little looping feelings
       </p>
