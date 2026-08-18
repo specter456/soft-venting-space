@@ -442,11 +442,6 @@ export default function GifStudio() {
     });
   };
 
-  const previewFrame = (i: number) => {
-    setPlaying(false);
-    setPlayIdx(i);
-  };
-
   const changeBase = (next: (typeof PHOTO_SCENES)[number] | "avatar") => {
     if (next === bg) return;
     setBg(next);
