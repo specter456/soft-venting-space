@@ -1,15 +1,30 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import { useSearchParams } from "react-router";
-import { Check, ChevronLeft, ChevronRight, Loader2, Lock, Mic, Video } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Lock,
+  Mic,
+  Plus,
+  Minus,
+  X,
+  ImagePlus,
+} from "lucide-react";
 import { AttachmentChip } from "@/components/AttachmentChip";
 import {
   attachRecordingToDiary,
   createDiaryEntry,
+  updateDiaryEntry,
   removeItem,
   useTable,
   type DiaryEntry,
+  type DiaryPageSticker,
+  type DiaryPagePhoto,
+  type DiaryPageStyle,
   type Recording,
 } from "@/lib/db";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,11 +35,109 @@ import { playPageTurn } from "@/lib/sound";
 import { cn } from "@/lib/utils";
 import { safeGetItem, safeSetItem } from "@/lib/safe-storage";
 
+/* ─── Constants ─────────────────────────────────────────────────── */
+
 const COVER_COLORS = ["#c8b2ee", "#f0bcc8", "#ade1c5", "#f2cd99", "#b5d9ef"];
 const COVER_EMBLEMS = ["💗", "⭐", "🌙", "🦋", "☁️", "🌸"];
 const COVER_KEY = "venting-diary-cover";
 
+const DIARY_FONTS = [
+  { id: "hand", label: "Handwritten", className: "font-hand" },
+  { id: "cozy", label: "Cozy", className: "rounded-lg" },
+  { id: "clean", label: "Clean", className: "font-sans" },
+  { id: "elegant", label: "Elegant", className: "font-serif italic" },
+];
+
+const INK_COLORS = [
+  { id: "lavender", label: "Deep lavender", hex: "#6b5b95" },
+  { id: "brown", label: "Soft brown", hex: "#8b6f47" },
+  { id: "pink", label: "Dusty pink", hex: "#c97b84" },
+  { id: "teal", label: "Teal", hex: "#5a8a7a" },
+  { id: "blue", label: "Dark blue", hex: "#4a6fa5" },
+  { id: "gray", label: "Warm gray", hex: "#7a7068" },
+];
+
+const DEFAULT_STYLE: DiaryPageStyle = {
+  font: "hand",
+  headingColor: "#6b5b95",
+  bodyColor: "#3d3654",
+};
+
 type View = "cover" | "read" | "compose";
+
+/* ─── Draggable element on page ─────────────────────────────────── */
+
+function DraggableItem({
+  children,
+  x,
+  y,
+  onMove,
+  onTap,
+  selected,
+}: {
+  children: React.ReactNode;
+  x: number;
+  y: number;
+  onMove: (dx: number, dy: number) => void;
+  onTap: () => void;
+  selected: boolean;
+}) {
+  const dragging = useRef(false);
+  const start = useRef({ x: 0, y: 0 });
+
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      dragging.current = true;
+      start.current = { x: e.clientX, y: e.clientY };
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      e.stopPropagation();
+    },
+    [],
+  );
+
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!dragging.current) return;
+      e.preventDefault();
+      const dx = e.clientX - start.current.x;
+      const dy = e.clientY - start.current.y;
+      start.current = { x: e.clientX, y: e.clientY };
+      onMove(dx, dy);
+    },
+    [onMove],
+  );
+
+  const onPointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      if (!dragging.current) return;
+      dragging.current = false;
+      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+    },
+    [],
+  );
+
+  return (
+    <div
+      className="absolute touch-none"
+      style={{
+        left: `${x}%`,
+        top: `${y}%`,
+        transform: "translate(-50%, -50%)",
+        zIndex: selected ? 30 : 10,
+      }}
+      onPointerDown={(e) => {
+        onPointerDown(e);
+        onTap();
+      }}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ─── Main Component ────────────────────────────────────────────── */
 
 export default function DiaryScreen() {
   const [params] = useSearchParams();
@@ -53,15 +166,43 @@ export default function DiaryScreen() {
   const [weather, setWeather] = useState(DIARY_WEATHER[0]);
   const [stickers, setStickers] = useState<string[]>(["💗"]);
   const [mood, setMood] = useState<MoodId | null>(null);
-  // pre-select the recording we were sent here with (from Record → Attach to Diary)
   const [recordingId, setRecordingId] = useState<string | null>(attachId);
   const [saving, setSaving] = useState(false);
 
-  const selectedRecording = recordings?.find((r) => r._id === recordingId) ?? null;
+  // photos for composer (stored as data URLs)
+  const [composerPhotos, setComposerPhotos] = useState<string[]>([]);
+  // style for composer
+  const [composerStyle, setComposerStyle] = useState<DiaryPageStyle>({
+    ...DEFAULT_STYLE,
+  });
+
+  const selectedRecording =
+    recordings?.find((r) => r._id === recordingId) ?? null;
+
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  // ─── Read-view interactive state ──────────────────────────────
+  const [selectedSticker, setSelectedSticker] = useState<number | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<number | null>(null);
 
   const saveCover = (next: { color: string; emblem: string }) => {
     setCover(next);
     safeSetItem(COVER_KEY, JSON.stringify(next));
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const src = reader.result as string;
+        setComposerPhotos((prev) => [...prev, src]);
+      };
+      reader.readAsDataURL(file);
+    });
+    // reset input so same file can be picked again
+    e.target.value = "";
   };
 
   const save = async () => {
@@ -91,6 +232,28 @@ export default function DiaryScreen() {
               },
         );
       }
+
+      // Build positioned stickers: place them in a gentle scatter
+      const positioned: DiaryPageSticker[] = stickers.map((emoji, i) => {
+        const col = i % 3;
+        const row = Math.floor(i / 3);
+        return {
+          emoji,
+          x: 18 + col * 30 + (row % 2 ? 5 : 0),
+          y: 70 + row * 14,
+          size: 36,
+        };
+      });
+
+      // Build photos
+      const photos: DiaryPagePhoto[] = composerPhotos.map((src) => ({
+        src,
+        x: 50,
+        y: 50,
+        w: 140,
+        h: 140,
+      }));
+
       const entry = createDiaryEntry({
         title: title.trim() || "an unspoken page",
         body: body.trim(),
@@ -98,21 +261,30 @@ export default function DiaryScreen() {
         weather,
         stickers,
         attachments,
+        positionedStickers: positioned,
+        photos,
+        style: { ...composerStyle },
       });
       if (selectedRecording) {
         attachRecordingToDiary(selectedRecording._id, entry._id);
       }
-      toast("Page tucked into your diary", { description: "It'll be waiting for you here." });
+      toast("Page tucked into your diary", {
+        description: "It'll be waiting for you here.",
+      });
       setTitle("");
       setBody("");
       setStickers(["💗"]);
       setMood(null);
       setRecordingId(null);
+      setComposerPhotos([]);
+      setComposerStyle({ ...DEFAULT_STYLE });
       setPage(0);
       setView("read");
     } catch (error) {
       console.error(error);
-      toast("Couldn't save that page", { description: "Please try again in a moment." });
+      toast("Couldn't save that page", {
+        description: "Please try again in a moment.",
+      });
     } finally {
       setSaving(false);
     }
@@ -123,7 +295,96 @@ export default function DiaryScreen() {
   const safePage = Math.min(page, Math.max(0, total - 1));
   const entry = sorted[safePage];
 
-  // ─── Cover ───────────────────────────────────────────────────────
+  // ─── Helpers for read view: update positioned items ────────────
+  const updatePageSticker = useCallback(
+    (entryId: string, idx: number, dx: number, dy: number) => {
+      const e = sorted.find((x) => x._id === entryId);
+      if (!e) return;
+      const ps = [...(e.positionedStickers ?? [])];
+      if (!ps[idx]) return;
+      ps[idx] = { ...ps[idx], x: Math.max(0, Math.min(100, ps[idx].x + (dx / 3) * 1.2)), y: Math.max(0, Math.min(100, ps[idx].y + (dy / 3) * 1.2)) };
+      updateDiaryEntry(entryId, { positionedStickers: ps });
+    },
+    [sorted],
+  );
+
+  const resizePageSticker = useCallback(
+    (entryId: string, idx: number, delta: number) => {
+      const e = sorted.find((x) => x._id === entryId);
+      if (!e) return;
+      const ps = [...(e.positionedStickers ?? [])];
+      if (!ps[idx]) return;
+      ps[idx] = { ...ps[idx], size: Math.max(16, Math.min(72, ps[idx].size + delta)) };
+      updateDiaryEntry(entryId, { positionedStickers: ps });
+    },
+    [sorted],
+  );
+
+  const removePageSticker = useCallback(
+    (entryId: string, idx: number) => {
+      const e = sorted.find((x) => x._id === entryId);
+      if (!e) return;
+      const ps = [...(e.positionedStickers ?? [])];
+      ps.splice(idx, 1);
+      updateDiaryEntry(entryId, { positionedStickers: ps });
+      setSelectedSticker(null);
+    },
+    [sorted],
+  );
+
+  const updatePagePhoto = useCallback(
+    (entryId: string, idx: number, dx: number, dy: number) => {
+      const e = sorted.find((x) => x._id === entryId);
+      if (!e) return;
+      const ph = [...(e.photos ?? [])];
+      if (!ph[idx]) return;
+      ph[idx] = { ...ph[idx], x: Math.max(0, Math.min(100, ph[idx].x + (dx / 3) * 1.2)), y: Math.max(0, Math.min(100, ph[idx].y + (dy / 3) * 1.2)) };
+      updateDiaryEntry(entryId, { photos: ph });
+    },
+    [sorted],
+  );
+
+  const resizePagePhoto = useCallback(
+    (entryId: string, idx: number, delta: number) => {
+      const e = sorted.find((x) => x._id === entryId);
+      if (!e) return;
+      const ph = [...(e.photos ?? [])];
+      if (!ph[idx]) return;
+      ph[idx] = { ...ph[idx], w: Math.max(40, Math.min(300, ph[idx].w + delta)), h: Math.max(40, Math.min(300, ph[idx].h + delta)) };
+      updateDiaryEntry(entryId, { photos: ph });
+    },
+    [sorted],
+  );
+
+  const removePagePhoto = useCallback(
+    (entryId: string, idx: number) => {
+      const e = sorted.find((x) => x._id === entryId);
+      if (!e) return;
+      const ph = [...(e.photos ?? [])];
+      ph.splice(idx, 1);
+      updateDiaryEntry(entryId, { photos: ph });
+      setSelectedPhoto(null);
+    },
+    [sorted],
+  );
+
+  const setBackgroundPhoto = useCallback(
+    (entryId: string, photoIdx: number) => {
+      const e = sorted.find((x) => x._id === entryId);
+      if (!e) return;
+      const ph = e.photos ?? [];
+      if (!ph[photoIdx]) return;
+      const s = { ...(e.style ?? DEFAULT_STYLE), bgPhoto: ph[photoIdx].src };
+      updateDiaryEntry(entryId, { style: s });
+      toast("Background set", { description: "The photo is now this page's background." });
+    },
+    [sorted],
+  );
+
+  const getFontClass = (fontId: string) =>
+    DIARY_FONTS.find((f) => f.id === fontId)?.className ?? "font-hand";
+
+  /* ─── Cover ─────────────────────────────────────────────────── */
   if (view === "cover") {
     return (
       <div className="flex flex-col items-center pt-4">
@@ -133,7 +394,6 @@ export default function DiaryScreen() {
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="w-full max-w-xs"
         >
-          {/* book */}
           <div
             className="relative rounded-r-[2rem] rounded-l-lg p-7 pt-10 pb-8"
             style={{
@@ -184,7 +444,6 @@ export default function DiaryScreen() {
             </div>
           </div>
 
-          {/* customize */}
           <AnimatePresence>
             {showCustomize && (
               <motion.div
@@ -195,7 +454,9 @@ export default function DiaryScreen() {
                 className="overflow-hidden"
               >
                 <div className="clay-card mt-4 rounded-3xl p-4">
-                  <p className="text-xs font-bold text-ink-soft uppercase tracking-wide">Cover color</p>
+                  <p className="text-xs font-bold text-ink-soft uppercase tracking-wide">
+                    Cover color
+                  </p>
                   <div className="mt-2 flex gap-2">
                     {COVER_COLORS.map((c) => (
                       <button
@@ -205,13 +466,16 @@ export default function DiaryScreen() {
                         aria-label={`Cover color ${c}`}
                         className={cn(
                           "h-9 w-9 rounded-full transition-transform hover:scale-110",
-                          cover.color === c && "ring-2 ring-lavender-400 ring-offset-2 ring-offset-cream",
+                          cover.color === c &&
+                            "ring-2 ring-lavender-400 ring-offset-2 ring-offset-cream",
                         )}
                         style={{ backgroundColor: c }}
                       />
                     ))}
                   </div>
-                  <p className="mt-4 text-xs font-bold text-ink-soft uppercase tracking-wide">Emblem</p>
+                  <p className="mt-4 text-xs font-bold text-ink-soft uppercase tracking-wide">
+                    Emblem
+                  </p>
                   <div className="mt-2 flex gap-2">
                     {COVER_EMBLEMS.map((e) => (
                       <button
@@ -220,7 +484,8 @@ export default function DiaryScreen() {
                         onClick={() => saveCover({ ...cover, emblem: e })}
                         className={cn(
                           "clay-chip flex h-10 w-10 items-center justify-center rounded-full text-xl transition-transform hover:scale-110",
-                          cover.emblem === e && "ring-2 ring-lavender-400 ring-offset-2 ring-offset-cream",
+                          cover.emblem === e &&
+                            "ring-2 ring-lavender-400 ring-offset-2 ring-offset-cream",
                         )}
                       >
                         {e}
@@ -234,13 +499,14 @@ export default function DiaryScreen() {
         </motion.div>
 
         <p className="mt-6 text-center text-[11px] font-semibold text-ink-soft">
-          🔒 weather, stickers & voices — all kept between these covers, only for you
+          🔒 weather, stickers & voices — all kept between these covers, only
+          for you
         </p>
       </div>
     );
   }
 
-  // ─── Composer ────────────────────────────────────────────────────
+  /* ─── Composer ──────────────────────────────────────────────── */
   if (view === "compose") {
     return (
       <div className="space-y-5">
@@ -260,11 +526,18 @@ export default function DiaryScreen() {
           autoCapitalize="sentences"
           spellCheck={false}
           placeholder="Dear diary…"
-          className="font-hand min-h-40 resize-none rounded-[2rem] border-lavender-200/70 bg-cream-soft px-5 py-5 text-lg leading-relaxed text-ink-deep placeholder:text-ink-soft/60 focus-visible:ring-lavender-300"
+          className={cn(
+            "min-h-40 resize-none rounded-[2rem] border-lavender-200/70 bg-cream-soft px-5 py-5 text-lg leading-relaxed text-ink-deep placeholder:text-ink-soft/60 focus-visible:ring-lavender-300",
+            getFontClass(composerStyle.font),
+          )}
+          style={{ color: composerStyle.bodyColor }}
         />
 
+        {/* ─── Weather ────────────────────────────────────────── */}
         <section>
-          <p className="text-xs font-bold text-ink-soft uppercase tracking-wide">Today&apos;s weather</p>
+          <p className="text-xs font-bold text-ink-soft uppercase tracking-wide">
+            Today&apos;s weather
+          </p>
           <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
             {DIARY_WEATHER.map((w) => (
               <button
@@ -273,7 +546,8 @@ export default function DiaryScreen() {
                 onClick={() => setWeather(w)}
                 className={cn(
                   "clay-chip flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl transition-transform hover:scale-110",
-                  weather === w && "ring-2 ring-lavender-400 ring-offset-2 ring-offset-cream",
+                  weather === w &&
+                    "ring-2 ring-lavender-400 ring-offset-2 ring-offset-cream",
                 )}
               >
                 {w}
@@ -282,8 +556,11 @@ export default function DiaryScreen() {
           </div>
         </section>
 
+        {/* ─── Stickers ────────────────────────────────────────── */}
         <section>
-          <p className="text-xs font-bold text-ink-soft uppercase tracking-wide">Stickers for the page</p>
+          <p className="text-xs font-bold text-ink-soft uppercase tracking-wide">
+            Stickers for the page
+          </p>
           <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
             {DIARY_STICKERS.map((s) => {
               const active = stickers.includes(s);
@@ -298,7 +575,8 @@ export default function DiaryScreen() {
                   }
                   className={cn(
                     "clay-chip flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl transition-transform hover:scale-110",
-                    active && "ring-2 ring-lavender-400 ring-offset-2 ring-offset-cream",
+                    active &&
+                      "ring-2 ring-lavender-400 ring-offset-2 ring-offset-cream",
                   )}
                 >
                   {s}
@@ -308,6 +586,51 @@ export default function DiaryScreen() {
           </div>
         </section>
 
+        {/* ─── Photos ────────────────────────────────────────── */}
+        <section>
+          <p className="text-xs font-bold text-ink-soft uppercase tracking-wide">
+            Photos <span className="normal-case">(optional)</span>
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => photoInputRef.current?.click()}
+              className="clay-chip flex h-11 items-center gap-1.5 rounded-full px-3 text-xs font-bold text-ink-soft transition-transform hover:scale-105"
+            >
+              <ImagePlus className="size-4" /> add photo
+            </button>
+            {composerPhotos.map((src, i) => (
+              <div key={i} className="relative">
+                <img
+                  src={src}
+                  alt={`Photo ${i + 1}`}
+                  className="h-11 w-11 rounded-xl object-cover ring-1 ring-lavender-200"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setComposerPhotos((prev) =>
+                      prev.filter((_, j) => j !== i),
+                    )
+                  }
+                  className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-blush-200 text-blush-500"
+                >
+                  <X className="size-2.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handlePhotoUpload}
+            className="hidden"
+          />
+        </section>
+
+        {/* ─── Mood ────────────────────────────────────────────── */}
         <section>
           <p className="text-xs font-bold text-ink-soft uppercase tracking-wide">
             Mood <span className="normal-case">(optional)</span>
@@ -331,9 +654,11 @@ export default function DiaryScreen() {
           </div>
         </section>
 
+        {/* ─── Recording attachment ────────────────────────────── */}
         <section>
           <p className="text-xs font-bold text-ink-soft uppercase tracking-wide">
-            Attach a recording <span className="normal-case">(optional)</span>
+            Attach a recording{" "}
+            <span className="normal-case">(optional)</span>
           </p>
           {recordings.length === 0 ? (
             <p className="mt-2 rounded-2xl bg-cream-deep/50 px-4 py-3 text-xs font-medium text-ink-soft">
@@ -350,26 +675,113 @@ export default function DiaryScreen() {
                     onClick={() => setRecordingId(active ? null : rec._id)}
                     className={cn(
                       "flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition-all",
-                      active ? "bg-lavender-500/15 ring-2 ring-lavender-400" : "clay-chip",
+                      active
+                        ? "bg-lavender-500/15 ring-2 ring-lavender-400"
+                        : "clay-chip",
                     )}
                   >
                     <span className="clay-chip flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lavender-600">
-                      {rec.kind === "voice" ? <Mic className="size-4" /> : <Video className="size-4" />}
+                      {rec.kind === "voice" ? (
+                        <Mic className="size-4" />
+                      ) : (
+                        <span className="text-sm">🎥</span>
+                      )}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-xs font-bold text-ink-deep">
                         {rec.kind === "voice" ? "Voice vent" : "Video vent"}
                       </span>
                       <span className="block text-[10px] font-semibold text-ink-soft">
-                        {Math.floor(rec.duration / 60)}:{String(rec.duration % 60).padStart(2, "0")} · 🔒 private
+                        {Math.floor(rec.duration / 60)}:
+                        {String(rec.duration % 60).padStart(2, "0")} · 🔒
+                        private
                       </span>
                     </span>
-                    {active && <Check className="size-4 shrink-0 text-lavender-600" />}
+                    {active && (
+                      <Check className="size-4 shrink-0 text-lavender-600" />
+                    )}
                   </button>
                 );
               })}
             </div>
           )}
+        </section>
+
+        {/* ─── Font ────────────────────────────────────────────── */}
+        <section>
+          <p className="text-xs font-bold text-ink-soft uppercase tracking-wide">
+            Page font
+          </p>
+          <div className="mt-2 flex gap-2 flex-wrap">
+            {DIARY_FONTS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() =>
+                  setComposerStyle((s) => ({ ...s, font: f.id }))
+                }
+                className={cn(
+                  "rounded-full px-3.5 py-1.5 text-xs font-bold transition-all",
+                  composerStyle.font === f.id
+                    ? "bg-lavender-500 text-cream-soft shadow-sm"
+                    : "clay-chip text-ink-soft",
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* ─── Text colors ──────────────────────────────────────── */}
+        <section>
+          <p className="text-xs font-bold text-ink-soft uppercase tracking-wide">
+            Heading color
+          </p>
+          <div className="mt-2 flex gap-2 flex-wrap">
+            {INK_COLORS.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() =>
+                  setComposerStyle((s) => ({ ...s, headingColor: c.hex }))
+                }
+                aria-label={c.label}
+                className={cn(
+                  "h-7 w-7 rounded-full border-2 transition-all",
+                  composerStyle.headingColor === c.hex
+                    ? "border-ink-deep scale-110 shadow-md"
+                    : "border-white/70",
+                )}
+                style={{ backgroundColor: c.hex }}
+              />
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <p className="text-xs font-bold text-ink-soft uppercase tracking-wide">
+            Body text color
+          </p>
+          <div className="mt-2 flex gap-2 flex-wrap">
+            {INK_COLORS.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() =>
+                  setComposerStyle((s) => ({ ...s, bodyColor: c.hex }))
+                }
+                aria-label={c.label}
+                className={cn(
+                  "h-7 w-7 rounded-full border-2 transition-all",
+                  composerStyle.bodyColor === c.hex
+                    ? "border-ink-deep scale-110 shadow-md"
+                    : "border-white/70",
+                )}
+                style={{ backgroundColor: c.hex }}
+              />
+            ))}
+          </div>
         </section>
 
         <div className="flex gap-2">
@@ -388,7 +800,8 @@ export default function DiaryScreen() {
           >
             {saving ? (
               <span className="flex items-center justify-center gap-2">
-                <Loader2 className="size-4 animate-spin" /> Writing the page…
+                <Loader2 className="size-4 animate-spin" /> Writing the
+                page…
               </span>
             ) : (
               "Tuck it into the diary"
@@ -399,7 +812,7 @@ export default function DiaryScreen() {
     );
   }
 
-  // ─── Read with page-turn ─────────────────────────────────────────
+  /* ─── Read with page-turn ───────────────────────────────────── */
   if (total === 0) {
     return (
       <div className="clay-card rounded-[2rem] px-6 py-14 text-center">
@@ -421,6 +834,11 @@ export default function DiaryScreen() {
       </div>
     );
   }
+
+  const pageStyle = entry?.style ?? DEFAULT_STYLE;
+  const positionedStickers = entry?.positionedStickers ?? [];
+  const pagePhotos = entry?.photos ?? [];
+  const bgPhoto = pageStyle.bgPhoto;
 
   return (
     <div className="space-y-5">
@@ -447,14 +865,31 @@ export default function DiaryScreen() {
             exit={{ rotateY: 80, opacity: 0, x: 40 }}
             transition={{ duration: 0.55, ease: "easeInOut" }}
             style={{ transformStyle: "preserve-3d" }}
-            className="clay-card relative min-h-[26rem] rounded-[1.6rem] p-6"
+            className="clay-card relative min-h-[26rem] overflow-hidden rounded-[1.6rem] p-6"
           >
+            {/* Background photo (softened) */}
+            {bgPhoto && (
+              <div
+                className="pointer-events-none absolute inset-0 rounded-[1.6rem]"
+                aria-hidden
+              >
+                <img
+                  src={bgPhoto}
+                  alt=""
+                  className="h-full w-full object-cover opacity-20 blur-[1px]"
+                />
+                <div className="absolute inset-0 bg-cream-soft/50" />
+              </div>
+            )}
+
+            {/* Margin line */}
             <div
               aria-hidden
               className="absolute inset-y-0 left-3 w-px bg-lavender-200/60"
             />
+
             {/* header */}
-            <div className="flex items-center justify-between">
+            <div className="relative flex items-center justify-between">
               <span className="text-2xl" aria-hidden>
                 {entry.weather}
               </span>
@@ -470,52 +905,187 @@ export default function DiaryScreen() {
               </span>
             </div>
 
-            <h3 className="font-hand mt-4 text-2xl font-bold tracking-tight text-ink-deep">
+            <h3
+              className={cn(
+                "relative mt-4 text-2xl font-bold tracking-tight",
+                getFontClass(pageStyle.font),
+              )}
+              style={{ color: pageStyle.headingColor }}
+            >
               {entry.title}
             </h3>
 
             {entry.mood && (
-              <span className="mt-2 inline-block rounded-full bg-lavender-100/80 px-2.5 py-1 text-[10px] font-bold text-lavender-600">
+              <span className="relative mt-2 inline-block rounded-full bg-lavender-100/80 px-2.5 py-1 text-[10px] font-bold text-lavender-600">
                 {moodById(entry.mood)?.emoji} {moodById(entry.mood)?.label}
               </span>
             )}
 
-            <p className="font-hand mt-4 text-lg leading-relaxed text-ink">
+            <p
+              className={cn(
+                "relative mt-4 text-lg leading-relaxed",
+                getFontClass(pageStyle.font),
+              )}
+              style={{ color: pageStyle.bodyColor }}
+            >
               {entry.body}
             </p>
 
             {entry.attachments.length > 0 && (
-              <div className="mt-5 flex flex-wrap gap-2">
+              <div className="relative mt-5 flex flex-wrap gap-2">
                 {entry.attachments.map((a, i) => (
                   <AttachmentChip key={i} attachment={a} />
                 ))}
               </div>
             )}
 
-            {/* stickers */}
-            {entry.stickers.length > 0 && (
-              <div className="mt-6 flex flex-wrap items-center gap-2">
-                {entry.stickers.map((s, i) => (
-                  <motion.span
-                    key={`${s}-${i}`}
-                    initial={{ scale: 0, rotate: -12 }}
-                    animate={{ scale: 1, rotate: i % 2 === 0 ? -8 : 8 }}
-                    transition={{ type: "spring", stiffness: 240, damping: 14, delay: 0.2 + i * 0.06 }}
-                    className="text-2xl drop-shadow-sm"
-                    aria-hidden
+            {/* ─── Draggable positioned stickers ─────────────── */}
+            {positionedStickers.map((ps, i) => (
+              <DraggableItem
+                key={`s-${i}-${ps.emoji}`}
+                x={ps.x}
+                y={ps.y}
+                selected={selectedSticker === i}
+                onTap={() => {
+                  setSelectedSticker(selectedSticker === i ? null : i);
+                  setSelectedPhoto(null);
+                }}
+                onMove={(dx, dy) =>
+                  updatePageSticker(entry._id, i, dx, dy)
+                }
+              >
+                <span
+                  className="drop-shadow-sm"
+                  style={{ fontSize: ps.size, lineHeight: 1 }}
+                  aria-hidden
+                >
+                  {ps.emoji}
+                </span>
+                {selectedSticker === i && (
+                  <div
+                    className="absolute -top-10 left-1/2 flex -translate-x-1/2 gap-1"
+                    onPointerDown={(e) => e.stopPropagation()}
                   >
-                    {s}
-                  </motion.span>
-                ))}
-              </div>
-            )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        resizePageSticker(entry._id, i, 6);
+                      }}
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-ink-deep shadow-md transition-transform hover:scale-110"
+                      aria-label="Bigger"
+                    >
+                      <Plus className="size-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        resizePageSticker(entry._id, i, -6);
+                      }}
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-ink-deep shadow-md transition-transform hover:scale-110"
+                      aria-label="Smaller"
+                    >
+                      <Minus className="size-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removePageSticker(entry._id, i);
+                      }}
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-blush-100 text-blush-500 shadow-md transition-transform hover:scale-110"
+                      aria-label="Remove"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </div>
+                )}
+              </DraggableItem>
+            ))}
+
+            {/* ─── Draggable photos ─────────────────────────── */}
+            {pagePhotos.map((ph, i) => (
+              <DraggableItem
+                key={`ph-${i}`}
+                x={ph.x}
+                y={ph.y}
+                selected={selectedPhoto === i}
+                onTap={() => {
+                  setSelectedPhoto(selectedPhoto === i ? null : i);
+                  setSelectedSticker(null);
+                }}
+                onMove={(dx, dy) => updatePagePhoto(entry._id, i, dx, dy)}
+              >
+                <img
+                  src={ph.src}
+                  alt={`Photo ${i + 1}`}
+                  className="rounded-xl shadow-md"
+                  style={{ width: ph.w, height: ph.h, objectFit: "cover" }}
+                />
+                {selectedPhoto === i && (
+                  <div
+                    className="absolute -top-10 left-1/2 flex -translate-x-1/2 gap-1"
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        resizePagePhoto(entry._id, i, 20);
+                      }}
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-ink-deep shadow-md transition-transform hover:scale-110"
+                      aria-label="Bigger"
+                    >
+                      <Plus className="size-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        resizePagePhoto(entry._id, i, -20);
+                      }}
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-ink-deep shadow-md transition-transform hover:scale-110"
+                      aria-label="Smaller"
+                    >
+                      <Minus className="size-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removePagePhoto(entry._id, i);
+                      }}
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-blush-100 text-blush-500 shadow-md transition-transform hover:scale-110"
+                      aria-label="Remove"
+                    >
+                      <X className="size-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setBackgroundPhoto(entry._id, i);
+                      }}
+                      className="flex h-6 items-center gap-0.5 rounded-full bg-white/90 px-2 text-[9px] font-bold text-ink-deep shadow-md transition-transform hover:scale-110"
+                      aria-label="Set as background"
+                    >
+                      🖼 bg
+                    </button>
+                  </div>
+                )}
+              </DraggableItem>
+            ))}
 
             <button
-              type="button"                onClick={() => {
-                  removeItem("diaryEntries", entry._id);
-                  setPage((p) => Math.max(0, p - 1));
-                  toast("Page removed", { description: "That page is gone for good." });
-                }}
+              type="button"
+              onClick={() => {
+                removeItem("diaryEntries", entry._id);
+                setPage((p) => Math.max(0, p - 1));
+                toast("Page removed", {
+                  description: "That page is gone for good.",
+                });
+              }}
               className="absolute right-4 bottom-4 flex h-8 w-8 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-blush-100/70 hover:text-blush-500"
               aria-label="Delete this page"
             >
@@ -531,6 +1101,8 @@ export default function DiaryScreen() {
           type="button"
           onClick={() => {
             setPage((p) => Math.max(0, p - 1));
+            setSelectedSticker(null);
+            setSelectedPhoto(null);
             playPageTurn();
           }}
           disabled={safePage === 0}
@@ -549,6 +1121,8 @@ export default function DiaryScreen() {
           type="button"
           onClick={() => {
             setPage((p) => Math.min(total - 1, p + 1));
+            setSelectedSticker(null);
+            setSelectedPhoto(null);
             playPageTurn();
           }}
           disabled={safePage === total - 1}
@@ -559,7 +1133,7 @@ export default function DiaryScreen() {
       </div>
 
       <p className="text-center text-[11px] font-semibold text-ink-soft">
-        pages turn gently — like this little book knows how you feel
+        drag stickers & photos anywhere — your page, your layout 🌸
       </p>
     </div>
   );

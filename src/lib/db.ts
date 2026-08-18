@@ -56,6 +56,28 @@ export interface Note extends LocalRow {
   attachments: Attachment[];
 }
 
+export interface DiaryPageSticker {
+  emoji: string;
+  x: number;
+  y: number;
+  size: number;
+}
+
+export interface DiaryPagePhoto {
+  src: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface DiaryPageStyle {
+  font: string;
+  headingColor: string;
+  bodyColor: string;
+  bgPhoto?: string;
+}
+
 export interface DiaryEntry extends LocalRow {
   title: string;
   body: string;
@@ -63,6 +85,9 @@ export interface DiaryEntry extends LocalRow {
   weather: string;
   stickers: string[];
   attachments: Attachment[];
+  positionedStickers?: DiaryPageSticker[];
+  photos?: DiaryPagePhoto[];
+  style?: DiaryPageStyle;
 }
 
 export interface VaultItem extends LocalRow {
@@ -249,6 +274,18 @@ export function createDiaryEntry(
   input: Omit<DiaryEntry, "_id" | "_creationTime">,
 ): DiaryEntry {
   return addRow<DiaryEntry>("diaryEntries", input);
+}
+
+export function updateDiaryEntry(
+  id: string,
+  patch: Partial<Omit<DiaryEntry, "_id" | "_creationTime">>,
+): void {
+  const entry = (cache.diaryEntries as DiaryEntry[]).find((e) => e._id === id);
+  if (!entry) return;
+  const updated = { ...entry, ...patch };
+  cache.diaryEntries = cache.diaryEntries.map((e) => (e._id === id ? updated : e));
+  void persistPut("diaryEntries", updated);
+  notify();
 }
 
 export function createVaultItem(
