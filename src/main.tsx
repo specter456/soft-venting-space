@@ -13,6 +13,7 @@ import "./index.css";
 // flash between screens. Everything reads from the on-device reactive cache,
 // so screens paint immediately and content simply fills in.
 import Landing from "./pages/Landing";
+import LoginEntry from "./pages/LoginEntry";
 import WelcomeCheckin from "./pages/WelcomeCheckin";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
@@ -111,6 +112,14 @@ createRoot(document.getElementById("root")!).render(
             element={
               <RouteShell>
                 <Landing />
+              </RouteShell>
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <RouteShell>
+                <LoginEntry />
               </RouteShell>
             }
           />

@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Logo } from "@/components/Logo";
@@ -18,13 +18,20 @@ const DAY_MOODS = [
   { id: "nervous", label: "Nervous", emoji: "😰" },
 ];
 
+function todayDayName(): string {
+  return new Date().toLocaleDateString(undefined, { weekday: "long" });
+}
+
 /**
- * Short welcome flow, shown once after the entry screen: a soft popup card
- * with a warm greeting, one question ("How was your day?"), four emoji
- * options in a row, and a small Skip. Everything stays on this device.
+ * Two-step welcome flow:
+ * 1. Warm welcome popup ("Welcome! Hope you had a nice day. Keep smiling.")
+ * 2. Check-in ("How was your day?" with today's day name + four emojis + Skip)
+ *
+ * Everything stays on this device.
  */
 export default function WelcomeCheckin() {
   const navigate = useNavigate();
+  const [step, setStep] = useState<"welcome" | "checkin">("welcome");
   const [picked, setPicked] = useState<string | null>(null);
 
   const finish = (moodId: string | null) => {
@@ -36,6 +43,7 @@ export default function WelcomeCheckin() {
     navigate("/dashboard");
   };
   const guardedFinish = useTapGuard(finish, 450);
+  const guardedNext = useTapGuard(() => setStep("checkin"), 450);
 
   return (
     <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-gradient-to-b from-cream-soft via-cream to-lavender-50 px-5 text-ink">
@@ -78,66 +86,100 @@ export default function WelcomeCheckin() {
           <Logo className="h-16 w-16" />
         </motion.div>
 
-        <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink-deep">
-          Welcome to Venting.
-        </h1>
-        <p className="mt-2 text-[15px] leading-relaxed font-medium text-ink">
-          We hope you had a nice day.
-        </p>
-        <p className="mt-1 text-[15px] leading-relaxed font-medium text-ink">
-          I hope you can keep shining.
-        </p>
+        <AnimatePresence mode="wait">
+          {step === "welcome" ? (
+            <motion.div
+              key="welcome"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink-deep">
+                Welcome!
+              </h1>
+              <p className="mt-2 text-[15px] leading-relaxed font-medium text-ink">
+                Hope you had a nice day.
+              </p>
+              <p className="mt-1 text-[15px] leading-relaxed font-medium text-ink">
+                Keep smiling. ✨
+              </p>
 
-        <div className="mx-auto mt-6 h-px w-24 bg-lavender-200" aria-hidden />
+              <div className="mx-auto mt-6 h-px w-24 bg-lavender-200" aria-hidden />
 
-        {/* ─── One question, four options ─────────────────────────── */}
-        <p className="mt-6 text-base font-bold tracking-tight text-ink-deep">
-          How was your day?
-        </p>
-
-        <div className="mt-5 flex items-center justify-between gap-2">
-          {DAY_MOODS.map((m) => {
-            const active = picked === m.id;
-            return (
               <button
-                key={m.id}
                 type="button"
-                onClick={() => {
-                  setPicked(m.id);
-                  guardedFinish(m.id);
-                }}
-                aria-pressed={active}
-                className="group flex flex-1 flex-col items-center gap-1.5"
+                onClick={guardedNext}
+                className="clay-btn mt-7 inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-bold text-cream-soft"
               >
-                <span
-                  className={cn(
-                    "clay-chip flex h-14 w-14 items-center justify-center rounded-full text-3xl transition-all",
-                    active && "mood-bubble mood-bubble-selected scale-110",
-                  )}
-                >
-                  <span aria-hidden className="drop-shadow-sm">
-                    {m.emoji}
-                  </span>
-                </span>
-                <span className="text-[11px] font-bold text-ink-soft group-hover:text-ink">
-                  {m.label}
-                </span>
+                Continue
               </button>
-            );
-          })}
-        </div>
 
-        <button
-          type="button"
-          onClick={() => guardedFinish(null)}
-          className="mt-7 text-xs font-bold text-ink-soft underline-offset-4 transition-colors hover:text-ink-deep hover:underline"
-        >
-          Skip
-        </button>
+              <p className="mt-4 text-center text-[11px] font-semibold text-ink-soft">
+                🔒 Private and safe. Only you can see this.
+              </p>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="checkin"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="mx-auto mt-4 h-px w-24 bg-lavender-200" aria-hidden />
 
-        <p className="mt-4 text-center text-[11px] font-semibold text-ink-soft">
-          🔒 Private and safe. Only you can see this.
-        </p>
+              {/* ─── One question, four options ─────────────────────── */}
+              <p className="mt-6 text-base font-bold tracking-tight text-ink-deep">
+                How was your {todayDayName()}?
+              </p>
+
+              <div className="mt-5 flex items-center justify-between gap-2">
+                {DAY_MOODS.map((m) => {
+                  const active = picked === m.id;
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => {
+                        setPicked(m.id);
+                        guardedFinish(m.id);
+                      }}
+                      aria-pressed={active}
+                      className="group flex flex-1 flex-col items-center gap-1.5"
+                    >
+                      <span
+                        className={cn(
+                          "clay-chip flex h-14 w-14 items-center justify-center rounded-full text-3xl transition-all",
+                          active && "mood-bubble mood-bubble-selected scale-110",
+                        )}
+                      >
+                        <span aria-hidden className="drop-shadow-sm">
+                          {m.emoji}
+                        </span>
+                      </span>
+                      <span className="text-[11px] font-bold text-ink-soft group-hover:text-ink">
+                        {m.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => guardedFinish(null)}
+                className="mt-7 text-xs font-bold text-ink-soft underline-offset-4 transition-colors hover:text-ink-deep hover:underline"
+              >
+                Skip
+              </button>
+
+              <p className="mt-4 text-center text-[11px] font-semibold text-ink-soft">
+                🔒 Private and safe. Only you can see this.
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </div>
   );
