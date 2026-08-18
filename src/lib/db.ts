@@ -110,6 +110,7 @@ export interface CalendarEntry extends LocalRow {
   /** Local calendar day, formatted "YYYY-MM-DD". */
   dateKey: string;
   type: CalendarEntryType;
+  heading?: string;
   body: string;
   /** Optional schedule time, free text like "4:00 pm". */
   time?: string;
