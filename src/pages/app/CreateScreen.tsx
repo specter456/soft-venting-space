@@ -2,9 +2,10 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useState } from "react";
 import { Link } from "react-router";
-import { ArrowLeft, Check, Images, Loader2, Lock, Palette, Sparkles, ImageDown } from "lucide-react";
+import { ArrowLeft, Check, Images, Loader2, Lock, Palette, Sparkles, ImageDown, Grid2x2 } from "lucide-react";
 import { createVaultItem } from "@/lib/db";
 import { saveToGallery } from "@/lib/save-to-gallery";
+import { combineIntoCollage } from "@/lib/collage";
 import { PHOTO_SCENES } from "@/lib/art";
 import { renderPhotoScene } from "@/lib/canvas-art";
 import { cn } from "@/lib/utils";
@@ -153,6 +154,26 @@ export default function CreateScreen() {
             Gallery
           </button>
         </div>
+        {selected.length >= 2 && (
+          <button
+            type="button"
+            onClick={async () => {
+              const arts = selected.map((emoji) => {
+                const scene = PHOTO_SCENES.find((s) => s.emoji === emoji);
+                return scene ? renderPhotoScene(scene.emoji, scene.bg) : "";
+              }).filter(Boolean);
+              const collage = await combineIntoCollage(arts);
+              if (collage) {
+                createVaultItem({ kind: "photo", art: collage, bg: "tile-peach", caption: `a ${arts.length}-photo collage` });
+                saveToGallery(collage, `venting-collage-${Date.now()}.png`);
+                toast("Collage saved", { description: `${arts.length} photos combined into one framed photo.` });
+              }
+            }}
+            className="clay-btn-soft flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-ink-deep"
+          >
+            <Grid2x2 className="size-4" /> combine all into one framed photo ({selected.length} photos)
+          </button>
+        )}
         <p className="text-center text-[11px] font-semibold text-ink-soft">
           🔒 double-locked · only you can open the vault
         </p>

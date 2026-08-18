@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useEffect, useRef, useState, useCallback, type PointerEvent as ReactPointerEvent } from "react";
-import { Loader2, Pause, Play, Plus, RotateCcw, Save, Trash2, Download, Share2, Minus, X } from "lucide-react";
+import { Loader2, Pause, Play, Plus, RotateCcw, Save, Trash2, Download, Share2, Minus, X, Copy, Grid2x2 } from "lucide-react";
 import { createVaultItem } from "@/lib/db";
+import { combineIntoCollage } from "@/lib/collage";
+import { saveToGallery } from "@/lib/save-to-gallery";
 import { GIFT_STAMPS, PHOTO_SCENES, VIDEO_AVATARS } from "@/lib/art";
 import { fillTileGradient, loadImageToCanvas } from "@/lib/canvas-art";
 import { gifDataUrlFromCanvases } from "@/lib/gif";
@@ -862,22 +864,37 @@ export default function GifStudio() {
         className="rounded-2xl border-lavender-200/70 bg-cream-soft text-sm text-ink-deep placeholder:text-ink-soft/70 focus-visible:ring-lavender-300"
       />
 
-      {/* ─── Add / Update frame button ───────────────────────────── */}
-      <button
-        type="button"
-        onClick={addFrame}
-        className="clay-btn-soft flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-bold text-ink-deep"
-      >
-        {editingFrameIdx !== null ? (
-          <>
-            <Save className="size-4" /> Update frame
-          </>
-        ) : (
-          <>
-            <Plus className="size-4" /> Add this as a frame
-          </>
-        )}
-      </button>
+      {/* ─── Add / Update / Duplicate frame button ────────────────── */}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={addFrame}
+          className="clay-btn-soft flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-sm font-bold text-ink-deep"
+        >
+          {editingFrameIdx !== null ? (
+            <>
+              <Save className="size-4" /> Update frame
+            </>
+          ) : (
+            <>
+              <Plus className="size-4" /> Add as frame
+            </>
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const img = composeFrame();
+            if (!img) return;
+            setFrames((f) => [...f, { img }]);
+            setEditingFrameIdx(null);
+            toast("Frame duplicated", { description: "A copy of the current frame was added." });
+          }}
+          className="clay-btn-soft flex items-center justify-center gap-1.5 rounded-2xl px-4 py-3.5 text-sm font-bold text-ink-deep"
+        >
+          <Copy className="size-4" /> duplicate
+        </button>
+      </div>
 
       {/* ─── Frames strip + GIF preview ───────────────────────────── */}
       {frames.length > 0 && (
@@ -951,6 +968,33 @@ export default function GifStudio() {
             ))}
           </div>
         </section>
+      )}
+
+      {/* ─── Combine all frames into collage ──────────────────────── */}
+      {frames.length >= 2 && (
+        <button
+          type="button"
+          disabled={saving}
+          onClick={async () => {
+            setSaving(true);
+            try {
+              const arts = frames.map((f) => f.img);
+              const collage = await combineIntoCollage(arts);
+              if (collage) {
+                createVaultItem({ kind: "photo", art: collage, bg: "tile-blush", caption: `a ${arts.length}-frame collage` });
+                saveToGallery(collage, `venting-collage-${Date.now()}.png`);
+                toast("Collage saved", { description: `${arts.length} frames combined into one framed photo.` });
+              }
+            } catch {
+              toast("Couldn't combine frames", { description: "Please try again." });
+            } finally {
+              setSaving(false);
+            }
+          }}
+          className="clay-btn-soft flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-ink-deep"
+        >
+          <Grid2x2 className="size-4" /> combine all into one framed photo ({frames.length} frames)
+        </button>
       )}
 
       {/* ─── Save / Download / Share buttons ──────────────────────── */}

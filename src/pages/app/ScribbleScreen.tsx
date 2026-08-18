@@ -1,8 +1,9 @@
 import { toast } from "sonner";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { Eraser, Loader2, Paintbrush, Pen, Save, Square, ImageDown } from "lucide-react";
+import { Eraser, Loader2, Paintbrush, Pen, Save, Square, ImageDown, Copy, Grid2x2 } from "lucide-react";
 import { createVaultItem } from "@/lib/db";
 import { saveToGallery } from "@/lib/save-to-gallery";
+import { combineIntoCollage } from "@/lib/collage";
 import { cn } from "@/lib/utils";
 
 type ToolId = "pencil" | "crayon" | "brush" | "marker" | "eraser";
@@ -69,6 +70,7 @@ export default function ScribbleScreen() {
   const [color, setColor] = useState(COLORS[0]);
   const [bg, setBg] = useState(BACKGROUNDS[0]);
   const [saving, setSaving] = useState(false);
+  const [versions, setVersions] = useState<string[]>([]);
 
   const bgClass = BACKGROUNDS.find((b) => b.id === bg.id)!.cls;
 
@@ -250,6 +252,50 @@ export default function ScribbleScreen() {
           />
         ))}
       </div>
+
+      {/* ─── Duplicate ──────────────────────────────────────── */}
+      <button
+        type="button"
+        onClick={() => {
+          const art = captureScribble(canvasRef.current, bg.cls);
+          if (art) {
+            setVersions((v) => [...v, art]);
+            clear();
+            toast("Page duplicated", { description: `Now editing copy ${versions.length + 2}. Original saved.` });
+          }
+        }}
+        className="clay-btn-soft flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-ink-deep"
+      >
+        <Copy className="size-4" /> duplicate this page
+      </button>
+
+      {/* ─── Combine ─────────────────────────────────────────── */}
+      {versions.length > 0 && (
+        <button
+          type="button"
+          disabled={saving}
+          onClick={async () => {
+            setSaving(true);
+            try {
+              const currentArt = captureScribble(canvasRef.current, bg.cls);
+              const all = [...versions, ...(currentArt ? [currentArt] : [])];
+              const collage = await combineIntoCollage(all);
+              if (collage) {
+                createVaultItem({ kind: "photo", art: collage, bg: "tile-peach", caption: `a ${all.length}-page collage` });
+                saveToGallery(collage, `venting-collage-${Date.now()}.png`);
+                toast("Collage saved", { description: `${all.length} pages combined into one framed photo.` });
+              }
+            } catch {
+              toast("Couldn't combine pages", { description: "Please try again." });
+            } finally {
+              setSaving(false);
+            }
+          }}
+          className="clay-btn-soft flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-ink-deep"
+        >
+          <Grid2x2 className="size-4" /> combine all into one framed photo ({versions.length + 1} pages)
+        </button>
+      )}
 
       <div className="flex gap-2">
         <button
