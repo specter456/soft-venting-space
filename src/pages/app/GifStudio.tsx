@@ -511,7 +511,7 @@ export default function GifStudio() {
       a.download = `venting-gif-${Date.now()}.gif`;
       a.click();
       URL.revokeObjectURL(url);
-      toast("Downloaded", { description: "Your GIF is saved to your device." });
+      toast("saved to your gallery 🌷", { description: "Your GIF is in your downloads." });
     } catch {
       toast("Download failed", { description: "Please try again." });
     }
@@ -974,7 +974,7 @@ export default function GifStudio() {
           className="clay-btn-soft flex items-center justify-center gap-1.5 rounded-2xl px-4 py-3.5 text-sm font-bold text-ink-deep"
         >
           <Download className="size-4" />
-          Download
+          Save to gallery
         </button>
         <button
           type="button"

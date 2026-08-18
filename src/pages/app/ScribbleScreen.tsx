@@ -1,7 +1,8 @@
 import { toast } from "sonner";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { Eraser, Loader2, Paintbrush, Pen, Save, Square } from "lucide-react";
+import { Eraser, Loader2, Paintbrush, Pen, Save, Square, ImageDown } from "lucide-react";
 import { createVaultItem } from "@/lib/db";
+import { saveToGallery } from "@/lib/save-to-gallery";
 import { cn } from "@/lib/utils";
 
 type ToolId = "pencil" | "crayon" | "brush" | "marker" | "eraser";
@@ -250,22 +251,35 @@ export default function ScribbleScreen() {
         ))}
       </div>
 
-      <button
-        type="button"
-        onClick={save}
-        disabled={saving}
-        className="clay-btn flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-bold text-cream-soft"
-      >
-        {saving ? (
-          <>
-            <Loader2 className="size-4 animate-spin" /> Tucking it away…
-          </>
-        ) : (
-          <>
-            <Save className="size-4" /> Save to my vault
-          </>
-        )}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={save}
+          disabled={saving}
+          className="clay-btn flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-sm font-bold text-cream-soft"
+        >
+          {saving ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Save className="size-4" />
+          )}
+          Save to vault
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+            canvas.toBlob((blob) => {
+              if (blob) saveToGallery(blob, `venting-scribble-${Date.now()}.png`);
+            });
+          }}
+          className="clay-btn-soft flex items-center justify-center gap-1.5 rounded-2xl px-4 py-3.5 text-sm font-bold text-ink-deep"
+        >
+          <ImageDown className="size-4" />
+          Save to gallery
+        </button>
+      </div>
       <p className="text-center text-[11px] font-semibold text-ink-soft">
         🖍️ draw messy, draw big, draw whatever needs out — it stays only with you
       </p>

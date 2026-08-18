@@ -2,8 +2,9 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useState } from "react";
 import { Link } from "react-router";
-import { ArrowLeft, Check, Images, Loader2, Lock, Palette, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Images, Loader2, Lock, Palette, Sparkles, ImageDown } from "lucide-react";
 import { createVaultItem } from "@/lib/db";
+import { saveToGallery } from "@/lib/save-to-gallery";
 import { PHOTO_SCENES } from "@/lib/art";
 import { renderPhotoScene } from "@/lib/canvas-art";
 import { cn } from "@/lib/utils";
@@ -121,24 +122,37 @@ export default function CreateScreen() {
           })}
         </div>
 
-        <button
-          type="button"
-          onClick={savePhotos}
-          disabled={selected.length === 0 || saving}
-          className="clay-btn flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-bold text-cream-soft disabled:opacity-50"
-        >
-          {saving ? (
-            <>
-              <Loader2 className="size-4 animate-spin" /> Locking them away…
-            </>
-          ) : (
-            <>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={savePhotos}
+            disabled={selected.length === 0 || saving}
+            className="clay-btn flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-sm font-bold text-cream-soft disabled:opacity-50"
+          >
+            {saving ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
               <Lock className="size-4" />
-              Save {selected.length > 0 ? `${selected.length} photo${selected.length > 1 ? "s" : ""} ` : ""}
-              to vault
-            </>
-          )}
-        </button>
+            )}
+            Save{selected.length > 0 ? ` ${selected.length}` : ""} to vault
+          </button>
+          <button
+            type="button"
+            disabled={selected.length === 0}
+            onClick={() => {
+              for (const emoji of selected) {
+                const scene = PHOTO_SCENES.find((s) => s.emoji === emoji);
+                if (!scene) continue;
+                const art = renderPhotoScene(scene.emoji, scene.bg);
+                if (art) saveToGallery(art, `venting-photo-${scene.label.replace(/\s+/g, "-").toLowerCase()}-${Date.now()}.png`);
+              }
+            }}
+            className="clay-btn-soft flex items-center justify-center gap-1.5 rounded-2xl px-4 py-3.5 text-sm font-bold text-ink-deep disabled:opacity-50"
+          >
+            <ImageDown className="size-4" />
+            Gallery
+          </button>
+        </div>
         <p className="text-center text-[11px] font-semibold text-ink-soft">
           🔒 double-locked · only you can open the vault
         </p>

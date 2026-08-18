@@ -1,9 +1,10 @@
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useState } from "react";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, ImageDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { createVaultItem } from "@/lib/db";
+import { saveToGallery } from "@/lib/save-to-gallery";
 import {
   STICKER_ACCESSORIES,
   STICKER_COLORS,
@@ -227,22 +228,39 @@ export default function StickerStudio() {
         className="rounded-2xl border-lavender-200/70 bg-cream-soft text-sm text-ink-deep placeholder:text-ink-soft/70 focus-visible:ring-lavender-300"
       />
 
-      <button
-        type="button"
-        onClick={save}
-        disabled={saving}
-        className="clay-btn flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-sm font-bold text-cream-soft"
-      >
-        {saving ? (
-          <>
-            <Loader2 className="size-4 animate-spin" /> Tucking it away…
-          </>
-        ) : (
-          <>
-            <Save className="size-4" /> Save sticker to vault
-          </>
-        )}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={save}
+          disabled={saving}
+          className="clay-btn flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-sm font-bold text-cream-soft"
+        >
+          {saving ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Save className="size-4" />
+          )}
+          Save to vault
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const art = renderStickerArt({
+              color: color.hex,
+              eyes: eyes.render,
+              mouth: mouth.render,
+              blush,
+              tear,
+              accessory,
+            });
+            if (art) saveToGallery(art, `venting-sticker-${Date.now()}.png`);
+          }}
+          className="clay-btn-soft flex items-center justify-center gap-1.5 rounded-2xl px-4 py-3.5 text-sm font-bold text-ink-deep"
+        >
+          <ImageDown className="size-4" />
+          Save to gallery
+        </button>
+      </div>
     </div>
   );
 }
