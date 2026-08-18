@@ -14,7 +14,9 @@
 import { useSyncExternalStore } from "react";
 
 const DB_NAME = "venting-local";
-const DB_VERSION = 1;
+// v2: adds the calendarEntries store. Existing devices get the new store
+// created in onupgradeneeded; nothing else changes.
+const DB_VERSION = 2;
 
 export const STORE_NAMES = [
   "notes",
@@ -22,6 +24,7 @@ export const STORE_NAMES = [
   "diaryEntries",
   "vaultItems",
   "moodCheckins",
+  "calendarEntries",
   "kv",
 ] as const;
 export type StoreName = (typeof STORE_NAMES)[number];
@@ -76,6 +79,17 @@ export interface MoodCheckin extends LocalRow {
   dateKey: string;
 }
 
+export type CalendarEntryType = "important" | "dump" | "normal";
+
+export interface CalendarEntry extends LocalRow {
+  /** Local calendar day, formatted "YYYY-MM-DD". */
+  dateKey: string;
+  type: CalendarEntryType;
+  body: string;
+  /** Optional schedule time, free text like "4:00 pm". */
+  time?: string;
+}
+
 export interface KVPair extends LocalRow {
   key: string;
   value: string;
@@ -93,6 +107,7 @@ const cache: Record<StoreName, LocalRow[]> = {
   diaryEntries: [],
   vaultItems: [],
   moodCheckins: [],
+  calendarEntries: [],
   kv: [],
 };
 
@@ -240,6 +255,24 @@ export function createVaultItem(
   input: Omit<VaultItem, "_id" | "_creationTime">,
 ): VaultItem {
   return addRow<VaultItem>("vaultItems", input);
+}
+
+export function createCalendarEntry(
+  input: Omit<CalendarEntry, "_id" | "_creationTime">,
+): CalendarEntry {
+  return addRow<CalendarEntry>("calendarEntries", input);
+}
+
+export function updateCalendarEntry(
+  id: string,
+  patch: Partial<Omit<CalendarEntry, "_id" | "_creationTime">>,
+): void {
+  const entry = (cache.calendarEntries as CalendarEntry[]).find((e) => e._id === id);
+  if (!entry) return;
+  const updated = { ...entry, ...patch };
+  cache.calendarEntries = cache.calendarEntries.map((e) => (e._id === id ? updated : e));
+  void persistPut("calendarEntries", updated);
+  notify();
 }
 
 /** One check-in per day: replacing yesterday's entry for the same dateKey. */
