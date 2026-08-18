@@ -26,14 +26,16 @@ const TITLES: Record<string, string> = {
   "/dashboard/gif-studio": "GIF Studio",
   "/dashboard/vault": "Private vault",
   "/dashboard/games": "Games",
+  "/dashboard/calendar": "Calendar",
   "/dashboard/settings": "Settings",
   "/dashboard/diary": "Diary",
 };
 
-/** Exactly three tabs — Home, Games, Settings. Settings is never a hidden tab. */
+/** Four tabs — Home, Games, Calendar, Settings. */
 const TABS = [
   { to: "/dashboard", label: "Home", emoji: "🏠" },
   { to: "/dashboard/games", label: "Games", emoji: "🫧" },
+  { to: "/dashboard/calendar", label: "Calendar", emoji: "📅" },
   { to: "/dashboard/settings", label: "Settings", emoji: "⚙️" },
 ];
 
@@ -44,6 +46,7 @@ const BAR_ROUTES = [
   "/dashboard/create",
   "/dashboard/diary",
   "/dashboard/games",
+  "/dashboard/calendar",
   "/dashboard/settings",
 ];
 
@@ -111,7 +114,7 @@ export default function Dashboard() {
 
   const isHome = location.pathname === "/dashboard";
   const title = TITLES[location.pathname] ?? "Venting";
-  const showBar = BAR_ROUTES.includes(location.pathname);
+  const showBar = BAR_ROUTES.includes(location.pathname) || location.pathname.startsWith("/dashboard/calendar/");
 
   return (
     <div className="relative min-h-dvh overflow-hidden bg-gradient-to-b from-cream-soft via-cream to-lavender-50 text-ink">
@@ -208,7 +211,9 @@ export default function Dashboard() {
           >
             <div className="clay-card flex w-full max-w-[420px] items-center gap-1 rounded-full p-1.5">
               {TABS.map((tab) => {
-                const active = location.pathname === tab.to;
+                const active = tab.to === "/dashboard/calendar"
+                  ? location.pathname.startsWith("/dashboard/calendar")
+                  : location.pathname === tab.to;
                 return (
                   <Link
                     key={tab.to}

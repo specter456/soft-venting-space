@@ -28,6 +28,8 @@ import GifStudio from "./pages/app/GifStudio";
 import GamesScreen from "./pages/app/GamesScreen";
 import SettingsScreen from "./pages/app/SettingsScreen";
 import DiaryScreen from "./pages/app/DiaryScreen";
+import CalendarScreen from "./pages/app/CalendarScreen";
+import CalendarDayView from "./pages/app/CalendarDayView";
 
 // Kick off local-storage hydration immediately — everything Venting needs
 // lives on this device, so no async auth gate is required.
@@ -138,6 +140,8 @@ createRoot(document.getElementById("root")!).render(
             <Route path="gif-studio" element={<GifStudio />} />
             <Route path="vault" element={<VaultScreen />} />
             <Route path="games" element={<GamesScreen />} />
+            <Route path="calendar" element={<CalendarScreen />} />
+            <Route path="calendar/:dateKey" element={<CalendarDayView />} />
             <Route path="settings" element={<SettingsScreen />} />
             <Route path="diary" element={<DiaryScreen />} />
           </Route>
