@@ -34,7 +34,10 @@ import CalendarDayView from "./pages/app/CalendarDayView";
 
 // Kick off local-storage hydration immediately — everything Venting needs
 // lives on this device, so no async auth gate is required.
-void hydrate();
+// Wrapped in try/catch so corrupted storage never prevents startup.
+hydrate().catch(() => {
+  console.warn("[venting] hydration failed — starting with empty data");
+});
 
 /** Guard so runtime errors never leave the app as a blank page. */
 class ToolbarErrorBoundary extends React.Component<
@@ -97,7 +100,19 @@ function GlobalNotice() {
   );
 }
 
-createRoot(document.getElementById("root")!).render(
+const rootEl = document.getElementById("root");
+if (!rootEl) {
+  // Extremely unlikely, but guard so we never white-screen
+  document.body.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100dvh;background:#f5eef8;font-family:system-ui;color:#6b5b95;text-align:center;padding:2rem">
+      <div>
+        <div style="font-size:2.5rem">💜</div>
+        <p style="margin-top:0.5rem;font-weight:bold">something went softly wrong</p>
+        <p style="font-size:0.8rem;opacity:0.7;margin-top:0.25rem">Try reloading the page.</p>
+      </div>
+    </div>`;
+} else {
+createRoot(rootEl).render(
   <React.StrictMode>
     <AppErrorBoundary onContinue={() => (window.location.href = "/")}>
       <ToolbarErrorBoundary>
@@ -161,3 +176,4 @@ createRoot(document.getElementById("root")!).render(
     </AppErrorBoundary>
   </React.StrictMode>,
 );
+}

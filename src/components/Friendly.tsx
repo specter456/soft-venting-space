@@ -14,7 +14,7 @@ export function friendlyErrorText(): string {
 export function FriendlyCrashFallback({
   onRetry,
   onContinue,
-  title = "Something went soft.",
+  title = "something went softly wrong.",
 }: {
   onRetry: () => void;
   onContinue?: () => void;
@@ -24,7 +24,7 @@ export function FriendlyCrashFallback({
     <div className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-cream-soft via-cream to-lavender-50 p-6 text-ink">
       <div className="clay-card w-full max-w-sm rounded-[2rem] px-6 py-8 text-center">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-lavender-100 text-3xl">
-          ☁️
+          💜
         </div>
         <h1 className="mt-4 text-xl font-bold tracking-tight text-ink-deep">{title}</h1>
         <p className="mt-2 text-sm leading-relaxed text-ink-soft">{friendlyErrorText()}</p>
@@ -34,7 +34,7 @@ export function FriendlyCrashFallback({
             onClick={onRetry}
             className="clay-btn rounded-full px-5 py-3 text-sm font-bold text-ink-deep"
           >
-            Try again
+            try again
           </button>
           {onContinue ? (
             <button
@@ -42,7 +42,7 @@ export function FriendlyCrashFallback({
               onClick={onContinue}
               className="rounded-full px-5 py-2.5 text-xs font-bold text-ink-soft transition-colors hover:bg-lavender-100/70 hover:text-ink-deep"
             >
-              Continue offline
+              back to home
             </button>
           ) : null}
         </div>

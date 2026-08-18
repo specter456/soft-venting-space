@@ -10,8 +10,14 @@
 </head>
 
 
-<body>
-  <div id="root"></div>
+<body style="margin:0;background:#f5eef8;overflow:hidden">
+  <div id="root" style="min-height:100dvh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif">
+    <div style="text-align:center;color:#6b5b95">
+      <div style="font-size:2.5rem;animation:breath 2.4s ease-in-out infinite">💜</div>
+      <p style="font-size:0.7rem;margin-top:0.5rem;opacity:0.6">loading…</p>
+    </div>
+    <style>@keyframes breath{0%,100%{transform:scale(1);opacity:0.7}50%{transform:scale(1.15);opacity:1}}</style>
+  </div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

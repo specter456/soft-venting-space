@@ -526,15 +526,23 @@ export default function GifStudio() {
       const file = new File([blob], `venting-gif-${Date.now()}.gif`, {
         type: "image/gif",
       });
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+      if (typeof navigator !== "undefined" && navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], title: "My Venting GIF" });
       } else {
         // fallback: download instead
         downloadGif();
         toast("Share not supported", { description: "Downloaded instead — you can share it from your files." });
       }
-    } catch {
-      // user cancelled or error — ignore
+    } catch (err: unknown) {
+      // user cancelled or permission denied — show a gentle message
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("cancel") || msg.includes("AbortError") || msg.includes("permission")) {
+        toast("that's okay — nothing was shared", { description: "Your GIF is still safe on your device." });
+      } else {
+        // unexpected error — show gentle fallback
+        downloadGif();
+        toast("that's okay — nothing was shared", { description: "Downloaded instead so you have it." });
+      }
     }
   };
 
