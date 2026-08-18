@@ -114,7 +114,7 @@ export default function CalendarScreen() {
               className={[
                 "relative flex aspect-square flex-col items-center justify-center rounded-2xl border transition-transform",
                 isToday
-                  ? "border-lavender-300 bg-lavender-200/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
+                  ? "border-lavender-300 bg-lavender-200/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_0_0_3px_rgba(196,168,224,0.4)]"
                   : "border-white/70 bg-white/55 shadow-[0_4px_10px_-5px_rgba(96,78,150,0.28)]",
               ].join(" ")}
             >

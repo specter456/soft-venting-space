@@ -26,7 +26,14 @@ export default function CalendarDayView() {
   const { dateKey } = useParams<{ dateKey: string }>();
   const date = dateKey ? parseDateKey(dateKey) : null;
   const entries = useTable<CalendarEntry>("calendarEntries");
-  const dayEntries = entries.filter((e) => e.dateKey === dateKey);
+  const dayEntries = entries
+    .filter((e) => e.dateKey === dateKey)
+    .sort((a, b) => {
+      // timed schedule items first, then untimed thoughts
+      if (a.time && !b.time) return -1;
+      if (!a.time && b.time) return 1;
+      return 0;
+    });
 
   const [body, setBody] = useState("");
   const [type, setType] = useState<CalendarEntryType>("normal");
