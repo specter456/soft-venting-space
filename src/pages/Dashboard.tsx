@@ -1,5 +1,5 @@
 import { Lock } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
@@ -69,6 +69,11 @@ export default function Dashboard() {
   const [lock, setLock] = useState<"setup" | "unlock" | "unlocked">("unlocked");
   const [lockInitDone, setLockInitDone] = useState(false);
 
+  // Scroll to top on every route change so header/greeting is always visible first.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [location.pathname]);
+
   // Decide the initial lock state once storage has hydrated. Adjusting state
   // during render (guarded, runs once) avoids effect cascades.
   if (hydrated && !lockInitDone) {
@@ -117,7 +122,7 @@ export default function Dashboard() {
   const showBar = BAR_ROUTES.includes(location.pathname) || location.pathname.startsWith("/dashboard/calendar/");
 
   return (
-    <div className="relative min-h-dvh overflow-x-hidden overflow-y-auto bg-gradient-to-b from-cream-soft via-cream to-lavender-50 text-ink">
+    <div className="relative overflow-x-hidden bg-gradient-to-b from-cream-soft via-cream to-lavender-50 text-ink">
       {/* dreamy background blobs */}
       <div
         aria-hidden
@@ -132,7 +137,7 @@ export default function Dashboard() {
         className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full bg-mint-100/50 blur-3xl"
       />
 
-      <div className="relative mx-auto flex min-h-dvh max-w-[480px] w-full flex-col">
+      <div className="relative mx-auto flex w-full max-w-[600px] flex-col">
         {/* ─── Header ─────────────────────────────────────────────── */}
         <header className="sticky top-0 z-40 bg-cream-soft/70 px-5 pt-6 pb-3 backdrop-blur-md">
           <div className="flex items-center justify-between">
@@ -209,7 +214,7 @@ export default function Dashboard() {
             aria-label="Main"
             className="fixed right-0 bottom-4 left-0 z-40 flex justify-center px-5"
           >
-            <div className="clay-card flex w-full max-w-[420px] items-center gap-1 rounded-full p-1.5">
+            <div className="clay-card flex w-full max-w-[560px] items-center gap-1 rounded-full p-1.5">
               {TABS.map((tab) => {
                 const active = tab.to === "/dashboard/calendar"
                   ? location.pathname.startsWith("/dashboard/calendar")
