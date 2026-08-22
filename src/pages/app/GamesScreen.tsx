@@ -4,11 +4,12 @@ import MusicWidget from "@/components/MusicWidget";
 import { WORRY_BUBBLES } from "@/lib/art";
 import { music } from "@/lib/music";
 import { useTapGuard } from "@/lib/useTapGuard";
+import { soundsEnabled } from "@/lib/sound";
 import { cn } from "@/lib/utils";
 
 /* ─── Game registry — exactly six games, two per row ───────────────── */
 
-type GameId = "pop" | "breathe" | "dandelion" | "buddy" | "jars" | "star";
+type GameId = "pop" | "breathe" | "dandelion" | "buddy" | "jars" | "star" | "honeycomb";
 
 const GAMES: {
   id: GameId;
@@ -23,6 +24,7 @@ const GAMES: {
   { id: "buddy", emoji: "🧸", name: "Comfort the Buddy", line: "a shaky little buddy calms with gentle taps and hugs", tile: "tile-lavender" },
   { id: "jars", emoji: "🫙", name: "Feelings Jars", line: "sort floating feelings into soft colored jars", tile: "tile-peach" },
   { id: "star", emoji: "⭐", name: "Star Trace", line: "trace slow glowing shapes to calm the mind", tile: "tile-mint" },
+  { id: "honeycomb", emoji: "🍯", name: "Honeycomb Squish", line: "press & squish the soft honey squishy — it slowly puffs back", tile: "tile-peach" },
 ];
 
 /**
@@ -65,6 +67,7 @@ export default function GamesScreen() {
           {open === "buddy" && <ComfortBuddy />}
           {open === "jars" && <FeelingsJars />}
           {open === "star" && <StarTrace />}
+          {open === "honeycomb" && <HoneycombSquish />}
         </div>
       ) : (
         <div className="space-y-5">
@@ -86,7 +89,10 @@ export default function GamesScreen() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: i * 0.05 }}
                 onClick={() => openGame(g.id)}
-                className="clay-card group flex h-full flex-col items-center gap-2 rounded-[1.8rem] px-4 py-5 text-center transition-transform hover:-translate-y-0.5"
+                className={cn(
+                  "clay-card group flex flex-col items-center gap-2 rounded-[1.8rem] px-4 py-5 text-center transition-transform hover:-translate-y-0.5",
+                  i === GAMES.length - 1 ? "col-span-2 justify-self-center w-[calc(50%-0.375rem)]" : "h-full",
+                )}
               >
             <span
               className={cn(
@@ -1031,6 +1037,252 @@ function StarTrace() {
           </p>
         )}
       </div>
+    </motion.div>
+  );
+}
+
+/* ─── 7. Honeycomb Squish ─────────────────────────────────────────── */
+
+const SQUISH_MESSAGES = [
+  "squish the stress away…",
+  "it always puffs back — just like you.",
+  "no rush. squish as long as you need.",
+  "soft and bouncy, just like a feeling passing through.",
+  "every squish lets a little tension go.",
+  "you're doing great — just breathe and squish.",
+];
+
+/** Play a soft squish sound via WebAudio. Respects global sound toggle. */
+function playSquishSound(): void {
+  if (!soundsEnabled()) return;
+  try {
+    const Ctor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+    if (!Ctor) return;
+    const ctx = new Ctor();
+    if (ctx.state === "suspended") void ctx.resume();
+    const now = ctx.currentTime;
+    // soft low thud
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.exponentialRampToValueAtTime(60, now + 0.12);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.18, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.18);
+  } catch {
+    /* audio unavailable — stay quiet */
+  }
+}
+
+/** Play a soft boing sound for quick taps. */
+function playBoingSound(): void {
+  if (!soundsEnabled()) return;
+  try {
+    const Ctor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+    if (!Ctor) return;
+    const ctx = new Ctor();
+    if (ctx.state === "suspended") void ctx.resume();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(320, now);
+    osc.frequency.exponentialRampToValueAtTime(180, now + 0.1);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.12, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.15);
+  } catch {
+    /* audio unavailable — stay quiet */
+  }
+}
+
+function HoneycombSquish() {
+  const [squishCount, setSquishCount] = useState(0);
+  const [pressing, setPressing] = useState(false);
+  const [squishProgress, setSquishProgress] = useState(0); // 0 = round, 1 = fully squished
+  const [messageIdx, setMessageIdx] = useState(0);
+  const pressTimer = useRef<number | null>(null);
+  const holdStart = useRef(0);
+  const wobble = useRef(false);
+  const [wobbleAnim, setWobbleAnim] = useState(false);
+
+  const message = SQUISH_MESSAGES[messageIdx % SQUISH_MESSAGES.length];
+
+  // Squish deformation: scaleX grows, scaleY shrinks
+  const scaleX = 1 + squishProgress * 0.35;
+  const scaleY = 1 - squishProgress * 0.3;
+
+  useEffect(() => {
+    return () => {
+      if (pressTimer.current) window.clearInterval(pressTimer.current);
+    };
+  }, []);
+
+  const startSquish = () => {
+    holdStart.current = Date.now();
+    setPressing(true);
+    wobble.current = false;
+    playSquishSound();
+    // vibration on mobile
+    try {
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        (navigator as { vibrate: (ms: number) => void }).vibrate(15);
+      }
+    } catch {
+      /* ignore */
+    }
+    pressTimer.current = window.setInterval(() => {
+      setSquishProgress((p) => Math.min(1, p + 0.04));
+    }, 30);
+  };
+
+  const endSquish = () => {
+    if (pressTimer.current) {
+      window.clearInterval(pressTimer.current);
+      pressTimer.current = null;
+    }
+    const held = Date.now() - holdStart.current;
+    setPressing(false);
+
+    if (held < 200) {
+      // quick tap → boing
+      playBoingSound();
+      wobble.current = true;
+      setWobbleAnim(true);
+      setTimeout(() => setWobbleAnim(false), 400);
+      setSquishProgress(0.15);
+    }
+
+    // count squishes for message rotation
+    setSquishCount((c) => {
+      const next = c + 1;
+      if (next % 3 === 0) setMessageIdx((m) => m + 1);
+      return next;
+    });
+
+    // puff back animation via CSS transition (squishProgress → 0)
+    // The transition is on the element's transform, driven by squishProgress
+    setSquishProgress(0);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="clay-card relative overflow-hidden rounded-[2.25rem] px-6 py-10 text-center"
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-14 -left-14 h-44 w-44 rounded-full bg-peach-100/60 blur-2xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-14 -bottom-14 h-44 w-44 rounded-full bg-peach-50/60 blur-2xl"
+      />
+
+      <GameIntro
+        emoji="🍯"
+        title="Honeycomb Squish"
+        sub="Press and hold the squishy to squish it flat. Release and watch it puff back."
+      />
+
+      {/* The squishy character */}
+      <div className="relative mx-auto mt-8 flex h-64 items-center justify-center">
+        {/* soft shadow underneath */}
+        <div
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-amber-300/30 blur-xl transition-all duration-300"
+          style={{
+            width: pressing ? 180 : 120,
+            height: pressing ? 30 : 20,
+          }}
+          aria-hidden
+        />
+
+        {/* the squishy body */}
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="Press and hold to squish the honey squishy"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            startSquish();
+          }}
+          onPointerUp={endSquish}
+          onPointerLeave={() => {
+            if (pressing) endSquish();
+          }}
+          onPointerCancel={endSquish}
+          className="relative cursor-pointer touch-none select-none"
+          style={{
+            transform: `scaleX(${scaleX}) scaleY(${scaleY})${wobbleAnim ? " rotate(3deg)" : ""}`,
+            transition: pressing
+              ? "transform 0.06s ease-out"
+              : "transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          }}
+        >
+          {/* honeycomb texture overlay */}
+          <div className="relative flex h-44 w-44 items-center justify-center rounded-full bg-gradient-to-br from-amber-200 via-amber-100 to-amber-200 shadow-[inset_0_4px_14px_rgba(255,255,255,0.85),inset_0_-8px_20px_-6px_rgba(200,150,50,0.4),0_20px_40px_-12px_rgba(200,150,50,0.45)]">
+            {/* honeycomb hex pattern overlay */}
+            <div
+              aria-hidden
+              className="absolute inset-3 rounded-full opacity-20"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle, #e5a820 1.5px, transparent 1.5px)",
+                backgroundSize: "16px 14px",
+              }}
+            />
+            {/* tiny cute face */}
+            <div className="relative z-10 flex flex-col items-center">
+              {/* eyes — sleepy/cute */}
+              <div className="flex gap-6">
+                <span className="text-2xl" aria-hidden>◔</span>
+                <span className="text-2xl" aria-hidden>◔</span>
+              </div>
+              {/* little blush marks */}
+              <div className="mt-1 flex gap-10">
+                <span className="h-2.5 w-4 rounded-full bg-blush-200/70" aria-hidden />
+                <span className="h-2.5 w-4 rounded-full bg-blush-200/70" aria-hidden />
+              </div>
+              {/* soft smile */}
+              <span className="mt-0.5 text-lg leading-none text-amber-500" aria-hidden>
+                ╰<span className="inline-block w-5" />╯
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* rotating gentle messages */}
+      {squishCount >= 3 && (
+        <motion.p
+          key={messageIdx}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-2 text-sm font-bold text-amber-600/80"
+        >
+          {message}
+        </motion.p>
+      )}
+
+      <p className="mt-4 text-xs font-semibold text-ink-soft">
+        {squishCount > 0
+          ? `${squishCount} gentle squish${squishCount === 1 ? "" : "es"} — no rush, no score`
+          : "press & hold to squish — release to puff back"}
+      </p>
     </motion.div>
   );
 }
