@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 /* ─── Game registry — exactly six games, two per row ───────────────── */
 
-type GameId = "pop" | "breathe" | "dandelion" | "buddy" | "jars" | "star" | "honeycomb";
+type GameId = "pop" | "breathe" | "dandelion" | "buddy" | "jars" | "star" | "honeycomb" | "shelf";
 
 const GAMES: {
   id: GameId;
@@ -25,6 +25,7 @@ const GAMES: {
   { id: "jars", emoji: "🫙", name: "Feelings Jars", line: "sort floating feelings into soft colored jars", tile: "tile-peach" },
   { id: "star", emoji: "⭐", name: "Star Trace", line: "trace slow glowing shapes to calm the mind", tile: "tile-mint" },
   { id: "honeycomb", emoji: "🍯", name: "Honeycomb Squish", line: "press & squish the soft honey squishy — it slowly puffs back", tile: "tile-peach" },
+  { id: "shelf", emoji: "🧸", name: "Squishy Shelf", line: "pick a soft squishy, poke it, squish it, breathe", tile: "tile-lavender" },
 ];
 
 /**
@@ -68,6 +69,7 @@ export default function GamesScreen() {
           {open === "jars" && <FeelingsJars />}
           {open === "star" && <StarTrace />}
           {open === "honeycomb" && <HoneycombSquish />}
+          {open === "shelf" && <SquishyShelf />}
         </div>
       ) : (
         <div className="space-y-5">
@@ -1282,6 +1284,413 @@ function HoneycombSquish() {
         {squishCount > 0
           ? `${squishCount} gentle squish${squishCount === 1 ? "" : "es"} — no rush, no score`
           : "press & hold to squish — release to puff back"}
+      </p>
+    </motion.div>
+  );
+}
+
+/* ─── 8. Squishy Shelf (satisfying ASMR-style squishy toy shelf) ───── */
+
+const SHELF_TOYS = [
+  {
+    id: "honeycomb",
+    label: "Honeycomb",
+    emoji: "🍯",
+    color: "from-amber-200 via-amber-100 to-amber-200",
+    shadow: "rgba(200,150,50,0.45)",
+    hasCells: true,
+  },
+  {
+    id: "bear",
+    label: "Honey Bear",
+    emoji: "🧸",
+    color: "from-amber-100 via-peach-100 to-amber-200",
+    shadow: "rgba(200,160,80,0.4)",
+    hasCells: false,
+  },
+  {
+    id: "bun",
+    label: "Slow Bun",
+    emoji: "🍞",
+    color: "from-peach-100 via-cream to-peach-200",
+    shadow: "rgba(200,140,100,0.4)",
+    hasCells: false,
+  },
+  {
+    id: "cloud",
+    label: "Cloud",
+    emoji: "☁️",
+    color: "from-mist-100 via-white to-mist-200",
+    shadow: "rgba(140,180,220,0.4)",
+    hasCells: false,
+  },
+  {
+    id: "catpaw",
+    label: "Cat Paw",
+    emoji: "🐾",
+    color: "from-blush-100 via-blush-50 to-blush-200",
+    shadow: "rgba(210,140,160,0.4)",
+    hasCells: false,
+  },
+  {
+    id: "star",
+    label: "Star",
+    emoji: "⭐",
+    color: "from-peach-100 via-amber-50 to-peach-200",
+    shadow: "rgba(220,180,80,0.4)",
+    hasCells: false,
+  },
+] as const;
+
+const SHELF_MESSAGES = [
+  "squish the stress away…",
+  "it always puffs back — just like you.",
+  "no rush. squish as long as you need.",
+  "soft and bouncy, just like a feeling passing through.",
+  "every squish lets a little tension go.",
+  "you're doing great — just breathe and squish.",
+];
+
+/** Soft squish sound via WebAudio. Respects global sound toggle. */
+function shelfSquishSound(): void {
+  if (!soundsEnabled()) return;
+  try {
+    const Ctor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+    if (!Ctor) return;
+    const ctx = new Ctor();
+    if (ctx.state === "suspended") void ctx.resume();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(200, now);
+    osc.frequency.exponentialRampToValueAtTime(55, now + 0.14);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.14, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.2);
+  } catch {
+    /* quiet */
+  }
+}
+
+/** Tiny "thock" for honeycomb cell pop. */
+function shelfPopSound(): void {
+  if (!soundsEnabled()) return;
+  try {
+    const Ctor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+    if (!Ctor) return;
+    const ctx = new Ctor();
+    if (ctx.state === "suspended") void ctx.resume();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(600, now);
+    osc.frequency.exponentialRampToValueAtTime(120, now + 0.06);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.18, now);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+    osc.connect(g);
+    g.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.1);
+  } catch {
+    /* quiet */
+  }
+}
+
+function SquishyShelf() {
+  const [selected, setSelected] = useState<string>(SHELF_TOYS[0].id);
+  const toy = SHELF_TOYS.find((t) => t.id === selected) ?? SHELF_TOYS[0];
+
+  // --- squish physics state ---
+  const [squish, setSquish] = useState(0); // 0 = round, 1 = flat
+  const [jiggle, setJiggle] = useState(0);
+  const [pressing, setPressing] = useState(false);
+  const pressTimer = useRef<number | null>(null);
+  const dragRef = useRef({ lastX: 0, lastY: 0 });
+  const jiggleTimer = useRef<number | null>(null);
+  const msgIdx = useRef(0);
+  const [message, setMessage] = useState(SHELF_MESSAGES[0]);
+  const squishCount = useRef(0);
+
+  // honeycomb cell state
+  const totalCells = 19;
+  const [poppedCells, setPoppedCells] = useState<Set<number>>(new Set());
+  const allCellsPopped = poppedCells.size >= totalCells;
+
+  // cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (pressTimer.current) window.clearInterval(pressTimer.current);
+      if (jiggleTimer.current) window.clearInterval(jiggleTimer.current);
+    };
+  }, []);
+
+  // jiggle decay
+  useEffect(() => {
+    if (jiggle !== 0) {
+      jiggleTimer.current = window.setInterval(() => {
+        setJiggle((j) => {
+          const next = j * 0.85;
+          if (Math.abs(next) < 0.3) {
+            if (jiggleTimer.current) window.clearInterval(jiggleTimer.current);
+            return 0;
+          }
+          return next;
+        });
+      }, 40);
+    }
+    return () => {
+      if (jiggleTimer.current) window.clearInterval(jiggleTimer.current);
+    };
+  }, [jiggle !== 0]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // --- pointer handlers ---
+  const handleDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    setPressing(true);
+    shelfSquishSound();
+    try {
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        (navigator as { vibrate: (ms: number) => void }).vibrate(10);
+      }
+    } catch {
+      /* ignore */
+    }
+    // slow squeeze
+    pressTimer.current = window.setInterval(() => {
+      setSquish((s) => Math.min(1, s + 0.025));
+    }, 25);
+    dragRef.current = { lastX: e.clientX, lastY: e.clientY };
+  };
+
+  const handleMove = (e: React.PointerEvent) => {
+    if (!pressing) return;
+    const dx = e.clientX - dragRef.current.lastX;
+    const dy = e.clientY - dragRef.current.lastY;
+    const dist = Math.hypot(dx, dy);
+    if (dist > 2) {
+      setJiggle(Math.min(12, Math.max(-12, dx * 0.6)));
+      dragRef.current = { lastX: e.clientX, lastY: e.clientY };
+    }
+  };
+
+  const handleUp = () => {
+    if (!pressing) return;
+    setPressing(false);
+    if (pressTimer.current) {
+      window.clearInterval(pressTimer.current);
+      pressTimer.current = null;
+    }
+    // slow-rise puff back
+    setSquish(0);
+    // count for messages
+    squishCount.current += 1;
+    if (squishCount.current % 3 === 0) {
+      msgIdx.current = (msgIdx.current + 1) % SHELF_MESSAGES.length;
+      setMessage(SHELF_MESSAGES[msgIdx.current]);
+    }
+  };
+
+  // quick poke (tap)
+  const handleTap = () => {
+    if (pressing) return;
+    shelfSquishSound();
+    setSquish(0.25);
+    setJiggle(6);
+    setTimeout(() => setSquish(0), 180);
+    squishCount.current += 1;
+    if (squishCount.current % 3 === 0) {
+      msgIdx.current = (msgIdx.current + 1) % SHELF_MESSAGES.length;
+      setMessage(SHELF_MESSAGES[msgIdx.current]);
+    }
+  };
+
+  // honeycomb cell pop
+  const popCell = (idx: number) => {
+    if (poppedCells.has(idx)) return;
+    setPoppedCells((prev) => new Set(prev).add(idx));
+    shelfPopSound();
+    try {
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        (navigator as { vibrate: (ms: number) => void }).vibrate(8);
+      }
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const refillCells = () => setPoppedCells(new Set());
+
+  // visual deformation
+  const scaleX = 1 + squish * 0.32;
+  const scaleY = 1 - squish * 0.28;
+  const jiggleAngle = jiggle;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7 text-center"
+    >
+      <GameIntro
+        emoji="🧸"
+        title="Squishy Shelf"
+        sub="Pick a soft squishy, poke it, squish it, breathe."
+      />
+
+      {/* ─── shelf row ─────────────────────────────────────── */}
+      <div className="mt-5 flex items-center justify-center gap-2 overflow-x-auto pb-2">
+        {SHELF_TOYS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => {
+              setSelected(t.id);
+              setSquish(0);
+              setJiggle(0);
+              setPoppedCells(new Set());
+            }}
+            className={cn(
+              "flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl text-2xl transition-all duration-200",
+              t.id === selected
+                ? "scale-110 bg-white/80 shadow-[0_4px_14px_rgba(0,0,0,0.1)] ring-2 ring-lavender-300"
+                : "bg-white/40 hover:bg-white/60",
+            )}
+          >
+            <span aria-hidden>{t.emoji}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ─── play area ────────────────────────────────────── */}
+      <div className="relative mx-auto mt-4 flex h-72 items-center justify-center">
+        {/* soft shadow under toy */}
+        <div
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-ink/5 blur-xl transition-all duration-300"
+          style={{
+            width: pressing ? 160 : 100,
+            height: pressing ? 24 : 14,
+          }}
+          aria-hidden
+        />
+
+        {/* the toy body */}
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label={`${toy.label} squishy toy — press and hold to squish`}
+          onPointerDown={handleDown}
+          onPointerMove={handleMove}
+          onPointerUp={handleUp}
+          onPointerLeave={handleUp}
+          onPointerCancel={handleUp}
+          onClick={handleTap}
+          className="relative cursor-pointer touch-none select-none"
+          style={{
+            transform: `scaleX(${scaleX}) scaleY(${scaleY}) rotate(${jiggleAngle}deg)`,
+            transition: pressing
+              ? "transform 0.06s ease-out"
+              : "transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          }}
+        >
+          <div
+            className={cn(
+              "relative flex h-44 w-44 items-center justify-center rounded-full bg-gradient-to-br shadow-[inset_0_4px_14px_rgba(255,255,255,0.85),inset_0_-8px_20px_-6px_rgba(0,0,0,0.15),0_20px_40px_-12px,",
+              toy.color,
+            )}
+            style={{
+              boxShadow: `inset 0 4px 14px rgba(255,255,255,0.85), inset 0 -8px 20px -6px ${toy.shadow}, 0 20px 40px -12px ${toy.shadow}`,
+            }}
+          >
+            {/* toy-specific content */}
+            {toy.hasCells ? (
+              /* honeycomb cell grid */
+              <div className="absolute inset-4 grid grid-cols-5 grid-rows-5 place-items-center">
+                {Array.from({ length: totalCells }).map((_, i) => {
+                  const row = Math.floor(i / 5);
+                  const col = i % 5;
+                  // skip corners for a rounder shape
+                  if (
+                    (row === 0 && (col === 0 || col === 4)) ||
+                    (row === 4 && (col === 0 || col === 4))
+                  )
+                    return <span key={i} />;
+                  const isPopped = poppedCells.has(i);
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        popCell(i);
+                      }}
+                      className={cn(
+                        "flex h-7 w-7 items-center justify-center rounded-md transition-all duration-200",
+                        isPopped
+                          ? "scale-50 bg-amber-300/20 opacity-30"
+                          : "bg-amber-200/60 hover:bg-amber-300/70 active:scale-90",
+                      )}
+                      aria-label={isPopped ? "cell popped" : "pop this cell"}
+                    >
+                      <span className="text-[8px]" aria-hidden>
+                        {isPopped ? "·" : "⬡"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              /* big emoji for non-honeycomb toys */
+              <span className="relative z-10 text-6xl drop-shadow-sm" aria-hidden>
+                {toy.emoji}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* honeycomb refill button */}
+      {toy.hasCells && allCellsPopped && (
+        <motion.button
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            refillCells();
+          }}
+          className="mx-auto mt-2 rounded-full bg-amber-100/80 px-4 py-2 text-xs font-bold text-amber-700 transition-transform hover:scale-105 active:scale-95"
+        >
+          🍯 refill cells
+        </motion.button>
+      )}
+
+      {/* rotating gentle messages */}
+      <motion.p
+        key={message}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mt-3 text-sm font-bold text-lavender-500/80"
+      >
+        {message}
+      </motion.p>
+
+      <p className="mt-2 text-xs font-semibold text-ink-soft">
+        {toy.hasCells
+          ? allCellsPopped
+            ? "all cells popped — refill to play again"
+            : `tap the hexagons to pop them — ${totalCells - poppedCells.size} left`
+          : "press & hold to squish — drag to jiggle — tap to poke"}
       </p>
     </motion.div>
   );
