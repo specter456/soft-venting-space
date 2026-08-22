@@ -117,7 +117,7 @@ export default function Dashboard() {
   const showBar = BAR_ROUTES.includes(location.pathname) || location.pathname.startsWith("/dashboard/calendar/");
 
   return (
-    <div className="relative min-h-dvh overflow-hidden bg-gradient-to-b from-cream-soft via-cream to-lavender-50 text-ink">
+    <div className="relative min-h-dvh overflow-x-hidden overflow-y-auto bg-gradient-to-b from-cream-soft via-cream to-lavender-50 text-ink">
       {/* dreamy background blobs */}
       <div
         aria-hidden
@@ -132,7 +132,7 @@ export default function Dashboard() {
         className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full bg-mint-100/50 blur-3xl"
       />
 
-      <div className="relative mx-auto flex min-h-dvh max-w-[440px] flex-col">
+      <div className="relative mx-auto flex min-h-dvh max-w-[480px] w-full flex-col">
         {/* ─── Header ─────────────────────────────────────────────── */}
         <header className="sticky top-0 z-40 bg-cream-soft/70 px-5 pt-6 pb-3 backdrop-blur-md">
           <div className="flex items-center justify-between">
