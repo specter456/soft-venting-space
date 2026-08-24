@@ -122,8 +122,8 @@ export default function Dashboard() {
   const showBar = BAR_ROUTES.includes(location.pathname) || location.pathname.startsWith("/dashboard/calendar/");
 
   return (
-    <div className="relative overflow-x-hidden bg-gradient-to-b from-cream-soft via-cream to-lavender-50 text-ink">
-      {/* dreamy background blobs */}
+    <div className="relative overflow-x-hidden text-ink">
+      {/* dreamy background blobs — full viewport, not clipped */}
       <div
         aria-hidden
         className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full bg-lavender-100/60 blur-3xl"
@@ -136,8 +136,12 @@ export default function Dashboard() {
         aria-hidden
         className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full bg-mint-100/50 blur-3xl"
       />
+      <div
+        aria-hidden
+        className="pointer-events-none fixed top-[40%] left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-peach-100/30 blur-3xl"
+      />
 
-      <div className="relative mx-auto flex w-full max-w-[600px] flex-col">
+      <div className="relative mx-auto flex w-full max-w-[800px] flex-col">
         {/* ─── Header ─────────────────────────────────────────────── */}
         <header className="sticky top-0 z-40 bg-cream-soft/70 px-5 pt-6 pb-3 backdrop-blur-md">
           <div className="flex items-center justify-between">
@@ -214,7 +218,7 @@ export default function Dashboard() {
             aria-label="Main"
             className="fixed right-0 bottom-4 left-0 z-40 flex justify-center px-5"
           >
-            <div className="clay-card flex w-full max-w-[560px] items-center gap-1 rounded-full p-1.5">
+            <div className="clay-card flex w-full max-w-[720px] items-center gap-1 rounded-full p-1.5">
               {TABS.map((tab) => {
                 const active = tab.to === "/dashboard/calendar"
                   ? location.pathname.startsWith("/dashboard/calendar")

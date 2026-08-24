@@ -40,7 +40,7 @@ export default function Landing() {
   const primaryCta = () => navigate("/login");
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-cream-soft via-cream to-lavender-50 text-ink">
+    <div className="relative min-h-screen overflow-hidden text-ink">
       {/* splash screen */}
       <SplashScreen visible={showSplash} />
 
@@ -118,7 +118,7 @@ export default function Landing() {
             <p className="mt-3 text-lg font-medium text-ink-soft sm:text-xl">
               a tiny safe room in your phone
             </p>
-            <p className="mt-2 text-base font-medium text-ink sm:text-lg">
+            <p className="mt-2 text-base font-medium text-ink sm:text-lg md:text-xl">
               your feelings have a home here
             </p>
           </motion.div>
@@ -131,14 +131,6 @@ export default function Landing() {
           transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
           className="mt-12 flex flex-col items-center gap-4 sm:flex-row"
         >
-          <button
-            type="button"
-            onClick={primaryCta}
-            className="clay-btn flex items-center gap-2 rounded-full px-8 py-3.5 text-base font-bold text-cream-soft"
-          >
-            Start checking in
-            <ArrowRight className="size-4" />
-          </button>
           <button
             type="button"
             onClick={() => setShowExplanation(true)}

@@ -174,14 +174,14 @@
     overflow-x: hidden;
   }
   body {
-    @apply bg-background text-foreground;
+    /* full-bleed pastel background — covers the ENTIRE viewport edge to edge */
+    @apply text-foreground;
+    background: linear-gradient(180deg, #fffcf3 0%, #faf0e0 35%, #f3edfb 100%);
     font-family:
       ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN",
       "Quicksand", system-ui, -apple-system, "Segoe UI", Roboto,
       "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
-    /* stable scrolling: no ghost/overscroll bounce while swiping through
-       the app's screens */
     overscroll-behavior-y: contain;
   }
   button:not([disabled]),

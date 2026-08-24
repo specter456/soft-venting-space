@@ -197,13 +197,11 @@ export default function CreateScreen() {
           transition={{ duration: 0.4 }}
           type="button"
           onClick={() => setView("photos")}
-          className="clay-card group flex aspect-[4/5] flex-col items-center justify-center gap-3 rounded-[2rem] p-4 text-center transition-transform hover:-translate-y-1"
-        >
-          <span className="clay-chip flex h-16 w-16 items-center justify-center rounded-full text-3xl transition-transform group-hover:scale-110">
-            <Images className="size-7 text-lavender-500" />
-          </span>
-          <span className="text-base font-bold tracking-tight text-ink-deep">Photos</span>
-          <span className="text-[11px] leading-snug font-medium text-ink-soft">
+          className="clay-card group flex flex-col items-center justify-center gap-2 rounded-[1.8rem] px-4 py-5 text-center transition-transform hover:-translate-y-1"
+        >            <span className="clay-chip flex h-12 w-12 items-center justify-center rounded-full text-2xl transition-transform group-hover:scale-110">
+            <Images className="size-5 text-lavender-500" />
+          </span>            <span className="text-sm font-bold tracking-tight text-ink-deep">Photos</span>
+          <span className="text-[10px] leading-snug font-medium text-ink-soft">
             keep moments in your locked vault
           </span>
           <span className="mt-auto text-xs font-bold text-lavender-600">Add photos →</span>
@@ -218,11 +216,11 @@ export default function CreateScreen() {
           >
             <Link
               to={tool.to}
-              className="clay-card group flex aspect-[4/5] flex-col items-center justify-center gap-3 rounded-[2rem] p-4 text-center transition-transform hover:-translate-y-1"
+              className="clay-card group flex flex-col items-center justify-center gap-2 rounded-[1.8rem] px-4 py-5 text-center transition-transform hover:-translate-y-1"
             >
               <span
                 className={cn(
-                  "flex h-16 w-16 items-center justify-center rounded-full text-3xl transition-transform group-hover:scale-110",
+                  "flex h-12 w-12 items-center justify-center rounded-full text-2xl transition-transform group-hover:scale-110",
                   tool.tile,
                 )}
               >
@@ -230,8 +228,8 @@ export default function CreateScreen() {
                   {tool.emoji}
                 </span>
               </span>
-              <span className="text-base font-bold tracking-tight text-ink-deep">{tool.title}</span>
-              <span className="text-[11px] leading-snug font-medium text-ink-soft">{tool.blurb}</span>
+              <span className="text-sm font-bold tracking-tight text-ink-deep">{tool.title}</span>
+              <span className="text-[10px] leading-snug font-medium text-ink-soft">{tool.blurb}</span>
               <span className="mt-auto text-xs font-bold text-lavender-600">{tool.action}</span>
             </Link>
           </motion.div>
@@ -243,11 +241,10 @@ export default function CreateScreen() {
           transition={{ duration: 0.4, delay: 0.3 }}
         >
           <Link
-            to="/dashboard/vault"
-            className="clay-card group flex aspect-[4/5] flex-col items-center justify-center gap-3 rounded-[2rem] p-4 text-center transition-transform hover:-translate-y-1"
+            to="/dashboard/vault"              className="clay-card group flex flex-col items-center justify-center gap-2 rounded-[1.8rem] px-4 py-5 text-center transition-transform hover:-translate-y-1"
           >
             <div className="relative">
-              <span className="clay-chip flex h-16 w-16 items-center justify-center rounded-full bg-lavender-100 text-2xl">
+              <span className="clay-chip flex h-12 w-12 items-center justify-center rounded-full bg-lavender-100 text-xl">
                 🗝️
               </span>
               <span className="absolute -right-2 -bottom-1 flex items-center" aria-hidden>
@@ -259,8 +256,8 @@ export default function CreateScreen() {
                 </span>
               </span>
             </div>
-            <span className="text-base font-bold tracking-tight text-ink-deep">Photo Vault</span>
-            <span className="text-[11px] leading-snug font-medium text-ink-soft">
+            <span className="text-sm font-bold tracking-tight text-ink-deep">Photo Vault</span>
+            <span className="text-[10px] leading-snug font-medium text-ink-soft">
               photos, video vents & GIFs, double-locked
             </span>
             <span className="mt-auto text-xs font-bold text-blush-500">Open vault →</span>

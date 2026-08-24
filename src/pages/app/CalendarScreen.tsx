@@ -85,11 +85,11 @@ export default function CalendarScreen() {
       </div>
 
       {/* ─── Weekday labels ──────────────────────────────────────── */}
-      <div className="grid grid-cols-7 gap-1.5" aria-hidden>
+      <div className="grid grid-cols-7 gap-1 sm:gap-2" aria-hidden>
         {WEEKDAY_LABELS.map((w) => (
           <p
             key={w}
-            className="text-center text-[10px] font-bold tracking-wide text-ink-soft"
+            className="text-center text-[10px] sm:text-xs font-bold tracking-wide text-ink-soft"
           >
             {w}
           </p>
@@ -97,7 +97,7 @@ export default function CalendarScreen() {
       </div>
 
       {/* ─── Day grid ────────────────────────────────────────────── */}
-      <div className="grid grid-cols-7 gap-1.5">
+      <div className="grid grid-cols-7 gap-1 sm:gap-2">
         {cells.map((cell) => {
           if (!cell.inMonth) {
             return <div key={cell.dateKey} aria-hidden className="aspect-square" />;
@@ -112,7 +112,7 @@ export default function CalendarScreen() {
               to={`/dashboard/calendar/${cell.dateKey}`}
               aria-label={`Open ${cell.dateKey}`}
               className={[
-                "relative flex aspect-square flex-col items-center justify-center rounded-2xl border transition-transform",
+                "relative flex aspect-square flex-col items-center justify-center rounded-xl sm:rounded-2xl border transition-transform min-h-[2.5rem] sm:min-h-[3.5rem]",
                 isToday
                   ? "border-lavender-300 bg-lavender-200/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_0_0_3px_rgba(196,168,224,0.4)]"
                   : "border-white/70 bg-white/55 shadow-[0_4px_10px_-5px_rgba(96,78,150,0.28)]",
@@ -127,8 +127,8 @@ export default function CalendarScreen() {
               <span
                 className={
                   isToday
-                    ? "text-xs font-extrabold text-ink-deep"
-                    : "text-xs font-bold text-ink"
+                    ? "text-xs sm:text-sm font-extrabold text-ink-deep"
+                    : "text-xs sm:text-sm font-bold text-ink"
                 }
               >
                 {cell.date.getDate()}

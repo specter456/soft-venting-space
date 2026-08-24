@@ -198,7 +198,7 @@ export default function HomeScreen() {
 
       {/* ─── Feature grid — exactly two per row ───────────────────── */}
       <section>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
           {FEATURES.map((f) => (
             <div key={f.to + f.title}>
               <Link
@@ -207,7 +207,7 @@ export default function HomeScreen() {
               >
                 <span
                   className={cn(
-                    "flex h-12 w-12 items-center justify-center rounded-2xl text-2xl transition-transform group-hover:scale-110",
+                    "flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl text-2xl sm:text-3xl transition-transform group-hover:scale-110",
                     f.tile,
                   )}
                 >
@@ -215,7 +215,7 @@ export default function HomeScreen() {
                     {f.emoji}
                   </span>
                 </span>
-                <span className="text-sm font-bold tracking-tight text-ink-deep">
+                <span className="text-sm sm:text-base font-bold tracking-tight text-ink-deep">
                   {f.title}
                 </span>
                 <span className="text-[11px] leading-snug font-medium text-ink-soft">
