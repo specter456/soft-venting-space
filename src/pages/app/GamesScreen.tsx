@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 /* ─── Game registry — exactly six games, two per row ───────────────── */
 
-type GameId = "pop" | "breathe" | "dandelion" | "buddy" | "jars" | "star" | "shelf";
+type GameId = "pop" | "breathe" | "dandelion" | "buddy" | "sand" | "star" | "shelf";
 
 const GAMES: {
   id: GameId;
@@ -22,7 +22,7 @@ const GAMES: {
   { id: "breathe", emoji: "🫧", name: "Breath Bubble", line: "a soft bubble grows and shrinks, guiding slow breathing", tile: "tile-mint" },
   { id: "dandelion", emoji: "🌼", name: "Dandelion Wishes", line: "press & hold to blow seeds away and release worries", tile: "tile-mist" },
   { id: "buddy", emoji: "🧸", name: "Comfort the Buddy", line: "a shaky little buddy calms with gentle taps and hugs", tile: "tile-lavender" },
-  { id: "jars", emoji: "🫙", name: "Feelings Jars", line: "sort floating feelings into soft colored jars", tile: "tile-peach" },
+  { id: "sand", emoji: "🏖️", name: "Soft Sand Garden", line: "rake soft patterns in warm sand — no rules, just calm", tile: "tile-peach" },
   { id: "star", emoji: "⭐", name: "Star Trace", line: "trace slow glowing shapes to calm the mind", tile: "tile-mint" },
   { id: "shelf", emoji: "🧸", name: "Squishy Shelf", line: "pick a soft squishy, poke it, squish it, breathe", tile: "tile-lavender" },
 ];
@@ -65,7 +65,7 @@ export default function GamesScreen() {
           {open === "breathe" && <BreathBubble />}
           {open === "dandelion" && <DandelionWishes />}
           {open === "buddy" && <ComfortBuddy />}
-          {open === "jars" && <FeelingsJars />}
+          {open === "sand" && <SoftSandGarden />}
           {open === "star" && <StarTrace />}
           {open === "shelf" && <SquishyShelf />}
         </div>
@@ -685,33 +685,189 @@ function ComfortBuddy() {
   );
 }
 
-/* ─── 5. Feelings Jars ─────────────────────────────────────────────── */
+/* ─── 5. Soft Sand Garden ─────────────────────────────────────────── */
 
-const JARS = [
-  { id: "sad", label: "Sad", bg: "bg-sky-100" },
-  { id: "angry", label: "Angry", bg: "bg-blush-100" },
-  { id: "happy", label: "Happy", bg: "bg-peach-100" },
-  { id: "tired", label: "Tired", bg: "bg-lavender-100" },
+const SAND_MESSAGES = [
+  "no rules here — just you and the sand.",
+  "let the rake follow wherever it wants.",
+  "soft patterns, soft thoughts.",
+  "the sand doesn't judge your lines.",
+  "breathe in. breathe out. keep raking.",
 ];
 
-const FLOATERS = [
-  { id: "f1", emoji: "😢", jar: "sad" },
-  { id: "f2", emoji: "😠", jar: "angry" },
-  { id: "f3", emoji: "😊", jar: "happy" },
-  { id: "f4", emoji: "😴", jar: "tired" },
-  { id: "f5", emoji: "🥺", jar: "sad" },
-  { id: "f6", emoji: "😤", jar: "angry" },
-];
+function SoftSandGarden() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const drawing = useRef(false);
+  const lastPos = useRef({ x: 0, y: 0 });
+  const msgIdx = useRef(0);
+  const [message, setMessage] = useState(SAND_MESSAGES[0]);
+  const [pebbles, setPebbles] = useState<{ x: number; y: number }[]>([]);
+  const [sprouts, setSprouts] = useState<{ x: number; y: number }[]>([]);
+  const sandColor = useRef("#e8d5b8");
 
-function FeelingsJars() {
-  const [placed, setPlaced] = useState<Record<string, boolean>>({});
-  const allDone = FLOATERS.every((f) => placed[f.id]);
-
-  const reset = useTapGuard(() => setPlaced({}), 400);
-
-  const place = (id: string) => {
-    setPlaced((prev) => (prev[id] ? prev : { ...prev, [id]: true }));
+  // draw warm sand base
+  const drawSand = (ctx: CanvasRenderingContext2D, w: number, h: number) => {
+    // sand gradient
+    const g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, "#f0dfc4");
+    g.addColorStop(0.5, "#e8d5b8");
+    g.addColorStop(1, "#dcc8a8");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+    // subtle grain dots
+    for (let i = 0; i < 300; i++) {
+      const x = Math.random() * w;
+      const y = Math.random() * h;
+      const r = Math.random() * 1.2 + 0.3;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(180,155,120,${Math.random() * 0.15 + 0.05})`;
+      ctx.fill();
+    }
+    // rake shadow lines
+    for (let y = 20; y < h; y += 28) {
+      ctx.beginPath();
+      ctx.moveTo(0, y + Math.sin(y * 0.1) * 3);
+      ctx.lineTo(w, y + Math.sin(y * 0.1 + 2) * 3);
+      ctx.strokeStyle = "rgba(180,155,120,0.12)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
   };
+
+  // init canvas
+  useEffect(() => {
+    const c = canvasRef.current;
+    if (!c) return;
+    const parent = c.parentElement;
+    if (!parent) return;
+    const w = parent.clientWidth;
+    const h = 280;
+    c.width = w * 2;
+    c.height = h * 2;
+    c.style.width = `${w}px`;
+    c.style.height = `${h}px`;
+    const ctx = c.getContext("2d");
+    if (!ctx) return;
+    ctx.scale(2, 2);
+    drawSand(ctx, w, h);
+    sandColor.current = "#e8d5b8";
+  }, []);
+
+  const getPos = (e: React.PointerEvent) => {
+    const c = canvasRef.current;
+    if (!c) return { x: 0, y: 0 };
+    const rect = c.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  };
+
+  const rake = (x: number, y: number) => {
+    const c = canvasRef.current;
+    if (!c) return;
+    const ctx = c.getContext("2d");
+    if (!ctx) return;
+    ctx.save();
+    ctx.scale(2, 2);
+    // dark rake line (groove)
+    ctx.beginPath();
+    ctx.moveTo(lastPos.current.x, lastPos.current.y);
+    ctx.lineTo(x, y);
+    ctx.strokeStyle = "rgba(140,120,90,0.4)";
+    ctx.lineWidth = 6;
+    ctx.lineCap = "round";
+    ctx.stroke();
+    // light ridge next to it
+    ctx.beginPath();
+    ctx.moveTo(lastPos.current.x + 2, lastPos.current.y + 2);
+    ctx.lineTo(x + 2, y + 2);
+    ctx.strokeStyle = "rgba(240,225,200,0.7)";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.restore();
+    lastPos.current = { x, y };
+  };
+
+  const onDown = (e: React.PointerEvent) => {
+    drawing.current = true;
+    lastPos.current = getPos(e);
+    // cycle message
+    msgIdx.current = (msgIdx.current + 1) % SAND_MESSAGES.length;
+    setMessage(SAND_MESSAGES[msgIdx.current]);
+  };
+  const onMove = (e: React.PointerEvent) => {
+    if (!drawing.current) return;
+    const pos = getPos(e);
+    rake(pos.x, pos.y);
+  };
+  const onUp = () => { drawing.current = false; };
+
+  const smoothSand = useTapGuard(() => {
+    const c = canvasRef.current;
+    if (!c) return;
+    const ctx = c.getContext("2d");
+    if (!ctx) return;
+    const w = c.width / 2;
+    const h = c.height / 2;
+    ctx.save();
+    ctx.scale(2, 2);
+    drawSand(ctx, w, h);
+    ctx.restore();
+    setPebbles([]);
+    setSprouts([]);
+  }, 300);
+
+  const placePebble = useTapGuard(() => {
+    const c = canvasRef.current;
+    if (!c) return;
+    const x = 30 + Math.random() * (c.width / 2 - 60);
+    const y = 30 + Math.random() * (c.height / 2 - 60);
+    setPebbles((p) => [...p, { x, y }]);
+    // draw pebble on canvas
+    const ctx = c.getContext("2d");
+    if (!ctx) return;
+    ctx.save();
+    ctx.scale(2, 2);
+    const g = ctx.createRadialGradient(x, y, 0, x, y, 8);
+    g.addColorStop(0, "#b0a090");
+    g.addColorStop(1, "#908070");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(x, y, 8, 6, Math.random() * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(100,85,65,0.25)";
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+    ctx.restore();
+  }, 300);
+
+  const plantSprout = useTapGuard(() => {
+    const c = canvasRef.current;
+    if (!c) return;
+    const x = 30 + Math.random() * (c.width / 2 - 60);
+    const y = 30 + Math.random() * (c.height / 2 - 60);
+    setSprouts((s) => [...s, { x, y }]);
+    const ctx = c.getContext("2d");
+    if (!ctx) return;
+    ctx.save();
+    ctx.scale(2, 2);
+    // stem
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(x - 3, y - 12, x - 1, y - 18);
+    ctx.strokeStyle = "#7ab87a";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.stroke();
+    // leaves
+    ctx.fillStyle = "#8cc08c";
+    ctx.beginPath();
+    ctx.ellipse(x - 4, y - 12, 4, 2.5, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(x + 2, y - 14, 3.5, 2, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }, 300);
 
   return (
     <motion.div
@@ -720,92 +876,63 @@ function FeelingsJars() {
       className="clay-card rounded-[2.25rem] px-5 py-7"
     >
       <GameIntro
-        emoji="🫙"
-        title="Feelings Jars"
-        sub="Tap a floating feeling and it drifts into its own soft jar. No rush — they're all welcome here."
+        emoji="🏖️"
+        title="Soft Sand Garden"
+        sub="rake soft patterns in warm sand — no rules, just calm."
       />
 
-      {/* floating feelings */}
-      <div className="mt-6 flex min-h-24 flex-wrap items-center justify-center gap-4">
-        {FLOATERS.map((f, i) =>
-          placed[f.id] ? null : (
-            <motion.button
-              key={f.id}
-              type="button"
-              initial={{ opacity: 0, scale: 0.6 }}
-              animate={{ y: [0, -7, 0], opacity: 1, scale: 1 }}
-              exit={{ scale: 0, opacity: 0, y: 14 }}
-              transition={{ y: { duration: 2.8 + i * 0.4, repeat: Infinity, ease: "easeInOut" }, scale: { type: "spring", stiffness: 240, damping: 16 } }}
-              onClick={() => place(f.id)}
-              whileHover={{ scale: 1.15 }}
-              whileTap={{ scale: 0.92 }}
-              className="clay-chip flex h-14 w-14 items-center justify-center rounded-full text-3xl"
-              aria-label={`Tuck ${f.emoji} into a jar`}
-            >
-              <span aria-hidden className="drop-shadow-sm">
-                {f.emoji}
-              </span>
-            </motion.button>
-          ),
-        )}
-        {allDone && (
-          <motion.p
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-sm font-bold text-mint-500"
-          >
-            all your feelings are tucked in 💗
-          </motion.p>
-        )}
+      {/* sand tray */}
+      <div className="relative mt-5 overflow-hidden rounded-2xl border-2 border-peach-200/50">
+        <canvas
+          ref={canvasRef}
+          className="block w-full cursor-crosshair touch-none select-none"
+          onPointerDown={onDown}
+          onPointerMove={onMove}
+          onPointerUp={onUp}
+          onPointerLeave={onUp}
+          onPointerCancel={onUp}
+        />
       </div>
 
-      {/* the jars */}
-      <div className="mt-6 grid grid-cols-4 gap-2">
-        {JARS.map((jar) => {
-          const contents = FLOATERS.filter((f) => f.jar === jar.id && placed[f.id]);
-          return (
-            <div key={jar.id} className="flex flex-col items-center gap-1.5">
-              <div
-                className={cn(
-                  "flex h-24 w-full flex-col items-center justify-start gap-1 overflow-hidden rounded-b-3xl rounded-t-lg border-2 border-ink-deep/10 px-1 pt-2",
-                  jar.bg,
-                )}
-              >
-                {contents.map((f) => (
-                  <motion.span
-                    key={f.id}
-                    initial={{ scale: 0, y: -10 }}
-                    animate={{ scale: 1, y: 0 }}
-                    transition={{ type: "spring", stiffness: 260, damping: 14 }}
-                    className="text-xl"
-                    aria-hidden
-                  >
-                    {f.emoji}
-                  </motion.span>
-                ))}
-              </div>
-              <span className="text-[10px] font-bold text-ink-soft">{jar.label}</span>
-            </div>
-          );
-        })}
+      {/* action buttons */}
+      <div className="mt-5 flex items-center justify-center gap-3">
+        <button
+          type="button"
+          onClick={placePebble}
+          className="clay-chip rounded-full px-4 py-2 text-xs font-bold text-ink-deep transition-transform hover:scale-105 active:scale-95"
+        >
+          🪨 place a pebble
+        </button>
+        <button
+          type="button"
+          onClick={plantSprout}
+          className="clay-chip rounded-full px-4 py-2 text-xs font-bold text-ink-deep transition-transform hover:scale-105 active:scale-95"
+        >
+          🌱 plant a sprout
+        </button>
+        <button
+          type="button"
+          onClick={smoothSand}
+          className="clay-chip rounded-full px-4 py-2 text-xs font-bold text-ink-deep transition-transform hover:scale-105 active:scale-95"
+        >
+          ✨ smooth the sand
+        </button>
       </div>
 
-      <div className="mt-5 flex items-center justify-center">
-        {allDone ? (
-          <button
-            type="button"
-            onClick={reset}
-            className="clay-btn-soft rounded-full px-5 py-2.5 text-xs font-bold text-ink-deep"
-          >
-            let them float again
-          </button>
-        ) : (
-          <p className="text-xs font-semibold text-ink-soft">
-            {FLOATERS.length - Object.keys(placed).length} feeling
-            {FLOATERS.length - Object.keys(placed).length === 1 ? "" : "s"} still floating
-          </p>
-        )}
-      </div>
+      <motion.p
+        key={message}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mt-4 text-center text-sm font-bold text-lavender-500/80"
+      >
+        {message}
+      </motion.p>
+
+      <p className="mt-2 text-center text-xs font-semibold text-ink-soft">
+        {pebbles.length + sprouts.length === 0
+          ? "drag your finger to rake the sand"
+          : `${pebbles.length} pebble${pebbles.length === 1 ? "" : "s"} · ${sprouts.length} sprout${sprouts.length === 1 ? "" : "s"} placed`}
+      </p>
     </motion.div>
   );
 }

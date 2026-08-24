@@ -29,19 +29,19 @@ export default function LoginEntry() {
   }, 450);
 
   return (
-    <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-gradient-to-b from-cream-soft via-cream to-lavender-50 px-5 text-ink">
+    <div className="relative flex min-h-dvh items-center justify-center px-5 text-ink">
       {/* dreamy background blobs */}
       <div
         aria-hidden
-        className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full bg-lavender-100/60 blur-3xl"
+        className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full bg-lavender-200/35 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed top-72 -right-24 h-80 w-80 rounded-full bg-blush-100/50 blur-3xl"
+        className="pointer-events-none fixed top-72 -right-24 h-80 w-80 rounded-full bg-blush-100/35 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full bg-mint-100/50 blur-3xl"
+        className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full bg-mint-200/35 blur-3xl"
       />
 
       {/* ─── Soft login card ─────────────────────────────────────── */}
