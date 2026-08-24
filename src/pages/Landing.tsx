@@ -40,7 +40,7 @@ export default function Landing() {
   const primaryCta = () => navigate("/login");
 
   return (
-    <div className="relative min-h-screen overflow-hidden text-ink">
+    <div className="relative min-h-screen text-ink">
       {/* splash screen */}
       <SplashScreen visible={showSplash} />
 
@@ -169,7 +169,7 @@ export default function Landing() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 16, scale: 0.97 }}
               transition={{ type: "spring", stiffness: 260, damping: 22 }}
-              className="clay-card relative w-full max-w-md overflow-hidden rounded-[2.25rem] px-6 py-9 text-center"
+              className="relative w-full max-w-md overflow-hidden rounded-[2.25rem] bg-white/40 backdrop-blur-xl border border-white/50 px-6 py-9 text-center shadow-lg shadow-lavender-200/20"
               onClick={(e) => e.stopPropagation()}
             >
               <div

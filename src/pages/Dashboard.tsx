@@ -143,7 +143,7 @@ export default function Dashboard() {
 
       <div className="relative mx-auto flex w-full max-w-[800px] flex-col">
         {/* ─── Header ─────────────────────────────────────────────── */}
-        <header className="sticky top-0 z-40 bg-cream-soft/70 px-5 pt-6 pb-3 backdrop-blur-md">
+        <header className="sticky top-0 z-40 bg-white/30 backdrop-blur-xl px-5 pt-6 pb-3 border-b border-white/30">
           <div className="flex items-center justify-between">
             {isHome ? (
               <div className="flex items-center gap-2.5">
@@ -218,7 +218,7 @@ export default function Dashboard() {
             aria-label="Main"
             className="fixed right-0 bottom-4 left-0 z-40 flex justify-center px-5"
           >
-            <div className="clay-card flex w-full max-w-[720px] items-center gap-1 rounded-full p-1.5">
+            <div className="flex w-full max-w-[720px] items-center gap-1 rounded-full p-1.5 bg-white/30 backdrop-blur-xl border border-white/40 shadow-lg shadow-lavender-200/20">
               {TABS.map((tab) => {
                 const active = tab.to === "/dashboard/calendar"
                   ? location.pathname.startsWith("/dashboard/calendar")
