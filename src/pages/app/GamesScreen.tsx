@@ -159,8 +159,14 @@ function BubblePop() {
     <motion.div
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      className="clay-card rounded-[2.25rem] px-5 py-7"
+      className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7"
     >
+      {/* soft floating sparkles */}
+      <span className="pointer-events-none absolute top-6 left-8 text-sm text-blush-200 animate-twinkle" aria-hidden>✦</span>
+      <span className="pointer-events-none absolute top-12 right-10 text-xs text-lavender-200 animate-twinkle" style={{ animationDelay: "0.8s" }} aria-hidden>✧</span>
+      <span className="pointer-events-none absolute bottom-16 left-12 text-xs text-mint-200 animate-twinkle" style={{ animationDelay: "1.5s" }} aria-hidden>✦</span>
+      <span className="pointer-events-none absolute bottom-10 right-14 text-sm text-peach-200 animate-twinkle" style={{ animationDelay: "2.2s" }} aria-hidden>✧</span>
+
       <GameIntro
         emoji="🫧"
         title="Bubble Pop"
@@ -356,8 +362,10 @@ function DandelionWishes() {
   const order = useRef<number[]>(shuffleSeeds());
   const [remaining, setRemaining] = useState(DANDELION_TOTAL);
   const [gone, setGone] = useState<Set<number>>(new Set());
+  const WORRY_WORDS = ["the noise", "tomorrow", "their tone", "that look", "the weight", "the waiting", "what if", "too much", "not enough", "the hurry", "the silence", "that word", "the ache", "the rush"];
+  const worryIdx = useRef(0);
   const [flying, setFlying] = useState<
-    { id: number; x: number; y: number; angle: number; dist: number }[]
+    { id: number; x: number; y: number; angle: number; dist: number; word?: string }[]
   >([]);
   const [holding, setHolding] = useState(false);
   const [empty, setEmpty] = useState(false);
@@ -384,10 +392,12 @@ function DandelionWishes() {
     const seed = DANDELION_SEEDS[seedIdx];
     flyId.current += 1;
     const angle = Math.random() * Math.PI * 2;
+    const word = WORRY_WORDS[worryIdx.current % WORRY_WORDS.length];
+    worryIdx.current += 1;
     setGone((g) => new Set(g).add(seedIdx));
     setFlying((f) => [
       ...f.slice(-6),
-      { id: flyId.current, x: seed.x, y: seed.y, angle, dist: 90 + Math.random() * 90 },
+      { id: flyId.current, x: seed.x, y: seed.y, angle, dist: 90 + Math.random() * 90, word },
     ]);
     const left = DANDELION_TOTAL - nextIdx.current;
     setRemaining(left);
@@ -413,6 +423,7 @@ function DandelionWishes() {
   const regrow = () => {
     order.current = shuffleSeeds();
     nextIdx.current = 0;
+    worryIdx.current = 0;
     setGone(new Set());
     setFlying([]);
     setRemaining(DANDELION_TOTAL);
@@ -470,7 +481,7 @@ function DandelionWishes() {
                 style={{ left: `${s.x}%`, top: `${s.y}%` }}
               >
                 <span
-                  className="block rounded-full bg-white shadow-[0_1px_3px_rgba(122,150,180,0.5),inset_0_-1px_2px_rgba(160,185,205,0.55)]"
+                  className="block rounded-full bg-[#F6C878] shadow-[0_1px_3px_rgba(200,160,60,0.4),inset_0_-1px_2px_rgba(230,190,100,0.6)]"
                   style={{ width: s.size * 1.6, height: s.size * 1.6 }}
                 />
               </span>
@@ -494,9 +505,20 @@ function DandelionWishes() {
               style={{ left: `${f.x}%`, top: `${f.y}%` }}
             >
               <span
-                className="block rounded-full bg-white shadow-[0_1px_3px_rgba(122,150,180,0.5)]"
+                className="block rounded-full bg-[#F6C878] shadow-[0_1px_3px_rgba(200,160,60,0.4)]"
                 style={{ width: 9, height: 9 }}
               />
+              {/* worry word fading with the seed */}
+              {f.word && (
+                <motion.span
+                  initial={{ opacity: 0.9, y: 0 }}
+                  animate={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 1.2, ease: "easeOut" }}
+                  className="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-bold text-ink-soft/60 italic"
+                >
+                  {f.word}
+                </motion.span>
+              )}
             </motion.span>
           ))}
 
@@ -535,13 +557,26 @@ function DandelionWishes() {
       </div>
 
       {empty ? (
-        <motion.p
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-5 text-sm leading-relaxed font-bold text-ink-deep"
-        >
-          the dandelion is light now — your worries went with the wind.
-        </motion.p>
+        <div className="mt-5">
+          {/* shooting star sparkle */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: [0, 1, 0], scale: [0.5, 1.2, 0.8], rotate: [0, 15, -10] }}
+            transition={{ duration: 1.8, ease: "easeOut" }}
+            className="mx-auto mb-2 w-fit text-3xl"
+            aria-hidden
+          >
+            ✨
+          </motion.div>
+          <motion.p
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="text-sm leading-relaxed font-bold text-ink-deep"
+          >
+            the dandelion is light now — your worries went with the wind 🌬️
+          </motion.p>
+        </div>
       ) : (
         <p className="mt-5 text-sm font-bold text-mint-500">
           {remaining} seed{remaining === 1 ? "" : "s"} still holding on
@@ -601,8 +636,13 @@ function ComfortBuddy() {
     <motion.div
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      className="clay-card rounded-[2.25rem] px-6 py-10 text-center"
+      className="clay-card relative overflow-hidden rounded-[2.25rem] px-6 py-10 text-center"
     >
+      {/* soft floating sparkles */}
+      <span className="pointer-events-none absolute top-8 left-10 text-sm text-lavender-200 animate-twinkle" aria-hidden>✦</span>
+      <span className="pointer-events-none absolute top-14 right-12 text-xs text-blush-200 animate-twinkle" style={{ animationDelay: "1s" }} aria-hidden>✧</span>
+      <span className="pointer-events-none absolute bottom-16 left-14 text-xs text-mint-200 animate-twinkle" style={{ animationDelay: "1.8s" }} aria-hidden>✦</span>
+
       <GameIntro
         emoji="🧸"
         title="Comfort the Buddy"
@@ -1096,8 +1136,13 @@ function StarTrace() {
     <motion.div
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      className="clay-card rounded-[2.25rem] px-5 py-7"
+      className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7"
     >
+      {/* soft floating sparkles */}
+      <span className="pointer-events-none absolute top-8 left-10 text-sm text-lavender-200 animate-twinkle" aria-hidden>✦</span>
+      <span className="pointer-events-none absolute top-14 right-8 text-xs text-mint-200 animate-twinkle" style={{ animationDelay: "1.2s" }} aria-hidden>✧</span>
+      <span className="pointer-events-none absolute bottom-12 left-14 text-xs text-peach-200 animate-twinkle" style={{ animationDelay: "0.6s" }} aria-hidden>✦</span>
+
       <GameIntro
         emoji={shape.emoji}
         title="Star Trace"
@@ -1300,6 +1345,18 @@ function SquishyShelf() {
   const [message, setMessage] = useState(SHELF_MESSAGES[0]);
   const squishCount = useRef(0);
 
+  // face state: eyes + blush
+  const [eyesClosed, setEyesClosed] = useState(false);
+  const [showBlush, setShowBlush] = useState(false);
+  const [showHearts, setShowHearts] = useState(false);
+  const heartTimer = useRef<number | null>(null);
+
+  // tap particles (hearts & sparkles)
+  const [particles, setParticles] = useState<
+    { id: number; x: number; y: number; emoji: string }[]
+  >([]);
+  const particleId = useRef(0);
+
   // honeycomb cell state
   const totalCells = 19;
   const [poppedCells, setPoppedCells] = useState<Set<number>>(new Set());
@@ -1310,6 +1367,7 @@ function SquishyShelf() {
     return () => {
       if (pressTimer.current) window.clearInterval(pressTimer.current);
       if (jiggleTimer.current) window.clearInterval(jiggleTimer.current);
+      if (heartTimer.current) window.clearTimeout(heartTimer.current);
     };
   }, []);
 
@@ -1336,6 +1394,8 @@ function SquishyShelf() {
   const handleDown = (e: React.PointerEvent) => {
     e.preventDefault();
     setPressing(true);
+    setEyesClosed(true);
+    setShowBlush(true);
     shelfSquishSound();
     try {
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
@@ -1369,8 +1429,14 @@ function SquishyShelf() {
       window.clearInterval(pressTimer.current);
       pressTimer.current = null;
     }
-    // slow-rise puff back
+    // slow-rise puff back with happy blink
     setSquish(0);
+    heartTimer.current = window.setTimeout(() => {
+      setEyesClosed(false);
+      setShowBlush(false);
+      setShowHearts(true);
+      window.setTimeout(() => setShowHearts(false), 800);
+    }, 400);
     // count for messages
     squishCount.current += 1;
     if (squishCount.current % 3 === 0) {
@@ -1379,13 +1445,31 @@ function SquishyShelf() {
     }
   };
 
-  // quick poke (tap)
+  // quick poke (tap) — wobble + boing + particles
   const handleTap = () => {
     if (pressing) return;
     shelfSquishSound();
     setSquish(0.25);
     setJiggle(6);
-    setTimeout(() => setSquish(0), 180);
+    setEyesClosed(true);
+    setShowBlush(true);
+    // spawn heart/sparkle particles
+    const emojis = ["💖", "✨", "💜", "⭐"];
+    const newParticles = Array.from({ length: 3 }, (_, i) => ({
+      id: particleId.current++,
+      x: -20 + Math.random() * 40,
+      y: -30 - Math.random() * 30,
+      emoji: emojis[i % emojis.length],
+    }));
+    setParticles((p) => [...p.slice(-8), ...newParticles]);
+    window.setTimeout(() => {
+      setParticles((p) => p.filter((pt) => !newParticles.some((np) => np.id === pt.id)));
+    }, 1000);
+    setTimeout(() => {
+      setSquish(0);
+      setEyesClosed(false);
+      setShowBlush(false);
+    }, 180);
     squishCount.current += 1;
     if (squishCount.current % 3 === 0) {
       msgIdx.current = (msgIdx.current + 1) % SHELF_MESSAGES.length;
@@ -1483,7 +1567,7 @@ function SquishyShelf() {
         >
           <div
             className={cn(
-              "relative flex h-44 w-44 items-center justify-center rounded-full bg-gradient-to-br shadow-[inset_0_4px_14px_rgba(255,255,255,0.85),inset_0_-8px_20px_-6px_rgba(0,0,0,0.15),0_20px_40px_-12px,",
+              "relative flex h-44 w-44 items-center justify-center rounded-full bg-gradient-to-br",
               toy.color,
             )}
             style={{
@@ -1492,12 +1576,10 @@ function SquishyShelf() {
           >
             {/* toy-specific content */}
             {toy.hasCells ? (
-              /* honeycomb cell grid */
               <div className="absolute inset-4 grid grid-cols-5 grid-rows-5 place-items-center">
                 {Array.from({ length: totalCells }).map((_, i) => {
                   const row = Math.floor(i / 5);
                   const col = i % 5;
-                  // skip corners for a rounder shape
                   if (
                     (row === 0 && (col === 0 || col === 4)) ||
                     (row === 4 && (col === 0 || col === 4))
@@ -1528,13 +1610,62 @@ function SquishyShelf() {
                 })}
               </div>
             ) : (
-              /* big emoji for non-honeycomb toys */
               <span className="relative z-10 text-6xl drop-shadow-sm" aria-hidden>
                 {toy.emoji}
               </span>
             )}
+
+            {/* face overlay — eyes + blush */}
+            {!toy.hasCells && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="absolute top-[38%] flex gap-5">
+                  {eyesClosed ? (
+                    <>
+                      <span className="block h-0.5 w-3 rounded-full bg-ink/30" />
+                      <span className="block h-0.5 w-3 rounded-full bg-ink/30" />
+                    </>
+                  ) : (
+                    <>
+                      <span className="block h-2.5 w-2.5 rounded-full bg-ink/40" />
+                      <span className="block h-2.5 w-2.5 rounded-full bg-ink/40" />
+                    </>
+                  )}
+                </div>
+                {showBlush && (
+                  <>
+                    <span className="absolute top-[50%] left-[22%] h-3 w-4 rounded-full bg-blush-200/60" />
+                    <span className="absolute top-[50%] right-[22%] h-3 w-4 rounded-full bg-blush-200/60" />
+                  </>
+                )}
+                {showHearts && (
+                  <motion.span
+                    initial={{ opacity: 0, y: 0, scale: 0.5 }}
+                    animate={{ opacity: [0, 1, 0], y: -20, scale: 1 }}
+                    transition={{ duration: 0.8 }}
+                    className="absolute -top-2 text-xl"
+                    aria-hidden
+                  >
+                    💖
+                  </motion.span>
+                )}
+              </div>
+            )}
           </div>
         </div>
+
+        {/* floating particles (tap hearts/sparkles) */}
+        {particles.map((p) => (
+          <motion.span
+            key={p.id}
+            initial={{ opacity: 1, x: 0, y: 0, scale: 0.6 }}
+            animate={{ opacity: 0, x: p.x, y: p.y, scale: 1.2 }}
+            transition={{ duration: 0.9, ease: "easeOut" }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-lg pointer-events-none"
+            aria-hidden
+          >
+            {p.emoji}
+          </motion.span>
+        ))}
       </div>
 
       {/* honeycomb refill button */}
