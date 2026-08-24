@@ -143,7 +143,7 @@ export default function Dashboard() {
 
       <div className="relative mx-auto flex w-full max-w-[800px] flex-col">
         {/* ─── Header ─────────────────────────────────────────────── */}
-        <header className="sticky top-0 z-40 bg-white/30 backdrop-blur-xl px-5 pt-6 pb-3 border-b border-white/30">
+        <header className="sticky top-0 z-40 bg-lavender-50/50 backdrop-blur-xl px-5 pt-6 pb-3 border-b border-lavender-100/40">
           <div className="flex items-center justify-between">
             {isHome ? (
               <div className="flex items-center gap-2.5">
@@ -218,7 +218,7 @@ export default function Dashboard() {
             aria-label="Main"
             className="fixed right-0 bottom-4 left-0 z-40 flex justify-center px-5"
           >
-            <div className="flex w-full max-w-[720px] items-center gap-1 rounded-full p-1.5 bg-white/30 backdrop-blur-xl border border-white/40 shadow-lg shadow-lavender-200/20">
+            <div className="flex w-full max-w-[720px] items-center gap-1 rounded-full p-1.5 bg-white/50 backdrop-blur-xl border border-lavender-100/50 shadow-lg shadow-lavender-200/25">
               {TABS.map((tab) => {
                 const active = tab.to === "/dashboard/calendar"
                   ? location.pathname.startsWith("/dashboard/calendar")
@@ -229,10 +229,9 @@ export default function Dashboard() {
                     to={tab.to}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "flex flex-1 flex-col items-center gap-0.5 rounded-full py-2 transition-all",
-                      active
-                        ? "bg-lavender-300/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
-                        : "hover:bg-lavender-100/60",
+                      "flex flex-1 flex-col items-center gap-0.5 rounded-full py-2 transition-all",                        active
+                          ? "bg-lavender-300/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
+                          : "hover:bg-lavender-100/60",
                     )}
                   >
                     <span
