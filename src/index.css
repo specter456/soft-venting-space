@@ -42,54 +42,52 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* ─── Venting pastel palette (Claymorphism, a little deeper & fluffier) ─
-   Colors are deepened just enough that every card and section shows its
-   soft color at a glance, while staying calm, warm and pastel. Ink gets
-   stronger contrast so text stays cozy and readable. */
+/* ─── Venting pastel palette — soothing, visible, clearly colored ──────
+   Every colored element reads as its color at a glance. No white wash. */
 @theme {
   --color-cream: #faf0e0;
   --color-cream-deep: #eedcc2;
-  --color-cream-soft: #fffcf3;
+  --color-cream-soft: #fff6e9;
 
-  --color-lavender-50: #f3edfb;
-  --color-lavender-100: #e4d7f5;
-  --color-lavender-200: #d1bcef;
-  --color-lavender-300: #b797e3;
-  --color-lavender-400: #9c76d5;
-  --color-lavender-500: #855ac5;
-  --color-lavender-600: #6e46a6;
-  --color-lavender-700: #5a3888;
+  --color-lavender-50: #f0e8fa;
+  --color-lavender-100: #dbc8f2;
+  --color-lavender-200: #cdbcf3;
+  --color-lavender-300: #b4a2ec;
+  --color-lavender-400: #9c88e0;
+  --color-lavender-500: #8b7ce8;
+  --color-lavender-600: #7a68d4;
+  --color-lavender-700: #5e4faa;
 
-  --color-blush-50: #fbeff2;
-  --color-blush-100: #f6dbe1;
-  --color-blush-200: #edbdc9;
-  --color-blush-300: #e19aae;
+  --color-blush-50: #fdeef3;
+  --color-blush-100: #f6cbdd;
+  --color-blush-200: #f0afc6;
+  --color-blush-300: #e897b3;
   --color-blush-400: #d27594;
-  --color-blush-500: #bf5a7d;
+  --color-blush-500: #c25a80;
 
-  --color-mist-50: #eef7fb;
-  --color-mist-100: #d8ebf6;
-  --color-mist-200: #b5d9ef;
-  --color-mist-300: #8cc1e4;
-  --color-mist-400: #63a3d5;
+  --color-mist-50: #e8f2fb;
+  --color-mist-100: #c8e2f5;
+  --color-mist-200: #a8cfef;
+  --color-mist-300: #8cbde4;
+  --color-mist-400: #6ba8d5;
   --color-mist-500: #4d86c0;
 
-  --color-mint-50: #ecf8f1;
-  --color-mint-100: #d4eee0;
-  --color-mint-200: #ade1c5;
-  --color-mint-300: #81cea8;
-  --color-mint-400: #5cb28b;
-  --color-mint-500: #439976;
+  --color-mint-50: #e8f6f1;
+  --color-mint-100: #c8ebe0;
+  --color-mint-200: #a9dccb;
+  --color-mint-300: #8ccbad;
+  --color-mint-400: #6fb89a;
+  --color-mint-500: #4fa080;
 
-  --color-peach-50: #fcf1e0;
-  --color-peach-100: #f9e3c2;
-  --color-peach-200: #f2cd99;
-  --color-peach-300: #e9b16b;
+  --color-peach-50: #fef0e0;
+  --color-peach-100: #f9dfc0;
+  --color-peach-200: #f2c899;
+  --color-peach-300: #e8b07a;
   --color-peach-400: #dd9447;
 
-  --color-ink: #4e4866;
+  --color-ink: #5C5470;
   --color-ink-soft: #78718f;
-  --color-ink-deep: #3a3452;
+  --color-ink-deep: #3E3358;
 }
 
 /* CHANGE VALUES FOR THEME */
@@ -170,7 +168,7 @@
     height: 100%;
     min-height: 100dvh;
     overflow-x: hidden;
-    background: #fff8ee;
+    background: #E9E2F7;
     overscroll-behavior-y: contain;
   }
   #root {
@@ -182,11 +180,9 @@
     overflow-x: hidden;
     background: linear-gradient(
       180deg,
-      #fff8ee 0%,
-      #faf0e0 20%,
-      #f3edfb 50%,
-      #fbeff2 75%,
-      #f3edfb 100%
+      #E9E2F7 0%,
+      #FBE9F0 45%,
+      #FFF6E9 100%
     );
     background-attachment: fixed;
     font-family:
@@ -282,9 +278,9 @@
       inset 0 3px 8px -2px rgba(99, 82, 150, 0.15);
   }
 
-  /* Primary clay button */
+  /* Primary clay button — lavender #8B7CE8 */
   .clay-btn {
-    background: linear-gradient(180deg, rgba(200, 178, 238, 0.9), rgba(165, 136, 224, 0.9));
+    background: linear-gradient(180deg, #9b8ef0, #8B7CE8);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.5);
@@ -306,15 +302,15 @@
       0 6px 12px -6px rgba(118, 90, 190, 0.45);
   }
 
-  /* Floating pill buttons with soft peach / pink clay */
+  /* Floating pill buttons — secondary peach #F0AE85 */
   .clay-btn-soft {
-    background: linear-gradient(180deg, rgba(249, 221, 182, 0.85), rgba(239, 194, 142, 0.85));
+    background: linear-gradient(180deg, #f5be98, #F0AE85);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.5);
     box-shadow:
       inset 0 1.5px 0 rgba(255, 255, 255, 0.5),
-      0 8px 20px -6px rgba(190, 135, 85, 0.4);
+      0 8px 20px -6px rgba(200, 150, 100, 0.4);
     transition:
       transform 0.15s ease,
       box-shadow 0.15s ease,
@@ -328,7 +324,7 @@
   }
 
   .clay-btn-blush {
-    background: linear-gradient(180deg, rgba(243, 211, 218, 0.85), rgba(233, 178, 191, 0.85));
+    background: linear-gradient(180deg, #f4c0cc, #f0a8b8);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.5);
@@ -374,32 +370,32 @@
   }
 
   .mood-sad {
-    background: linear-gradient(180deg, #cfe5f6, #b5d7ef);
+    background: linear-gradient(180deg, #a8d0f0, #86B7E8);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
       inset 0 -6px 12px -6px rgba(84, 140, 190, 0.5),
       0 12px 20px -10px rgba(96, 152, 205, 0.55);
   }
   .mood-angry {
-    background: linear-gradient(180deg, #f8d2b6, #efb58f);
+    background: linear-gradient(180deg, #f0a8a8, #E89090);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
-      inset 0 -6px 12px -6px rgba(190, 120, 75, 0.5),
-      0 12px 20px -10px rgba(214, 140, 100, 0.55);
+      inset 0 -6px 12px -6px rgba(190, 120, 120, 0.5),
+      0 12px 20px -10px rgba(220, 130, 130, 0.55);
   }
   .mood-nervous {
-    background: linear-gradient(180deg, #cfeade, #aedbc6);
+    background: linear-gradient(180deg, #b0bdef, #93A7E3);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
-      inset 0 -6px 12px -6px rgba(80, 150, 115, 0.5),
-      0 12px 20px -10px rgba(110, 180, 145, 0.55);
+      inset 0 -6px 12px -6px rgba(100, 120, 180, 0.5),
+      0 12px 20px -10px rgba(120, 140, 200, 0.55);
   }
   .mood-happy {
-    background: linear-gradient(180deg, #f9dcb0, #f0c48c);
+    background: linear-gradient(180deg, #fcc0a0, #F5A97F);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
-      inset 0 -6px 12px -6px rgba(190, 130, 60, 0.5),
-      0 12px 20px -10px rgba(220, 160, 90, 0.55);
+      inset 0 -6px 12px -6px rgba(200, 130, 80, 0.5),
+      0 12px 20px -10px rgba(230, 150, 100, 0.55);
   }
   .mood-tired {
     background: linear-gradient(180deg, #dccdf5, #c9b2ec);
@@ -430,37 +426,37 @@
       0 12px 20px -10px rgba(215, 165, 95, 0.55);
   }
 
-  /* Soft colored squircle tiles for tool cards */
+  /* Clearly visible pastel tiles — each reads as its color */
   .tile-lavender {
-    background: linear-gradient(180deg, #e4d7f5, #d1bcef);
+    background: linear-gradient(180deg, #d5c8f0, #BCA9EE);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
       inset 0 -6px 12px -6px rgba(110, 70, 166, 0.45),
       0 10px 16px -8px rgba(140, 110, 205, 0.5);
   }
   .tile-blush {
-    background: linear-gradient(180deg, #f6dbe1, #edbdc9);
+    background: linear-gradient(180deg, #f8c8d6, #F0AFC6);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
       inset 0 -6px 12px -6px rgba(185, 100, 125, 0.45),
       0 10px 16px -8px rgba(210, 120, 150, 0.5);
   }
   .tile-mist {
-    background: linear-gradient(180deg, #d8ebf6, #b5d9ef);
+    background: linear-gradient(180deg, #c0ddf0, #9CCBE8);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
       inset 0 -6px 12px -6px rgba(76, 140, 190, 0.45),
       0 10px 16px -8px rgba(100, 170, 215, 0.5);
   }
   .tile-mint {
-    background: linear-gradient(180deg, #d4eee0, #ade1c5);
+    background: linear-gradient(180deg, #c4e8d6, #A9DCCB);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
       inset 0 -6px 12px -6px rgba(80, 150, 115, 0.45),
       0 10px 16px -8px rgba(110, 180, 145, 0.5);
   }
   .tile-peach {
-    background: linear-gradient(180deg, #f9e3c2, #f2cd99);
+    background: linear-gradient(180deg, #f8d5b0, #F2BE93);
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.85),
       inset 0 -6px 12px -6px rgba(190, 130, 60, 0.45),

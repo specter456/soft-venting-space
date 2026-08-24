@@ -123,22 +123,22 @@ export default function Dashboard() {
 
   return (
     <div className="relative overflow-x-hidden text-ink">
-      {/* dreamy background blobs — full viewport, not clipped */}
+      {/* dreamy background blobs — full viewport, new palette colors at 35% */}
       <div
         aria-hidden
-        className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full bg-lavender-100/60 blur-3xl"
+        className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full bg-lavender-200/35 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed top-72 -right-24 h-80 w-80 rounded-full bg-blush-100/50 blur-3xl"
+        className="pointer-events-none fixed top-72 -right-24 h-80 w-80 rounded-full bg-blush-100/35 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full bg-mint-100/50 blur-3xl"
+        className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full bg-mint-200/35 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed top-[40%] left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-peach-100/30 blur-3xl"
+        className="pointer-events-none fixed top-[40%] left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-peach-100/35 blur-3xl"
       />
 
       <div className="relative mx-auto flex w-full max-w-[800px] flex-col">
@@ -231,7 +231,7 @@ export default function Dashboard() {
                     className={cn(
                       "flex flex-1 flex-col items-center gap-0.5 rounded-full py-2 transition-all",
                       active
-                        ? "bg-lavender-400/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
+                        ? "bg-lavender-300/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
                         : "hover:bg-lavender-100/60",
                     )}
                   >

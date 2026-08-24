@@ -44,22 +44,22 @@ export default function Landing() {
       {/* splash screen */}
       <SplashScreen visible={showSplash} />
 
-      {/* dreamy background blobs */}
+      {/* dreamy background blobs — new palette colors at 35% */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-lavender-200/50 blur-3xl"
+        className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-lavender-200/35 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute top-40 -right-32 h-[28rem] w-[28rem] rounded-full bg-blush-100/60 blur-3xl"
+        className="pointer-events-none absolute top-40 -right-32 h-[28rem] w-[28rem] rounded-full bg-blush-100/35 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute top-[52rem] -left-40 h-96 w-96 rounded-full bg-mint-100/60 blur-3xl"
+        className="pointer-events-none absolute top-[52rem] -left-40 h-96 w-96 rounded-full bg-mint-200/35 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-peach-100/50 blur-3xl"
+        className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-peach-100/35 blur-3xl"
       />
 
       {/* ─── Slim top bar ──────────────────────────────────────────── */}
