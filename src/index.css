@@ -42,52 +42,60 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* ─── Venting pastel palette — soothing, visible, clearly colored ──────
-   Every colored element reads as its color at a glance. No white wash. */
+/* ─── Venting: Old Lace + Wisteria Blue palette ─────────────────────
+   Warm cream base with wisteria blue accents. Everything visible,
+   nothing washed-out. No pure white surfaces. */
 @theme {
-  --color-cream: #faf0e0;
-  --color-cream-deep: #eedcc2;
-  --color-cream-soft: #fff6e9;
+  /* Background base — warm Old Lace family */
+  --color-cream: #FDF5E6;
+  --color-cream-deep: #E8D5B8;
+  --color-cream-soft: #FFF6E9;
 
-  --color-lavender-50: #f0e8fa;
-  --color-lavender-100: #dbc8f2;
-  --color-lavender-200: #cdbcf3;
-  --color-lavender-300: #b4a2ec;
-  --color-lavender-400: #9c88e0;
-  --color-lavender-500: #8b7ce8;
-  --color-lavender-600: #7a68d4;
-  --color-lavender-700: #5e4faa;
+  /* Wisteria Blue family */
+  --color-lavender-50: #EDEBF6;
+  --color-lavender-100: #D9DEF4;
+  --color-lavender-200: #C4CBE8;
+  --color-lavender-300: #AAB6E3;
+  --color-lavender-400: #8C9AD6;
+  --color-lavender-500: #8C9AD6;
+  --color-lavender-600: #6F7BC0;
+  --color-lavender-700: #5F6DBE;
 
-  --color-blush-50: #fdeef3;
-  --color-blush-100: #f6cbdd;
-  --color-blush-200: #f0afc6;
-  --color-blush-300: #e897b3;
-  --color-blush-400: #d27594;
-  --color-blush-500: #c25a80;
+  /* Blush — warm rose-pink */
+  --color-blush-50: #F5E8EE;
+  --color-blush-100: #EACDD8;
+  --color-blush-200: #DEA9BD;
+  --color-blush-300: #C48B9E;
+  --color-blush-400: #B07288;
+  --color-blush-500: #9A5A74;
 
-  --color-mist-50: #e8f2fb;
-  --color-mist-100: #c8e2f5;
-  --color-mist-200: #a8cfef;
-  --color-mist-300: #8cbde4;
-  --color-mist-400: #6ba8d5;
-  --color-mist-500: #4d86c0;
+  /* Mist — wisteria-light blue */
+  --color-mist-50: #E6EAF6;
+  --color-mist-100: #D0D7F0;
+  --color-mist-200: #B8C2E8;
+  --color-mist-300: #9AA5D6;
+  --color-mist-400: #8290C8;
+  --color-mist-500: #6B78B5;
 
-  --color-mint-50: #e8f6f1;
-  --color-mint-100: #c8ebe0;
-  --color-mint-200: #a9dccb;
-  --color-mint-300: #8ccbad;
-  --color-mint-400: #6fb89a;
-  --color-mint-500: #4fa080;
+  /* Mint — sage green */
+  --color-mint-50: #E4EDE8;
+  --color-mint-100: #C9DAD0;
+  --color-mint-200: #ACCCB6;
+  --color-mint-300: #7BA88F;
+  --color-mint-400: #659A7D;
+  --color-mint-500: #4F8A6C;
 
-  --color-peach-50: #fef0e0;
-  --color-peach-100: #f9dfc0;
-  --color-peach-200: #f2c899;
-  --color-peach-300: #e8b07a;
-  --color-peach-400: #dd9447;
+  /* Peach — Old Lace gold family */
+  --color-peach-50: #FBF2E0;
+  --color-peach-100: #F3E7C9;
+  --color-peach-200: #E5D4AA;
+  --color-peach-300: #D9B36A;
+  --color-peach-400: #C9A96A;
 
-  --color-ink: #5C5470;
-  --color-ink-soft: #78718f;
-  --color-ink-deep: #3E3358;
+  /* Ink — deep wisteria tones */
+  --color-ink: #555B8A;
+  --color-ink-soft: #7A7FA8;
+  --color-ink-deep: #3A4170;
 }
 
 /* CHANGE VALUES FOR THEME */
@@ -168,7 +176,7 @@
     height: 100%;
     min-height: 100dvh;
     overflow-x: hidden;
-    background: #E9E2F7;
+    background: #FDF5E6;
     overscroll-behavior-y: contain;
   }
   #root {
@@ -180,14 +188,13 @@
     overflow-x: hidden;
     background: linear-gradient(
       180deg,
-      #E9E2F7 0%,
-      #FBE9F0 45%,
-      #FFF6E9 100%
+      #FDF5E6 0%,
+      #EDEBF6 50%,
+      #D9DEF4 100%
     );
     background-attachment: fixed;
-    font-family:
-      ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN",
-      "Quicksand", system-ui, -apple-system, "Segoe UI", Roboto,
+    font-family: "Nunito", ui-rounded, "SF Pro Rounded",
+      system-ui, -apple-system, "Segoe UI", Roboto,
       "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     overscroll-behavior-y: contain;
@@ -198,10 +205,7 @@
     cursor: pointer;
   }
 
-  /* ─── No accidental text selection anywhere in the UI ───────────────
-     Everything (buttons, cards, chips, headings, toasts, sliders, the
-     taskbar, emoji rows) is non-selectable. Only real inputs and textareas
-     keep full text selection & editing. */
+  /* ─── No accidental text selection anywhere in the UI ─────────────── */
   *,
   *::before,
   *::after {
@@ -211,7 +215,6 @@
     -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;
   }
-  /* Typing stays untouched — inputs keep full text selection & editing. */
   input,
   textarea,
   [contenteditable] {
@@ -219,8 +222,6 @@
     -moz-user-select: text;
     user-select: text;
   }
-  /* Icons, emojis and canvases must never be draggable — no ghost drags
-     while scrolling or tapping. */
   img,
   svg,
   canvas,
@@ -230,7 +231,6 @@
     -webkit-user-select: none;
     user-select: none;
   }
-  /* Taps respond instantly: no double-tap zoom delay on interactive bits. */
   button,
   [role="button"],
   a,
@@ -241,52 +241,46 @@
   }
 }
 
-/* ─── Claymorphism surfaces (fluffy & cozy) ───────────────────────────
-   Cards carry a soft felt/velvet texture (tiny dots), a warm cream-to-
-   lavender tint so color is visible at a glance, plush cloud shadows and
-   a tiny top highlight — like soft toys and clouds. */
+/* ─── Frosted glass surfaces — Old Lace tinted ────────────────────── */
 @layer components {
-  /* Frosted glass card — semi-transparent with backdrop blur */
   .clay-card {
-    background: rgba(255, 255, 255, 0.55);
+    background: rgba(253, 245, 230, 0.55);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(253, 245, 230, 0.6);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.7),
-      0 8px 32px -8px rgba(96, 78, 150, 0.18);
+      inset 0 1px 0 rgba(255, 255, 255, 0.5),
+      0 8px 32px -8px rgba(90, 90, 140, 0.18);
   }
 
-  /* Frosted glass chip — lighter frosted surface */
   .clay-chip {
-    background: rgba(255, 255, 255, 0.4);
+    background: rgba(253, 245, 230, 0.4);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(253, 245, 230, 0.5);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.6),
-      0 4px 16px -4px rgba(96, 78, 150, 0.12);
+      inset 0 1px 0 rgba(255, 255, 255, 0.45),
+      0 4px 16px -4px rgba(90, 90, 140, 0.12);
   }
 
-  /* Pressed / inset clay surface */
   .clay-press {
-    background: rgba(255, 255, 255, 0.35);
+    background: rgba(253, 245, 230, 0.35);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(253, 245, 230, 0.45);
     box-shadow:
-      inset 0 3px 8px -2px rgba(99, 82, 150, 0.15);
+      inset 0 3px 8px -2px rgba(90, 90, 140, 0.15);
   }
 
-  /* Primary clay button — lavender #8B7CE8 */
+  /* Primary button — Deep Wisteria #5F6DBE */
   .clay-btn {
-    background: linear-gradient(180deg, #9b8ef0, #8B7CE8);
+    background: linear-gradient(180deg, #6F7BC0, #5F6DBE);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.4);
     box-shadow:
-      inset 0 1.5px 0 rgba(255, 255, 255, 0.5),
-      0 8px 20px -6px rgba(118, 90, 190, 0.45);
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.4),
+      0 8px 20px -6px rgba(95, 109, 190, 0.45);
     transition:
       transform 0.15s ease,
       box-shadow 0.15s ease,
@@ -298,19 +292,19 @@
   .clay-btn:active {
     transform: translateY(2px) scale(0.98);
     box-shadow:
-      inset 0 3px 9px -2px rgba(95, 72, 160, 0.4),
-      0 6px 12px -6px rgba(118, 90, 190, 0.45);
+      inset 0 3px 9px -2px rgba(95, 109, 190, 0.4),
+      0 6px 12px -6px rgba(95, 109, 190, 0.45);
   }
 
-  /* Floating pill buttons — secondary peach #F0AE85 */
+  /* Secondary button — Old Lace Gold #C9A96A */
   .clay-btn-soft {
-    background: linear-gradient(180deg, #f5be98, #F0AE85);
+    background: linear-gradient(180deg, #D9C080, #C9A96A);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.4);
     box-shadow:
-      inset 0 1.5px 0 rgba(255, 255, 255, 0.5),
-      0 8px 20px -6px rgba(200, 150, 100, 0.4);
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.45),
+      0 8px 20px -6px rgba(200, 169, 106, 0.4);
     transition:
       transform 0.15s ease,
       box-shadow 0.15s ease,
@@ -324,13 +318,13 @@
   }
 
   .clay-btn-blush {
-    background: linear-gradient(180deg, #f4c0cc, #f0a8b8);
+    background: linear-gradient(180deg, #D4A0B0, #C48B9E);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.4);
     box-shadow:
-      inset 0 1.5px 0 rgba(255, 255, 255, 0.5),
-      0 8px 20px -6px rgba(185, 105, 125, 0.4);
+      inset 0 1.5px 0 rgba(255, 255, 255, 0.4),
+      0 8px 20px -6px rgba(196, 139, 158, 0.4);
     transition:
       transform 0.15s ease,
       box-shadow 0.15s ease,
@@ -344,14 +338,14 @@
   }
 }
 
-/* ─── Mood bubbles (per-feeling clay colors) ────────────────────────── */
+/* ─── Mood bubbles (Old Lace + Wisteria family) ───────────────────── */
 @layer components {
   .mood-bubble {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     border-radius: 9999px;
-    border: 1px solid rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.7);
     transition:
       transform 0.18s ease,
       box-shadow 0.18s ease,
@@ -365,106 +359,113 @@
     transform: translateY(1px) scale(0.97);
   }
   .mood-bubble-selected {
-    outline: 3px solid rgba(58, 52, 82, 0.38);
+    outline: 3px solid rgba(95, 109, 190, 0.5);
     outline-offset: 2px;
   }
 
   .mood-sad {
-    background: linear-gradient(180deg, #a8d0f0, #86B7E8);
+    background: linear-gradient(180deg, #B8C8ED, #AAB6E3);
     box-shadow:
-      inset 0 2px 3px rgba(255, 255, 255, 0.85),
-      inset 0 -6px 12px -6px rgba(84, 140, 190, 0.5),
-      0 12px 20px -10px rgba(96, 152, 205, 0.55);
+      inset 0 2px 3px rgba(255, 255, 255, 0.8),
+      inset 0 -6px 12px -6px rgba(120, 140, 190, 0.5),
+      0 12px 20px -10px rgba(140, 160, 210, 0.55);
   }
   .mood-angry {
-    background: linear-gradient(180deg, #f0a8a8, #E89090);
+    background: linear-gradient(180deg, #D4A0AE, #C48B9E);
     box-shadow:
-      inset 0 2px 3px rgba(255, 255, 255, 0.85),
-      inset 0 -6px 12px -6px rgba(190, 120, 120, 0.5),
-      0 12px 20px -10px rgba(220, 130, 130, 0.55);
+      inset 0 2px 3px rgba(255, 255, 255, 0.8),
+      inset 0 -6px 12px -6px rgba(160, 100, 120, 0.5),
+      0 12px 20px -10px rgba(180, 120, 140, 0.55);
   }
   .mood-nervous {
-    background: linear-gradient(180deg, #b0bdef, #93A7E3);
+    background: linear-gradient(180deg, #ACB5DE, #9AA5D6);
     box-shadow:
-      inset 0 2px 3px rgba(255, 255, 255, 0.85),
-      inset 0 -6px 12px -6px rgba(100, 120, 180, 0.5),
-      0 12px 20px -10px rgba(120, 140, 200, 0.55);
+      inset 0 2px 3px rgba(255, 255, 255, 0.8),
+      inset 0 -6px 12px -6px rgba(120, 130, 180, 0.5),
+      0 12px 20px -10px rgba(140, 150, 200, 0.55);
   }
   .mood-happy {
-    background: linear-gradient(180deg, #fcc0a0, #F5A97F);
+    background: linear-gradient(180deg, #F0D8B8, #E8C898);
     box-shadow:
-      inset 0 2px 3px rgba(255, 255, 255, 0.85),
-      inset 0 -6px 12px -6px rgba(200, 130, 80, 0.5),
-      0 12px 20px -10px rgba(230, 150, 100, 0.55);
+      inset 0 2px 3px rgba(255, 255, 255, 0.8),
+      inset 0 -6px 12px -6px rgba(190, 160, 110, 0.5),
+      0 12px 20px -10px rgba(210, 180, 130, 0.55);
   }
   .mood-tired {
-    background: linear-gradient(180deg, #dccdf5, #c9b2ec);
+    background: linear-gradient(180deg, #D8D0EA, #C4BCDE);
     box-shadow:
-      inset 0 2px 3px rgba(255, 255, 255, 0.85),
-      inset 0 -6px 12px -6px rgba(120, 90, 180, 0.5),
-      0 12px 20px -10px rgba(140, 110, 205, 0.55);
+      inset 0 2px 3px rgba(255, 255, 255, 0.8),
+      inset 0 -6px 12px -6px rgba(130, 120, 170, 0.5),
+      0 12px 20px -10px rgba(150, 140, 190, 0.55);
   }
   .mood-overwhelmed {
-    background: linear-gradient(180deg, #f4cdd8, #e9adbd);
+    background: linear-gradient(180deg, #E8C0CC, #DAA8B8);
     box-shadow:
-      inset 0 2px 3px rgba(255, 255, 255, 0.85),
-      inset 0 -6px 12px -6px rgba(185, 100, 125, 0.5),
-      0 12px 20px -10px rgba(210, 120, 150, 0.55);
+      inset 0 2px 3px rgba(255, 255, 255, 0.8),
+      inset 0 -6px 12px -6px rgba(170, 110, 130, 0.5),
+      0 12px 20px -10px rgba(190, 130, 150, 0.55);
   }
   .mood-calm {
-    background: linear-gradient(180deg, #c8e2f5, #a9d2ec);
+    background: linear-gradient(180deg, #C0D5E8, #A8C5DC);
     box-shadow:
-      inset 0 2px 3px rgba(255, 255, 255, 0.85),
-      inset 0 -6px 12px -6px rgba(76, 140, 190, 0.5),
-      0 12px 20px -10px rgba(100, 170, 215, 0.55);
+      inset 0 2px 3px rgba(255, 255, 255, 0.8),
+      inset 0 -6px 12px -6px rgba(100, 140, 180, 0.5),
+      0 12px 20px -10px rgba(120, 160, 200, 0.55);
   }
   .mood-irritated {
-    background: linear-gradient(180deg, #f8e0ba, #f0c996);
+    background: linear-gradient(180deg, #EED5B0, #E0C89A);
     box-shadow:
-      inset 0 2px 3px rgba(255, 255, 255, 0.85),
-      inset 0 -6px 12px -6px rgba(190, 135, 70, 0.5),
-      0 12px 20px -10px rgba(215, 165, 95, 0.55);
+      inset 0 2px 3px rgba(255, 255, 255, 0.8),
+      inset 0 -6px 12px -6px rgba(170, 140, 80, 0.5),
+      0 12px 20px -10px rgba(190, 160, 100, 0.55);
   }
 
-  /* Clearly visible pastel tiles — each reads as its color */
+  /* ─── Clearly visible feature tiles — Wisteria & Lace family ──── */
   .tile-lavender {
-    background: linear-gradient(180deg, #d5c8f0, #BCA9EE);
+    background: linear-gradient(180deg, #B8C0E8, #9AA5D6);
     box-shadow:
-      inset 0 2px 3px rgba(255, 255, 255, 0.85),
-      inset 0 -6px 12px -6px rgba(110, 70, 166, 0.45),
-      0 10px 16px -8px rgba(140, 110, 205, 0.5);
+      inset 0 2px 3px rgba(255, 255, 255, 0.8),
+      inset 0 -6px 12px -6px rgba(100, 110, 180, 0.45),
+      0 10px 16px -8px rgba(120, 130, 200, 0.5);
   }
   .tile-blush {
-    background: linear-gradient(180deg, #f8c8d6, #F0AFC6);
+    background: linear-gradient(180deg, #D4A0B8, #B79BD9);
     box-shadow:
-      inset 0 2px 3px rgba(255, 255, 255, 0.85),
-      inset 0 -6px 12px -6px rgba(185, 100, 125, 0.45),
-      0 10px 16px -8px rgba(210, 120, 150, 0.5);
+      inset 0 2px 3px rgba(255, 255, 255, 0.8),
+      inset 0 -6px 12px -6px rgba(140, 100, 170, 0.45),
+      0 10px 16px -8px rgba(160, 120, 190, 0.5);
   }
   .tile-mist {
-    background: linear-gradient(180deg, #c0ddf0, #9CCBE8);
+    background: linear-gradient(180deg, #9AB0D0, #7F9BD9);
     box-shadow:
-      inset 0 2px 3px rgba(255, 255, 255, 0.85),
-      inset 0 -6px 12px -6px rgba(76, 140, 190, 0.45),
-      0 10px 16px -8px rgba(100, 170, 215, 0.5);
+      inset 0 2px 3px rgba(255, 255, 255, 0.8),
+      inset 0 -6px 12px -6px rgba(90, 110, 160, 0.45),
+      0 10px 16px -8px rgba(110, 130, 180, 0.5);
   }
   .tile-mint {
-    background: linear-gradient(180deg, #c4e8d6, #A9DCCB);
+    background: linear-gradient(180deg, #A0C4B8, #8FA8C9);
     box-shadow:
-      inset 0 2px 3px rgba(255, 255, 255, 0.85),
-      inset 0 -6px 12px -6px rgba(80, 150, 115, 0.45),
-      0 10px 16px -8px rgba(110, 180, 145, 0.5);
+      inset 0 2px 3px rgba(255, 255, 255, 0.8),
+      inset 0 -6px 12px -6px rgba(100, 130, 150, 0.45),
+      0 10px 16px -8px rgba(120, 150, 170, 0.5);
   }
   .tile-peach {
-    background: linear-gradient(180deg, #f8d5b0, #F2BE93);
+    background: linear-gradient(180deg, #E5C898, #C9A96A);
     box-shadow:
-      inset 0 2px 3px rgba(255, 255, 255, 0.85),
-      inset 0 -6px 12px -6px rgba(190, 130, 60, 0.45),
-      0 10px 16px -8px rgba(220, 160, 90, 0.5);
+      inset 0 2px 3px rgba(255, 255, 255, 0.8),
+      inset 0 -6px 12px -6px rgba(160, 130, 70, 0.45),
+      0 10px 16px -8px rgba(180, 150, 90, 0.5);
   }
 }
 
-/* ─── Gentle motion ─────────────────────────────────────────────────── */
+/* ─── Script font utility — Caveat for special words only ─────────── */
+@layer utilities {
+  .font-script {
+    font-family: "Caveat", "Comic Sans MS", cursive;
+  }
+}
+
+/* ─── Gentle motion ────────────────────────────────────────────────── */
 @layer utilities {
   .animate-floaty {
     animation: floaty 6s ease-in-out infinite;
@@ -481,7 +482,6 @@
   .animate-rise {
     animation: rise 1.2s ease-out infinite;
   }
-  /* the spinning music CD in the Games section */
   .animate-cd-spin {
     animation: cd-spin 3.2s linear infinite;
   }
@@ -489,7 +489,7 @@
   /* handwritten journal text for the diary */
   .font-hand {
     font-family:
-      "Comic Sans MS", "Segoe Print", "Bradley Hand", "Chalkboard SE",
+      "Caveat", "Comic Sans MS", "Segoe Print", "Bradley Hand", "Chalkboard SE",
       "Hiragino Maru Gothic ProN", cursive;
   }
 }
@@ -498,16 +498,16 @@
 .cd-disc {
   background: radial-gradient(
     circle at 50% 50%,
-    #fff 0 13%,
+    #FDF5E6 0 13%,
     transparent 15% 18%,
-    #7d6cb8 20% 42%,
-    #9d8cd2 42% 62%,
-    #c3b5e8 62% 100%
+    #5F6DBE 20% 42%,
+    #8C9AD6 42% 62%,
+    #C4CBE8 62% 100%
   );
   box-shadow:
-    inset 0 2px 4px rgba(255, 255, 255, 0.75),
-    inset 0 -4px 8px rgba(70, 60, 120, 0.45),
-    0 10px 18px -8px rgba(96, 78, 150, 0.55);
+    inset 0 2px 4px rgba(255, 255, 255, 0.6),
+    inset 0 -4px 8px rgba(58, 65, 112, 0.45),
+    0 10px 18px -8px rgba(90, 90, 140, 0.55);
 }
 
 @keyframes floaty {
@@ -568,6 +568,6 @@
   width: 6px;
 }
 .soft-scroll::-webkit-scrollbar-thumb {
-  background: rgba(139, 112, 190, 0.25);
+  background: rgba(140, 154, 214, 0.3);
   border-radius: 9999px;
 }

@@ -12,9 +12,9 @@ import { useTapGuard } from "@/lib/useTapGuard";
 
 /** Dot colors per entry type — green / yellow / pale blue. */
 const DOT: Record<CalendarEntry["type"], string> = {
-  important: "bg-mint-400",
-  dump: "bg-peach-300",
-  normal: "bg-mist-300",
+  important: "bg-[#7BA88F]",
+  dump: "bg-[#D9B36A]",
+  normal: "bg-[#8C9AD6]",
 };
 
 export default function CalendarScreen() {
@@ -68,7 +68,7 @@ export default function CalendarScreen() {
             <button
               type="button"
               onClick={backToToday}
-              className="mt-0.5 rounded-full bg-lavender-100/80 px-2.5 py-0.5 text-[10px] font-bold text-lavender-600 transition-colors hover:bg-lavender-200/80"
+              className="mt-0.5 rounded-full bg-[#D9DEF4]/80 px-2.5 py-0.5 text-[10px] font-bold text-[#5F6DBE] transition-colors hover:bg-[#C4CBE8]/80"
             >
               back to today
             </button>
@@ -114,14 +114,14 @@ export default function CalendarScreen() {
               className={[
                 "relative flex aspect-square flex-col items-center justify-center rounded-xl sm:rounded-2xl border transition-transform min-h-[2.5rem] sm:min-h-[3.5rem]",
                 isToday
-                  ? "border-lavender-300 bg-lavender-200/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_0_0_3px_rgba(196,168,224,0.4)]"
-                  : "border-white/70 bg-white/55 shadow-[0_4px_10px_-5px_rgba(96,78,150,0.28)]",
+                  ? "border-[#8C9AD6] bg-[#D9DEF4]/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_0_0_3px_rgba(140,154,214,0.4)]"
+                  : "border-[#C4CBE8]/70 bg-[#FDF5E6]/55 shadow-[0_4px_10px_-5px_rgba(90,90,140,0.28)]",
               ].join(" ")}
             >
               {hasImportant && (
                 <Star
                   aria-hidden
-                  className="absolute top-0.5 right-1 size-2.5 fill-mint-400 text-mint-400"
+                  className="absolute top-0.5 right-1 size-2.5 fill-[#7BA88F] text-[#7BA88F]"
                 />
               )}
               <span
@@ -151,13 +151,13 @@ export default function CalendarScreen() {
       {/* ─── Legend ──────────────────────────────────────────────── */}
       <div className="clay-chip flex items-center justify-center gap-4 rounded-full px-4 py-2.5">
         <span className="flex items-center gap-1.5 text-[10px] font-bold text-ink-soft">
-          <span className="size-2 rounded-full bg-mint-400" aria-hidden /> important
+          <span className="size-2 rounded-full bg-[#7BA88F]" aria-hidden /> important
         </span>
         <span className="flex items-center gap-1.5 text-[10px] font-bold text-ink-soft">
-          <span className="size-2 rounded-full bg-peach-300" aria-hidden /> thought dump
+          <span className="size-2 rounded-full bg-[#D9B36A]" aria-hidden /> thought dump
         </span>
         <span className="flex items-center gap-1.5 text-[10px] font-bold text-ink-soft">
-          <span className="size-2 rounded-full bg-mist-300" aria-hidden /> normal
+          <span className="size-2 rounded-full bg-[#8C9AD6]" aria-hidden /> normal
         </span>
       </div>
 

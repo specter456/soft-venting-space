@@ -105,7 +105,7 @@ export default function HomeScreen() {
     <div className="space-y-6">
       {/* ─── Greeting ─────────────────────────────────────────────── */}
       <section>
-        <p className="text-2xl font-bold tracking-tight text-ink-deep">
+        <p className="font-script text-3xl font-bold tracking-tight text-ink-deep">
           {greet.emoji} {greet.text}, friend
         </p>
         <p className="mt-1 text-sm font-medium text-ink-soft">
@@ -148,7 +148,7 @@ export default function HomeScreen() {
             </div>
           ) : (
             <div>
-              <p className="text-center text-lg font-bold tracking-tight text-ink-deep">
+              <p className="font-script text-center text-xl font-bold tracking-tight text-ink-deep">
                 How are you feeling today?
               </p>
               <p className="mt-1 text-center text-sm text-ink-soft">
@@ -165,7 +165,7 @@ export default function HomeScreen() {
                 spellCheck={false}
                 placeholder="Type how you feel… (slightly happy, extremely sad, a little nervous…)"
                 aria-label="How you feel right now"
-                className="mt-5 w-full rounded-2xl border-0 bg-cream-soft px-4 py-3.5 text-sm leading-relaxed text-ink-deep shadow-[inset_0_2px_6px_rgba(99,82,150,0.08)] placeholder:text-ink-soft/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-lavender-300"
+                className="mt-5 w-full rounded-2xl border-0 bg-[#FDF5E6]/70 px-4 py-3.5 text-sm leading-relaxed text-ink-deep shadow-[inset_0_2px_6px_rgba(90,90,140,0.08)] placeholder:text-ink-soft/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8C9AD6]"
               />
 
               {/* exactly four quick moods, one row */}

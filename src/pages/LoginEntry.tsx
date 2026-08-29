@@ -33,15 +33,15 @@ export default function LoginEntry() {
       {/* dreamy background blobs */}
       <div
         aria-hidden
-        className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full bg-lavender-200/35 blur-3xl"
+        className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full bg-[#AAB6E3]/40 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed top-72 -right-24 h-80 w-80 rounded-full bg-blush-100/35 blur-3xl"
+        className="pointer-events-none fixed top-72 -right-24 h-80 w-80 rounded-full bg-[#F3E7C9]/40 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full bg-mint-200/35 blur-3xl"
+        className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full bg-[#C4CBE8]/40 blur-3xl"
       />
 
       {/* ─── Soft login card ─────────────────────────────────────── */}
@@ -82,7 +82,7 @@ export default function LoginEntry() {
               <button
                 type="button"
                 onClick={() => setMode("email")}
-                className="clay-btn w-full rounded-2xl px-5 py-3.5 text-sm font-bold text-cream-soft"
+                className="clay-btn w-full rounded-2xl px-5 py-3.5 text-sm font-bold text-white"
               >
                 Continue with email
               </button>
@@ -117,7 +117,7 @@ export default function LoginEntry() {
               type="button"
               onClick={guardedEmail}
               disabled={!email.trim()}
-              className="clay-btn w-full rounded-2xl px-5 py-3.5 text-sm font-bold text-cream-soft disabled:opacity-50 disabled:cursor-not-allowed"
+              className="clay-btn w-full rounded-2xl px-5 py-3.5 text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Continue
             </button>

@@ -13,16 +13,16 @@ export function SplashScreen({ visible }: { visible: boolean }) {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.6, ease: "easeInOut" }}
-          className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-lavender-50"
+          className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#EDEBF6]"
         >
           {/* soft background blobs */}
           <div
             aria-hidden
-            className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-lavender-200/35 blur-3xl"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-blush-100/35 blur-3xl"
+        className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-[#AAB6E3]/40 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[#F3E7C9]/40 blur-3xl"
           />
 
           {/* heart icon */}
@@ -39,7 +39,7 @@ export function SplashScreen({ visible }: { visible: boolean }) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="mt-5 text-3xl font-bold tracking-tight text-ink-deep"
+            className="font-script mt-5 text-4xl font-bold tracking-tight text-ink-deep"
           >
             Venting
           </motion.p>

@@ -50,15 +50,15 @@ export default function WelcomeCheckin() {
       {/* dreamy background blobs */}
       <div
         aria-hidden
-        className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full bg-lavender-200/35 blur-3xl"
+        className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full bg-[#AAB6E3]/40 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed top-72 -right-24 h-80 w-80 rounded-full bg-blush-100/35 blur-3xl"
+        className="pointer-events-none fixed top-72 -right-24 h-80 w-80 rounded-full bg-[#F3E7C9]/40 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full bg-mint-200/35 blur-3xl"
+        className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full bg-[#C4CBE8]/40 blur-3xl"
       />
 
       {/* ─── Soft popup card ──────────────────────────────────────── */}
@@ -95,7 +95,7 @@ export default function WelcomeCheckin() {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink-deep">
+              <h1 className="font-script mt-4 text-3xl font-bold tracking-tight text-ink-deep">
                 Welcome!
               </h1>
               <p className="mt-2 text-[15px] leading-relaxed font-medium text-ink">
@@ -110,7 +110,7 @@ export default function WelcomeCheckin() {
               <button
                 type="button"
                 onClick={guardedNext}
-                className="clay-btn mt-7 inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-bold text-cream-soft"
+                className="clay-btn mt-7 inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-bold text-white"
               >
                 Continue
               </button>
@@ -130,7 +130,7 @@ export default function WelcomeCheckin() {
               <div className="mx-auto mt-4 h-px w-24 bg-lavender-200" aria-hidden />
 
               {/* ─── One question, four options ─────────────────────── */}
-              <p className="mt-6 text-base font-bold tracking-tight text-ink-deep">
+              <p className="font-script mt-6 text-xl font-bold tracking-tight text-ink-deep">
                 How was your {todayDayName()}?
               </p>
 

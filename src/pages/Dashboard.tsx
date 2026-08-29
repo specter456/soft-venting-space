@@ -126,24 +126,24 @@ export default function Dashboard() {
       {/* dreamy background blobs — full viewport, new palette colors at 35% */}
       <div
         aria-hidden
-        className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full bg-lavender-200/35 blur-3xl"
+        className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full bg-[#AAB6E3]/40 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed top-72 -right-24 h-80 w-80 rounded-full bg-blush-100/35 blur-3xl"
+        className="pointer-events-none fixed top-72 -right-24 h-80 w-80 rounded-full bg-[#F3E7C9]/40 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full bg-mint-200/35 blur-3xl"
+        className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full bg-[#C4CBE8]/40 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed top-[40%] left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-peach-100/35 blur-3xl"
+        className="pointer-events-none fixed top-[40%] left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-[#EDEBF6]/40 blur-3xl"
       />
 
       <div className="relative mx-auto flex w-full max-w-[800px] flex-col">
         {/* ─── Header ─────────────────────────────────────────────── */}
-        <header className="sticky top-0 z-40 bg-lavender-50/50 backdrop-blur-xl px-5 pt-6 pb-3 border-b border-lavender-100/40">
+        <header className="sticky top-0 z-40 bg-[#EDEBF6]/60 backdrop-blur-xl px-5 pt-6 pb-3 border-b border-[#C4CBE8]/40">
           <div className="flex items-center justify-between">
             {isHome ? (
               <div className="flex items-center gap-2.5">
@@ -152,7 +152,7 @@ export default function Dashboard() {
                   <p className="text-base font-bold tracking-tight text-ink-deep">
                     Venting
                   </p>
-                  <p className="text-[11px] font-medium text-ink-soft">
+                  <p className="font-script text-[13px] font-semibold text-ink-soft">
                     your soft space
                   </p>
                 </div>
@@ -218,7 +218,7 @@ export default function Dashboard() {
             aria-label="Main"
             className="fixed right-0 bottom-4 left-0 z-40 flex justify-center px-5"
           >
-            <div className="flex w-full max-w-[720px] items-center gap-1 rounded-full p-1.5 bg-white/50 backdrop-blur-xl border border-lavender-100/50 shadow-lg shadow-lavender-200/25">
+            <div className="flex w-full max-w-[720px] items-center gap-1 rounded-full p-1.5 bg-[#FDF5E6]/60 backdrop-blur-xl border border-[#C4CBE8]/40 shadow-lg shadow-[#8C9AD6]/15">
               {TABS.map((tab) => {
                 const active = tab.to === "/dashboard/calendar"
                   ? location.pathname.startsWith("/dashboard/calendar")
@@ -230,8 +230,8 @@ export default function Dashboard() {
                     aria-current={active ? "page" : undefined}
                     className={cn(
                       "flex flex-1 flex-col items-center gap-0.5 rounded-full py-2 transition-all",                        active
-                          ? "bg-lavender-300/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
-                          : "hover:bg-lavender-100/60",
+                          ? "bg-[#5F6DBE] shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]"
+                          : "hover:bg-[#EDEBF6]/60",
                     )}
                   >
                     <span
@@ -246,7 +246,7 @@ export default function Dashboard() {
                     <span
                       className={cn(
                         "text-[10px] font-bold",
-                        active ? "text-ink-deep" : "text-ink-soft",
+                        active ? "text-white" : "text-ink-soft",
                       )}
                     >
                       {tab.label}

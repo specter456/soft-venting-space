@@ -47,19 +47,19 @@ export default function Landing() {
       {/* dreamy background blobs — new palette colors at 35% */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-lavender-200/35 blur-3xl"
+        className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-[#AAB6E3]/40 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute top-40 -right-32 h-[28rem] w-[28rem] rounded-full bg-blush-100/35 blur-3xl"
+        className="pointer-events-none absolute top-40 -right-32 h-[28rem] w-[28rem] rounded-full bg-[#F3E7C9]/40 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute top-[52rem] -left-40 h-96 w-96 rounded-full bg-mint-200/35 blur-3xl"
+        className="pointer-events-none absolute top-[52rem] -left-40 h-96 w-96 rounded-full bg-[#C4CBE8]/40 blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-peach-100/35 blur-3xl"
+        className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[#EDEBF6]/40 blur-3xl"
       />
 
       {/* ─── Slim top bar ──────────────────────────────────────────── */}
@@ -67,7 +67,7 @@ export default function Landing() {
         <button
           type="button"
           onClick={primaryCta}
-          className="clay-btn flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold text-cream-soft"
+          className="clay-btn flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold text-white"
         >
           Open Venting
           <ArrowRight className="size-4" />
@@ -112,13 +112,13 @@ export default function Landing() {
             className="flex flex-col items-center text-center"
           >
             <Logo className="h-24 w-24 animate-floaty-slow drop-shadow-[0_10px_20px_rgba(120,100,160,0.25)] sm:h-28 sm:w-28" />
-            <h1 className="mt-6 text-4xl font-bold tracking-tight text-ink-deep sm:text-5xl">
+            <h1 className="font-script mt-6 text-5xl font-bold tracking-tight text-ink-deep sm:text-6xl">
               Venting
             </h1>
-            <p className="mt-3 text-lg font-medium text-ink-soft sm:text-xl">
+            <p className="font-script mt-3 text-xl font-semibold text-ink-soft sm:text-2xl">
               a tiny safe room in your phone
             </p>
-            <p className="mt-2 text-base font-medium text-ink sm:text-lg md:text-xl">
+            <p className="font-script mt-2 text-lg font-semibold text-ink sm:text-xl md:text-2xl">
               your feelings have a home here
             </p>
           </motion.div>
@@ -169,19 +169,19 @@ export default function Landing() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 16, scale: 0.97 }}
               transition={{ type: "spring", stiffness: 260, damping: 22 }}
-              className="relative w-full max-w-md overflow-hidden rounded-[2.25rem] bg-white/40 backdrop-blur-xl border border-white/50 px-6 py-9 text-center shadow-lg shadow-lavender-200/20"
+              className="relative w-full max-w-md overflow-hidden rounded-[2.25rem] bg-[#FDF5E6]/50 backdrop-blur-xl border border-[#C4CBE8]/40 px-6 py-9 text-center shadow-lg shadow-[#8C9AD6]/15"
               onClick={(e) => e.stopPropagation()}
             >
               <div
                 aria-hidden
-                className="pointer-events-none absolute -top-14 -right-14 h-36 w-36 rounded-full bg-lavender-100/70 blur-2xl"
+                className="pointer-events-none absolute -top-14 -right-14 h-36 w-36 rounded-full bg-[#AAB6E3]/40 blur-2xl"
               />
               <div
                 aria-hidden
-                className="pointer-events-none absolute -bottom-14 -left-14 h-36 w-36 rounded-full bg-blush-100/60 blur-2xl"
+                className="pointer-events-none absolute -bottom-14 -left-14 h-36 w-36 rounded-full bg-[#F3E7C9]/40 blur-2xl"
               />
 
-              <p className="relative text-sm font-bold tracking-wide text-lavender-500 uppercase">
+              <p className="relative text-sm font-bold tracking-wide text-[#5F6DBE] uppercase">
                 how a check-in works
               </p>
               <h2 className="relative mx-auto mt-2 max-w-xs text-2xl font-bold tracking-tight text-ink-deep">
@@ -212,7 +212,7 @@ export default function Landing() {
                   setShowExplanation(false);
                   primaryCta();
                 }}
-                className="clay-btn relative mt-8 inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-bold text-cream-soft"
+                className="clay-btn relative mt-8 inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-bold text-white"
               >
                 Try it now
                 <ArrowRight className="size-4" />
@@ -229,8 +229,7 @@ export default function Landing() {
         )}
       </AnimatePresence>
 
-      {/* ─── Footer ──────────────────────────────────────────────────── */}
-      <footer className="relative z-10 border-t border-lavender-100/80">
+      {/* ─── Footer ──────────────────────────────────────────────────── */}              <footer className="relative z-10 border-t border-[#C4CBE8]/40">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-4 px-5 py-8 sm:flex-row sm:px-8">
           <div className="flex items-center gap-2.5">
             <Logo className="h-8 w-8" />
@@ -243,8 +242,7 @@ export default function Landing() {
           </p>
           <button
             type="button"
-            onClick={primaryCta}
-            className="text-xs font-bold text-lavender-600 underline-offset-4 hover:underline"
+            onClick={primaryCta}                className="text-xs font-bold text-[#5F6DBE] underline-offset-4 hover:underline"
           >
             Open the app →
           </button>
