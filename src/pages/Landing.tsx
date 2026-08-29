@@ -47,19 +47,19 @@ export default function Landing() {
       {/* dreamy background blobs — new palette colors at 35% */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-[#AAB6E3]/40 blur-3xl"
+        className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-[#AAB6E3]/30 blur-2xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute top-40 -right-32 h-[28rem] w-[28rem] rounded-full bg-[#F3E7C9]/40 blur-3xl"
+        className="pointer-events-none absolute top-40 -right-32 h-[28rem] w-[28rem] rounded-full bg-[#F3E7C9]/30 blur-2xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute top-[52rem] -left-40 h-96 w-96 rounded-full bg-[#C4CBE8]/40 blur-3xl"
+        className="pointer-events-none absolute top-[52rem] -left-40 h-96 w-96 rounded-full bg-[#C4CBE8]/30 blur-2xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[#EDEBF6]/40 blur-3xl"
+        className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[#EDEBF6]/30 blur-2xl"
       />
 
       {/* ─── Slim top bar ──────────────────────────────────────────── */}
@@ -161,7 +161,7 @@ export default function Landing() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 px-5 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 px-5"
             onClick={() => setShowExplanation(false)}
           >
             <motion.div
@@ -169,7 +169,7 @@ export default function Landing() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 16, scale: 0.97 }}
               transition={{ type: "spring", stiffness: 260, damping: 22 }}
-              className="relative w-full max-w-md overflow-hidden rounded-[2.25rem] bg-[#FDF5E6]/50 backdrop-blur-xl border border-[#C4CBE8]/40 px-6 py-9 text-center shadow-lg shadow-[#8C9AD6]/15"
+              className="relative w-full max-w-md overflow-hidden rounded-[2.25rem] bg-[#FDF5E6]/90 border border-[#C4CBE8]/40 px-6 py-9 text-center shadow-lg shadow-[#8C9AD6]/15"
               onClick={(e) => e.stopPropagation()}
             >
               <div

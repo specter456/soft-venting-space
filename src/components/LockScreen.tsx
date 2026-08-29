@@ -148,15 +148,15 @@ export function LockScreen({
       {/* dreamy blobs */}
       <div
         aria-hidden
-        className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full bg-blush-100/60 blur-3xl"
+        className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full bg-blush-100/40 blur-2xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed -right-24 bottom-0 h-80 w-80 rounded-full bg-mint-100/60 blur-3xl"
+        className="pointer-events-none fixed -right-24 bottom-0 h-80 w-80 rounded-full bg-mint-100/40 blur-2xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed top-1/3 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-lavender-100/50 blur-3xl"
+        className="pointer-events-none fixed top-1/3 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-lavender-100/35 blur-2xl"
       />
 
       <div className="relative flex min-h-full items-center justify-center px-4 py-8">

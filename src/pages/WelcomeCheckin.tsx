@@ -50,15 +50,15 @@ export default function WelcomeCheckin() {
       {/* dreamy background blobs */}
       <div
         aria-hidden
-        className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full bg-[#AAB6E3]/40 blur-3xl"
+        className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full bg-[#AAB6E3]/30 blur-2xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed top-72 -right-24 h-80 w-80 rounded-full bg-[#F3E7C9]/40 blur-3xl"
+        className="pointer-events-none fixed top-72 -right-24 h-80 w-80 rounded-full bg-[#F3E7C9]/30 blur-2xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full bg-[#C4CBE8]/40 blur-3xl"
+        className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full bg-[#C4CBE8]/30 blur-2xl"
       />
 
       {/* ─── Soft popup card ──────────────────────────────────────── */}
