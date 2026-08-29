@@ -894,9 +894,9 @@ function MoonlightGlide() {
       <p className="mt-1 text-xs font-medium text-ink-soft">
         tap left, center, or right to move the bear
       </p>
-      </>
-      )}
-    </motion.div>
+    </>
+    )}
+  </motion.div>
   );
 }
 
@@ -1109,9 +1109,9 @@ function SoftTiles() {
       <p className="mt-1 text-xs font-medium text-ink-soft">
         tap tiles before they fade — the melody is gentle
       </p>
-      </>
-      )}
-    </motion.div>
+    </>
+    )}
+  </motion.div>
   );
 }
 
