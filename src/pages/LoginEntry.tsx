@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Logo } from "@/components/Logo";
 import { safeSetItem } from "@/lib/safe-storage";
+import { setGuest } from "@/lib/guest";
 import { useTapGuard } from "@/lib/useTapGuard";
 
 const EMAIL_KEY = "venting-profile-email";
@@ -19,6 +20,8 @@ export default function LoginEntry() {
   const goToWelcome = (emailValue?: string) => {
     if (emailValue) {
       safeSetItem(EMAIL_KEY, emailValue);
+    } else {
+      setGuest();
     }
     navigate("/welcome");
   };

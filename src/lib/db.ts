@@ -359,6 +359,8 @@ async function persistPut(name: StoreName, row: LocalRow): Promise<void> {
 /* ─── Key-value (passcode lock, device prefs) ──────────────────────── */
 
 export async function setKv(key: string, value: string): Promise<void> {
+  const { isGuest } = await import("@/lib/guest");
+  if (isGuest()) return;
   const existing = (cache.kv as KVPair[]).find((k) => k.key === key);
   if (existing) {
     const updated = { ...existing, value };

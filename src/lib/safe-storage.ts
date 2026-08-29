@@ -1,10 +1,16 @@
+import { isGuest } from "@/lib/guest";
+
 /**
  * Safe localStorage / sessionStorage access.
  *
  * Some browsers (notably Safari private mode and strict webviews) throw on
  * any storage access. Every read/write is wrapped so storage problems can
  * never crash the app — worst case the value is treated as missing.
+ *
+ * Guest mode: all writes are skipped — nothing persists between sessions.
  */
+
+const _isGuest = isGuest;
 
 function storageAvailable(storage: Storage | undefined): storage is Storage {
   if (!storage) return false;
@@ -34,6 +40,7 @@ export function safeGetItem(key: string): string | null {
 
 export function safeSetItem(key: string, value: string): void {
   try {
+    if (_isGuest()) return;
     if (localOk) (local as Storage).setItem(key, value);
   } catch {
     /* ignore — storage unavailable */
@@ -42,6 +49,7 @@ export function safeSetItem(key: string, value: string): void {
 
 export function safeRemoveItem(key: string): void {
   try {
+    if (_isGuest()) return;
     if (localOk) (local as Storage).removeItem(key);
   } catch {
     /* ignore */
@@ -58,6 +66,7 @@ export function safeSessionGetItem(key: string): string | null {
 
 export function safeSessionSetItem(key: string, value: string): void {
   try {
+    if (_isGuest()) return;
     if (sessionOk) (session as Storage).setItem(key, value);
   } catch {
     /* ignore */
@@ -66,6 +75,7 @@ export function safeSessionSetItem(key: string, value: string): void {
 
 export function safeSessionRemoveItem(key: string): void {
   try {
+    if (_isGuest()) return;
     if (sessionOk) (session as Storage).removeItem(key);
   } catch {
     /* ignore */
