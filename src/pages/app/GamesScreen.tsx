@@ -635,12 +635,15 @@ function MoonlightGlide() {
     { id: number; lane: 0 | 1 | 2; y: number; emoji: string }[]
   >([]);
   const [caught, setCaught] = useState(0);
+  const [missed, setMissed] = useState(0);
+  const [ended, setEnded] = useState(false);
   const [skyIdx, setSkyIdx] = useState(0);
   const [sparkles, setSparkles] = useState<
     { id: number; lane: 0 | 1 | 2; y: number }[]
   >([]);
   const nextId = useRef(0);
   const sparkleId = useRef(0);
+  const MAX_MISSES = 5;
 
   // Cycle sky colors slowly
   useEffect(() => {
@@ -652,6 +655,7 @@ function MoonlightGlide() {
 
   // Spawn falling items
   useEffect(() => {
+    if (ended) return;
     const t = window.setInterval(() => {
       const lanes: (0 | 1 | 2)[] = [0, 1, 2];
       const emojis = ["⭐", "💛", "🏮"];
@@ -667,20 +671,31 @@ function MoonlightGlide() {
       ]);
     }, 1700);
     return () => window.clearInterval(t);
-  }, []);
+  }, [ended]);
 
-  // Move items downward
+  // Move items downward + track misses
   useEffect(() => {
+    if (ended) return;
     const t = window.setInterval(() => {
       setItems((prev) => {
         const updated = prev
-          .map((item) => ({ ...item, y: item.y + 1.8 }))
-          .filter((item) => item.y < 100);
+          .map((item) => ({ ...item, y: item.y + 1.8 }));
+
+        // Items that fell off screen are missed
+        const offScreen = updated.filter((item) => item.y >= 100);
+        const stillOnScreen = updated.filter((item) => item.y < 100);
+        if (offScreen.length > 0) {
+          setMissed((m) => {
+            const next = m + offScreen.length;
+            if (next >= MAX_MISSES) setEnded(true);
+            return next;
+          });
+        }
 
         // Check catches
-        const caughtItems: typeof updated = [];
-        const remaining: typeof updated = [];
-        for (const item of updated) {
+        const caughtItems: typeof stillOnScreen = [];
+        const remaining: typeof stillOnScreen = [];
+        for (const item of stillOnScreen) {
           if (item.lane === lane && item.y >= 72 && item.y <= 88) {
             caughtItems.push(item);
           } else {
@@ -701,7 +716,7 @@ function MoonlightGlide() {
       });
     }, 50);
     return () => window.clearInterval(t);
-  }, [lane]);
+  }, [lane, ended]);
 
   // Clean up old sparkles
   useEffect(() => {
@@ -712,8 +727,16 @@ function MoonlightGlide() {
   }, []);
 
   const sky = SKY_COLORS[skyIdx];
-
   const laneX = ["16.6%", "50%", "83.4%"];
+
+  const reset = useTapGuard(() => {
+    setItems([]);
+    setCaught(0);
+    setMissed(0);
+    setSparkles([]);
+    setEnded(false);
+    setLane(1);
+  }, 400);
 
   return (
     <motion.div
@@ -724,9 +747,49 @@ function MoonlightGlide() {
       <GameIntro
         emoji="🌙"
         title="Moonlight Glide"
-        sub="glide through a dreamy sky and catch falling stars."
+        sub={ended ? "the stars are resting now 🌙" : "glide through a dreamy sky and catch falling stars."}
       />
 
+      {/* soft end screen */}
+      {ended ? (
+        <div className="mt-8 space-y-4">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 200, damping: 16 }}
+            className="mx-auto w-fit text-6xl"
+          >
+            🌙
+          </motion.div>
+          <motion.p
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-sm font-bold text-ink-deep"
+          >
+            you caught ⭐ {caught} star{caught === 1 ? "" : "s"} in the dreamy sky
+          </motion.p>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="text-xs text-ink-soft"
+          >
+            the moon will shine again whenever you&apos;re ready
+          </motion.p>
+          <motion.button
+            type="button"
+            onClick={reset}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="clay-btn rounded-full px-6 py-3 text-sm font-bold text-white"
+          >
+            🌙 glide again
+          </motion.button>
+        </div>
+      ) : (
+      <>
       {/* sky area */}
       <div
         className="relative mx-auto mt-5 h-80 w-full max-w-sm overflow-hidden rounded-3xl"
@@ -826,11 +889,13 @@ function MoonlightGlide() {
       </div>
 
       <p className="mt-4 text-sm font-bold text-ink-deep">
-        ⭐ {caught} caught
+        ⭐ {caught} caught · 💫 {missed} of {MAX_MISSES} stars missed
       </p>
       <p className="mt-1 text-xs font-medium text-ink-soft">
         tap left, center, or right to move the bear
       </p>
+      </>
+      )}
     </motion.div>
   );
 }
@@ -874,9 +939,12 @@ interface Tile {
 function SoftTiles() {
   const [tiles, setTiles] = useState<Tile[]>([]);
   const [played, setPlayed] = useState(0);
+  const [missed, setMissed] = useState(0);
+  const [ended, setEnded] = useState(false);
   const [hue, setHue] = useState(0);
   const nextId = useRef(0);
   const enabled = soundsEnabled();
+  const MAX_MISSES = 5;
 
   // Slowly shift background hue
   useEffect(() => {
@@ -888,6 +956,7 @@ function SoftTiles() {
 
   // Spawn tiles
   useEffect(() => {
+    if (ended) return;
     const t = window.setInterval(() => {
       const col = Math.floor(Math.random() * 4);
       nextId.current += 1;
@@ -903,25 +972,42 @@ function SoftTiles() {
       ]);
     }, 1200);
     return () => window.clearInterval(t);
-  }, []);
+  }, [ended]);
 
-  // Move tiles down
+  // Move tiles down + track misses
   useEffect(() => {
+    if (ended) return;
     const t = window.setInterval(() => {
-      setTiles((prev) =>
-        prev
-          .map((tile) => ({ ...tile, y: tile.y + 0.625 }))
-          .filter((tile) => tile.y < 105),
-      );
+      setTiles((prev) => {
+        const moved = prev.map((tile) => ({ ...tile, y: tile.y + 0.625 }));
+        const offScreen = moved.filter((tile) => tile.y >= 105);
+        const visible = moved.filter((tile) => tile.y < 105);
+        if (offScreen.length > 0) {
+          setMissed((m) => {
+            const next = m + offScreen.length;
+            if (next >= MAX_MISSES) setEnded(true);
+            return next;
+          });
+        }
+        return visible;
+      });
     }, 50);
     return () => window.clearInterval(t);
-  }, []);
+  }, [ended]);
 
   const tapTile = (tile: Tile) => {
+    if (ended) return;
     if (enabled) playTileNote(tile.freq);
     setTiles((prev) => prev.filter((t) => t.id !== tile.id));
     setPlayed((p) => p + 1);
   };
+
+  const reset = useTapGuard(() => {
+    setTiles([]);
+    setPlayed(0);
+    setMissed(0);
+    setEnded(false);
+  }, 400);
 
   return (
     <motion.div
@@ -932,9 +1018,49 @@ function SoftTiles() {
       <GameIntro
         emoji="🎹"
         title="Soft Tiles"
-        sub="tap slow tiles, play a gentle melody."
+        sub={ended ? "the melody has paused 🎵" : "tap slow tiles, play a gentle melody."}
       />
 
+      {/* soft end screen */}
+      {ended ? (
+        <div className="mt-8 space-y-4">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 200, damping: 16 }}
+            className="mx-auto w-fit text-6xl"
+          >
+            🎵
+          </motion.div>
+          <motion.p
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-sm font-bold text-ink-deep"
+          >
+            you played 🎵 {played} note{played === 1 ? "" : "s"} softly
+          </motion.p>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="text-xs text-ink-soft"
+          >
+            the melody will come back whenever you want
+          </motion.p>
+          <motion.button
+            type="button"
+            onClick={reset}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="clay-btn rounded-full px-6 py-3 text-sm font-bold text-white"
+          >
+            🎵 play again
+          </motion.button>
+        </div>
+      ) : (
+      <>
       {/* tile area with hue-rotate */}
       <div
         className="relative mx-auto mt-5 h-80 w-full max-w-sm overflow-hidden rounded-3xl"
@@ -978,11 +1104,13 @@ function SoftTiles() {
       </div>
 
       <p className="mt-4 text-sm font-bold text-ink-deep">
-        🎵 {played} notes played
+        🎵 {played} notes played · 🍃 {missed} of {MAX_MISSES} tiles missed
       </p>
       <p className="mt-1 text-xs font-medium text-ink-soft">
-        tap tiles before they fade — no rush, no fail
+        tap tiles before they fade — the melody is gentle
       </p>
+      </>
+      )}
     </motion.div>
   );
 }
