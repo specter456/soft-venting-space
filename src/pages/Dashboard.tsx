@@ -197,7 +197,7 @@ export default function Dashboard() {
         </header>
 
         {/* ─── Current room ───────────────────────────────────────── */}
-        <main className={cn("flex-1 px-5", showBar ? "pb-32" : "pb-14")}>
+        <main className={cn("px-5", showBar ? "pb-32" : "pb-14")}>
           {/* The shell paints instantly; room content fills in softly once
               the on-device cache is ready. No blocking "Loading…" screen. */}
           {hydrated ? (
