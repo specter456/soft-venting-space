@@ -7,9 +7,9 @@ import { useTapGuard } from "@/lib/useTapGuard";
 import { soundsEnabled } from "@/lib/sound";
 import { cn } from "@/lib/utils";
 
-/* ─── Game registry — exactly six games, two per row ───────────────── */
+/* ─── Game registry — eight games, two per row ────────────────────── */
 
-type GameId = "pop" | "breathe" | "dandelion" | "buddy" | "sand" | "star" | "shelf";
+type GameId = "pop" | "breathe" | "dandelion" | "sand" | "star" | "shelf" | "moon" | "tiles";
 
 const GAMES: {
   id: GameId;
@@ -21,10 +21,11 @@ const GAMES: {
   { id: "pop", emoji: "🫧", name: "Bubble Pop", line: "gently pop floating worry bubbles", tile: "tile-blush" },
   { id: "breathe", emoji: "🫧", name: "Breath Bubble", line: "a soft bubble grows and shrinks, guiding slow breathing", tile: "tile-mint" },
   { id: "dandelion", emoji: "🌼", name: "Dandelion Wishes", line: "press & hold to blow seeds away and release worries", tile: "tile-mist" },
-  { id: "buddy", emoji: "🧸", name: "Comfort the Buddy", line: "a shaky little buddy calms with gentle taps and hugs", tile: "tile-lavender" },
   { id: "sand", emoji: "🏖️", name: "Soft Sand Garden", line: "rake soft patterns in warm sand — no rules, just calm", tile: "tile-peach" },
   { id: "star", emoji: "⭐", name: "Star Trace", line: "trace slow glowing shapes to calm the mind", tile: "tile-mint" },
   { id: "shelf", emoji: "🧸", name: "Squishy Shelf", line: "pick a soft squishy, poke it, squish it, breathe", tile: "tile-lavender" },
+  { id: "moon", emoji: "🌙", name: "Moonlight Glide", line: "glide through a dreamy sky and catch falling stars", tile: "tile-lavender" },
+  { id: "tiles", emoji: "🎹", name: "Soft Tiles", line: "tap slow tiles, play a gentle melody", tile: "tile-blush" },
 ];
 
 /**
@@ -64,10 +65,11 @@ export default function GamesScreen() {
           {open === "pop" && <BubblePop />}
           {open === "breathe" && <BreathBubble />}
           {open === "dandelion" && <DandelionWishes />}
-          {open === "buddy" && <ComfortBuddy />}
           {open === "sand" && <SoftSandGarden />}
           {open === "star" && <StarTrace />}
           {open === "shelf" && <SquishyShelf />}
+          {open === "moon" && <MoonlightGlide />}
+          {open === "tiles" && <SoftTiles />}
         </div>
       ) : (
         <div className="space-y-5">
@@ -618,109 +620,369 @@ function DandelionWishes() {
   );
 }
 
-/* ─── 4. Comfort the Buddy ─────────────────────────────────────────── */
+/* ─── 4. Moonlight Glide ─────────────────────────────────────────── */
 
-function ComfortBuddy() {
-  const [comfort, setComfort] = useState(0);
-  const calm = comfort >= 5;
+const SKY_COLORS = [
+  { top: "#b8d4f0", mid: "#d4bfaa", bot: "#e8c898" },   // dawn blue → sunset
+  { top: "#2a3a6e", mid: "#3d4a8a", bot: "#5a6ab0" },   // night
+  { top: "#6a8ab8", mid: "#a8c8e0", bot: "#d4e8f0" },   // bright day
+  { top: "#3a4a78", mid: "#5a6a98", bot: "#8a9ac0" },   // twilight
+];
 
-  const tap = useTapGuard(() => {
-    if (!calm) setComfort((c) => Math.min(5, c + 1));
-  }, 380);
-  const hug = useTapGuard(() => {
-    if (!calm) setComfort((c) => Math.min(5, c + 2));
-  }, 480);
-  const reset = useTapGuard(() => setComfort(0), 400);
+function MoonlightGlide() {
+  const [lane, setLane] = useState<0 | 1 | 2>(1);
+  const [items, setItems] = useState<
+    { id: number; lane: 0 | 1 | 2; y: number; emoji: string }[]
+  >([]);
+  const [caught, setCaught] = useState(0);
+  const [skyIdx, setSkyIdx] = useState(0);
+  const [sparkles, setSparkles] = useState<
+    { id: number; lane: 0 | 1 | 2; y: number }[]
+  >([]);
+  const nextId = useRef(0);
+  const sparkleId = useRef(0);
+
+  // Cycle sky colors slowly
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      setSkyIdx((i) => (i + 1) % SKY_COLORS.length);
+    }, 6000);
+    return () => window.clearInterval(t);
+  }, []);
+
+  // Spawn falling items
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      const lanes: (0 | 1 | 2)[] = [0, 1, 2];
+      const emojis = ["⭐", "💛", "🏮"];
+      nextId.current += 1;
+      setItems((prev) => [
+        ...prev,
+        {
+          id: nextId.current,
+          lane: lanes[Math.floor(Math.random() * 3)],
+          y: 0,
+          emoji: emojis[Math.floor(Math.random() * 3)],
+        },
+      ]);
+    }, 1700);
+    return () => window.clearInterval(t);
+  }, []);
+
+  // Move items downward
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      setItems((prev) => {
+        const updated = prev
+          .map((item) => ({ ...item, y: item.y + 1.8 }))
+          .filter((item) => item.y < 100);
+
+        // Check catches
+        const caughtItems: typeof updated = [];
+        const remaining: typeof updated = [];
+        for (const item of updated) {
+          if (item.lane === lane && item.y >= 72 && item.y <= 88) {
+            caughtItems.push(item);
+          } else {
+            remaining.push(item);
+          }
+        }
+        if (caughtItems.length > 0) {
+          setCaught((c) => c + caughtItems.length);
+          for (const ci of caughtItems) {
+            sparkleId.current += 1;
+            setSparkles((sp) => [
+              ...sp.slice(-8),
+              { id: sparkleId.current, lane: ci.lane, y: ci.y },
+            ]);
+          }
+        }
+        return remaining;
+      });
+    }, 50);
+    return () => window.clearInterval(t);
+  }, [lane]);
+
+  // Clean up old sparkles
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      setSparkles((sp) => sp.filter((_, i) => i > sp.length - 6));
+    }, 1500);
+    return () => window.clearInterval(t);
+  }, []);
+
+  const sky = SKY_COLORS[skyIdx];
+
+  const laneX = ["16.6%", "50%", "83.4%"];
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      className="clay-card relative overflow-hidden rounded-[2.25rem] px-6 py-10 text-center"
+      className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7 text-center"
     >
-      {/* soft floating sparkles */}
-      <span className="pointer-events-none absolute top-8 left-10 text-sm text-lavender-200 animate-twinkle" aria-hidden>✦</span>
-      <span className="pointer-events-none absolute top-14 right-12 text-xs text-blush-200 animate-twinkle" style={{ animationDelay: "1s" }} aria-hidden>✧</span>
-      <span className="pointer-events-none absolute bottom-16 left-14 text-xs text-mint-200 animate-twinkle" style={{ animationDelay: "1.8s" }} aria-hidden>✦</span>
-
       <GameIntro
-        emoji="🧸"
-        title="Comfort the Buddy"
-        sub={calm ? "The buddy feels safe now. 🤍" : "The buddy is a little shaky — gentle taps and hugs help them settle."}
+        emoji="🌙"
+        title="Moonlight Glide"
+        sub="glide through a dreamy sky and catch falling stars."
       />
 
-      <div className="relative mx-auto mt-8 flex h-52 items-center justify-center">
-        <motion.span
-          animate={
-            calm
-              ? { x: 0, rotate: 0, scale: [1, 1.06, 1] }
-              : { x: [0, -6, 6, -4, 4, 0], rotate: [0, -2, 2, -1, 1, 0] }
-          }
-          transition={calm ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0.45, repeat: Infinity }}
-          className="text-8xl drop-shadow-md select-none"
-          aria-hidden
-        >
-          {calm ? "🧸" : "🐻"}
-        </motion.span>
-        {calm &&
-          ["💗", "✨", "💛"].map((h, i) => (
-            <motion.span
-              key={i}
-              initial={{ opacity: 0, y: 10, scale: 0 }}
-              animate={{ opacity: [0, 1, 0], y: -30 - i * 10, scale: 1 }}
-              transition={{ duration: 2.4, repeat: Infinity, delay: i * 0.5, ease: "easeOut" }}
-              className="absolute text-2xl"
-              aria-hidden
-            >
-              {h}
-            </motion.span>
+      {/* sky area */}
+      <div
+        className="relative mx-auto mt-5 h-80 w-full max-w-sm overflow-hidden rounded-3xl"
+        style={{
+          background: `linear-gradient(180deg, ${sky.top} 0%, ${sky.mid} 50%, ${sky.bot} 100%)`,
+          transition: "background 4s ease",
+        }}
+      >
+        {/* stars in night sky */}
+        {skyIdx === 1 && (
+          <div className="pointer-events-none absolute inset-0">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <span
+                key={i}
+                className="absolute animate-twinkle text-xs text-white/60"
+                style={{
+                  left: `${8 + (i * 7.5) % 90}%`,
+                  top: `${5 + (i * 13) % 60}%`,
+                  animationDelay: `${i * 0.3}s`,
+                }}
+                aria-hidden
+              >
+                ✦
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* lane indicators (subtle) */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 bottom-0 flex">
+          {[0, 1, 2].map((l) => (
+            <div key={l} className="flex-1 border-r border-white/10 last:border-r-0" />
           ))}
+        </div>
+
+        {/* falling items */}
+        {items.map((item) => (
+          <motion.span
+            key={item.id}
+            initial={{ opacity: 1 }}
+            animate={{ opacity: item.y > 85 ? 0 : 1 }}
+            transition={{ duration: 0.4 }}
+            className="absolute -translate-x-1/2 -translate-y-1/2 text-2xl"
+            style={{ left: laneX[item.lane], top: `${item.y}%` }}
+            aria-hidden
+          >
+            {item.emoji}
+          </motion.span>
+        ))}
+
+        {/* sparkle effects on catch */}
+        {sparkles.map((s) => (
+          <motion.span
+            key={s.id}
+            initial={{ scale: 0.5, opacity: 1 }}
+            animate={{ scale: 2, opacity: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="absolute -translate-x-1/2 -translate-y-1/2 text-lg text-[#FDF5E6]"
+            style={{ left: laneX[s.lane], top: `${s.y}%` }}
+            aria-hidden
+          >
+            ✨
+          </motion.span>
+        ))}
+
+        {/* bear character */}
+        <motion.div
+          animate={{ left: laneX[lane] }}
+          transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          className="absolute bottom-6 -translate-x-1/2 text-4xl drop-shadow-md"
+          style={{ left: laneX[lane] }}
+        >
+          🧸
+        </motion.div>
+
+        {/* tap zones */}
+        <div className="absolute inset-0 flex">
+          <button
+            type="button"
+            onClick={() => setLane(0)}
+            className="flex-1 opacity-0"
+            aria-label="Move left"
+          />
+          <button
+            type="button"
+            onClick={() => setLane(1)}
+            className="flex-1 opacity-0"
+            aria-label="Move center"
+          />
+          <button
+            type="button"
+            onClick={() => setLane(2)}
+            className="flex-1 opacity-0"
+            aria-label="Move right"
+          />
+        </div>
       </div>
 
-      {/* gentle progress — never a score */}
-      <div className="mt-4 flex items-center justify-center gap-2">
-        {[0, 1, 2, 3, 4].map((i) => (
-          <span
-            key={i}
+      <p className="mt-4 text-sm font-bold text-ink-deep">
+        ⭐ {caught} caught
+      </p>
+      <p className="mt-1 text-xs font-medium text-ink-soft">
+        tap left, center, or right to move the bear
+      </p>
+    </motion.div>
+  );
+}
+
+/* ─── 5. Soft Tiles ──────────────────────────────────────────────── */
+
+const TILE_NOTES = [262, 294, 330, 392]; // C4, D4, E4, G4
+const TILE_COLORS = [
+  "bg-blush-200",
+  "bg-lavender-200",
+  "bg-mint-200",
+  "bg-peach-200",
+];
+
+function playTileNote(freq: number) {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    gain.gain.value = 0.3;
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.35);
+  } catch {
+    /* audio not available */
+  }
+}
+
+interface Tile {
+  id: number;
+  col: number;
+  y: number;
+  color: string;
+  freq: number;
+}
+
+function SoftTiles() {
+  const [tiles, setTiles] = useState<Tile[]>([]);
+  const [played, setPlayed] = useState(0);
+  const [hue, setHue] = useState(0);
+  const nextId = useRef(0);
+  const enabled = soundsEnabled();
+
+  // Slowly shift background hue
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      setHue((h) => (h + 1) % 360);
+    }, 83); // 360 * 83ms ≈ 30s full cycle
+    return () => window.clearInterval(t);
+  }, []);
+
+  // Spawn tiles
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      const col = Math.floor(Math.random() * 4);
+      nextId.current += 1;
+      setTiles((prev) => [
+        ...prev,
+        {
+          id: nextId.current,
+          col,
+          y: -5,
+          color: TILE_COLORS[col],
+          freq: TILE_NOTES[col],
+        },
+      ]);
+    }, 1200);
+    return () => window.clearInterval(t);
+  }, []);
+
+  // Move tiles down
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      setTiles((prev) =>
+        prev
+          .map((tile) => ({ ...tile, y: tile.y + 0.625 }))
+          .filter((tile) => tile.y < 105),
+      );
+    }, 50);
+    return () => window.clearInterval(t);
+  }, []);
+
+  const tapTile = (tile: Tile) => {
+    if (enabled) playTileNote(tile.freq);
+    setTiles((prev) => prev.filter((t) => t.id !== tile.id));
+    setPlayed((p) => p + 1);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7 text-center"
+    >
+      <GameIntro
+        emoji="🎹"
+        title="Soft Tiles"
+        sub="tap slow tiles, play a gentle melody."
+      />
+
+      {/* tile area with hue-rotate */}
+      <div
+        className="relative mx-auto mt-5 h-80 w-full max-w-sm overflow-hidden rounded-3xl"
+        style={{ filter: `hue-rotate(${hue}deg)`, transition: "filter 0.1s" }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-b from-[#EDEBF6] to-[#FDF5E6]" />
+
+        {/* four columns */}
+        <div className="relative flex h-full gap-1 p-1">
+          {[0, 1, 2, 3].map((col) => (
+            <div
+              key={col}
+              className="relative flex-1 rounded-2xl border border-white/40 bg-white/20"
+            >
+              {/* column label */}
+              <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-lg opacity-20">
+                {["♪", "♫", "♩", "♬"][col]}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* falling tiles (absolute positioned) */}
+        {tiles.map((tile) => (
+          <button
+            key={tile.id}
+            type="button"
+            onClick={() => tapTile(tile)}
             className={cn(
-              "h-2.5 rounded-full transition-all duration-500",
-              i < comfort ? "w-5 bg-lavender-400" : "w-2.5 bg-lavender-200",
+              "absolute left-0 right-0 mx-auto h-14 w-[calc(25%-4px)] rounded-2xl shadow-md transition-transform hover:scale-105 active:scale-95",
+              tile.color,
             )}
-          />
+            style={{
+              top: `${tile.y}%`,
+              marginLeft: `${tile.col * 25 + 1}%`,
+            }}
+          >
+            <span className="text-2xl drop-shadow-sm">{["🎹", "🎵", "🎶", "🎹"][tile.col]}</span>
+          </button>
         ))}
       </div>
-      <p className="mt-2 text-xs font-semibold text-ink-soft">
-        {calm ? "fully at ease" : "feeling a little steadier, slowly"}
+
+      <p className="mt-4 text-sm font-bold text-ink-deep">
+        🎵 {played} notes played
       </p>
-
-      <div className="mt-6 flex items-center justify-center gap-3">
-        <button
-          type="button"
-          onClick={tap}
-          disabled={calm}
-          className="clay-btn rounded-full px-6 py-3 text-sm font-bold text-ink-deep disabled:opacity-50"
-        >
-          🤍 gentle tap
-        </button>
-        <button
-          type="button"
-          onClick={hug}
-          disabled={calm}
-          className="clay-btn-blush rounded-full px-6 py-3 text-sm font-bold text-ink-deep disabled:opacity-50"
-        >
-          🫂 a hug
-        </button>
-      </div>
-
-      {calm && (
-        <button
-          type="button"
-          onClick={reset}
-          className="mt-5 rounded-full px-4 py-2 text-xs font-bold text-ink-soft underline-offset-4 hover:text-ink-deep hover:underline"
-        >
-          start again with a new shaky friend
-        </button>
-      )}
+      <p className="mt-1 text-xs font-medium text-ink-soft">
+        tap tiles before they fade — no rush, no fail
+      </p>
     </motion.div>
   );
 }
