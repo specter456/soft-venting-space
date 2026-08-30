@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router";
 import { Delete, LockKeyhole, RotateCcw } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { SplashScreen } from "@/components/SplashScreen";
 import { useTapGuard } from "@/lib/useTapGuard";
 import {
   KV_PASSCODE_HASH,
@@ -19,13 +18,28 @@ import {
 } from "@/lib/db";
 import { hashPasscode, randomSalt } from "@/lib/passcode";
 
+/**
+ * Clean linear entry flow (no splash — splash lives on Landing only):
+ *
+ * Fresh user:
+ *   choose → email-setup → email-passcode → email-confirm → /welcome
+ *   choose → guest-setup → guest-passcode → guest-confirm → /welcome
+ *
+ * Returning user:
+ *   unlock → /dashboard (via /welcome check-in or direct)
+ *
+ * Back links go one step back. No screen redirects on its own.
+ */
 type Step =
   | "choose"
   | "email-setup"
   | "email-passcode"
+  | "email-confirm"
   | "guest-setup"
   | "guest-passcode"
+  | "guest-confirm"
   | "unlock"
+  | "unlock-setup" // "use a different space" from unlock
   | "forgot";
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
@@ -43,12 +57,6 @@ export default function LoginEntry() {
   const [error, setError] = useState<string | null>(null);
   const [shakeKey, setShakeKey] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [showSplash, setShowSplash] = useState(true);
-
-  useEffect(() => {
-    const t = window.setTimeout(() => setShowSplash(false), 1500);
-    return () => window.clearTimeout(t);
-  }, []);
 
   // Read stored identity from kv
   const storedHash =
@@ -62,7 +70,7 @@ export default function LoginEntry() {
   const hasReturningUser =
     hydrated && storedHash && storedSalt && userType;
 
-  // Redirect to unlock if already authenticated — runs once on mount.
+  // Returning users: jump to unlock step on mount (no splash — splash was on Landing)
   const initDoneRef = useRef(false);
   useEffect(() => {
     if (!initDoneRef.current && hydrated && hasReturningUser) {
@@ -72,9 +80,10 @@ export default function LoginEntry() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated, hasReturningUser]);
 
-  // Auto-verify when 4 digits entered in unlock
+  // ─── Passcode verification ────────────────────────────────────────
   const finishCode = useCallback(
     async (code: string) => {
+      // Unlock (returning user)
       if (step === "unlock") {
         if (!storedHash || !storedSalt) return;
         setBusy(true);
@@ -82,7 +91,7 @@ export default function LoginEntry() {
           const hash = await hashPasscode(code, storedSalt);
           if (hash === storedHash) {
             setDigits("");
-            navigate("/welcome");
+            navigate("/dashboard");
           } else {
             setError("that code didn't match. your space stays sealed.");
             setShakeKey((k) => k + 1);
@@ -97,25 +106,33 @@ export default function LoginEntry() {
         return;
       }
 
+      // Create passcode (email or guest) — save to tempCode, advance to confirm
       if (step === "email-passcode" || step === "guest-passcode") {
-        // Confirm passcode
+        setTempCode(code);
+        setDigits("");
+        setStep(step === "email-passcode" ? "email-confirm" : "guest-confirm");
+        return;
+      }
+
+      // Confirm passcode — verify match, then save and go to /welcome
+      if (step === "email-confirm" || step === "guest-confirm") {
         if (code !== tempCode) {
           setError("those two didn't match — try once more.");
           setShakeKey((k) => k + 1);
           setDigits("");
           setTempCode("");
-          setStep(step === "email-passcode" ? "email-setup" : "guest-setup");
+          // Go back to create step — one step back
+          setStep(step === "email-confirm" ? "email-passcode" : "guest-passcode");
           return;
         }
-        // Save passcode
+        // Match! Save passcode + identity
         setBusy(true);
         try {
           const salt = randomSalt();
           const hash = await hashPasscode(code, salt);
           await setKv(KV_PASSCODE_HASH, hash);
           await setKv(KV_PASSCODE_SALT, salt);
-          // Save identity
-          if (step === "email-passcode") {
+          if (step === "email-confirm") {
             await setKv(KV_USER_TYPE, "email");
             await setKv(KV_USER_EMAIL, email.trim());
           } else {
@@ -135,7 +152,7 @@ export default function LoginEntry() {
     [step, storedHash, storedSalt, tempCode, email, username, navigate],
   );
 
-  // Auto-trigger on 4 digits — defer to avoid setState-in-effect warning.
+  // Auto-trigger on 4 digits
   useEffect(() => {
     if (digits.length === 4 && !busy) {
       const code = digits;
@@ -147,7 +164,7 @@ export default function LoginEntry() {
   // Clear error after a moment
   useEffect(() => {
     if (!error) return;
-    const t = setTimeout(() => setError(null), 3000);
+    const t = setTimeout(() => setError(null), 3500);
     return () => clearTimeout(t);
   }, [error]);
 
@@ -161,8 +178,8 @@ export default function LoginEntry() {
     setDigits((prev) => prev.slice(0, -1));
   };
 
-  const startEmail = useTapGuard(() => setStep("email-setup"), 450);
-  const startGuest = useTapGuard(() => setStep("guest-setup"), 450);
+  const startEmail = useTapGuard(() => setStep("email-setup"), 400);
+  const startGuest = useTapGuard(() => setStep("guest-setup"), 400);
 
   const handleStartFresh = useTapGuard(async () => {
     await wipeAll();
@@ -171,13 +188,16 @@ export default function LoginEntry() {
     setDigits("");
     setEmail("");
     setUsername("");
+    setTempCode("");
   }, 600);
 
-  // ─── RENDER ────────────────────────────────────────────────────────
+  // ─── Step titles (for passcode screens) ──────────────────────────
+  const passcodeLabel =
+    step.startsWith("email") ? email || "your email" : username || "your space";
 
+  // ─── RENDER ────────────────────────────────────────────────────────
   return (
     <div className="relative flex min-h-dvh items-center justify-center px-5 text-ink">
-      <SplashScreen visible={showSplash} />
       {/* background blobs */}
       <div
         aria-hidden
@@ -216,7 +236,7 @@ export default function LoginEntry() {
           <Logo className="h-16 w-16" />
         </motion.div>
 
-        {/* ── Choose: email or guest ──────────────────────────── */}
+        {/* ── CHOOSE: email or guest ─────────────────────────────── */}
         {step === "choose" && (
           <>
             <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink-deep">
@@ -247,7 +267,7 @@ export default function LoginEntry() {
           </>
         )}
 
-        {/* ── Email setup: enter email ────────────────────────── */}
+        {/* ── EMAIL SETUP: enter email ──────────────────────────── */}
         {step === "email-setup" && (
           <>
             <h1 className="mt-4 text-xl font-bold tracking-tight text-ink-deep">
@@ -267,15 +287,18 @@ export default function LoginEntry() {
                 spellCheck={false}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && email.trim()) {
-                    setStep("email-passcode");
+                    if (email.includes("@")) {
+                      setError(null);
+                      setStep("email-passcode");
+                    } else {
+                      setError("that doesn't look like an email address.");
+                    }
                   }
                 }}
                 className="w-full rounded-2xl border-0 bg-[#FDF5E6]/70 px-4 py-3.5 text-sm text-ink-deep shadow-[inset_0_2px_6px_rgba(99,82,150,0.08)] placeholder:text-ink-soft/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8C9AD6]"
               />
               {error && (
-                <p className="text-xs font-semibold text-[#C48B9E]">
-                  {error}
-                </p>
+                <p className="text-xs font-semibold text-[#C48B9E]">{error}</p>
               )}
               <button
                 type="button"
@@ -303,7 +326,7 @@ export default function LoginEntry() {
           </>
         )}
 
-        {/* ── Guest setup: choose name ────────────────────────── */}
+        {/* ── GUEST SETUP: choose name ──────────────────────────── */}
         {step === "guest-setup" && (
           <>
             <h1 className="mt-4 text-xl font-bold tracking-tight text-ink-deep">
@@ -332,9 +355,7 @@ export default function LoginEntry() {
               <button
                 type="button"
                 onClick={() => {
-                  if (username.trim()) {
-                    setStep("guest-passcode");
-                  }
+                  if (username.trim()) setStep("guest-passcode");
                 }}
                 disabled={!username.trim()}
                 className="clay-btn w-full rounded-2xl px-5 py-3.5 text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
@@ -352,17 +373,17 @@ export default function LoginEntry() {
           </>
         )}
 
-        {/* ── Email passcode: create + confirm ────────────────── */}
+        {/* ── EMAIL PASSCODE: create ──────────────────────────── */}
         {step === "email-passcode" && (
           <>
             <h1 className="mt-4 text-xl font-bold tracking-tight text-ink-deep">
-              {tempCode ? "Confirm your passcode" : "Create a 4-digit passcode"}
+              Create a 4-digit passcode
             </h1>
             <p className="mt-2 text-sm text-ink-soft">
               only you will ever know this. it never leaves your device.
             </p>
             <p className="mt-1 text-[11px] font-semibold text-ink-soft">
-              for: {email}
+              for: {passcodeLabel}
             </p>
             <PasscodeUI
               digits={digits}
@@ -375,7 +396,7 @@ export default function LoginEntry() {
             />
             <button
               type="button"
-              onClick={() => { setStep("email-setup"); setTempCode(""); setDigits(""); setError(null); }}
+              onClick={() => { setStep("email-setup"); setDigits(""); setError(null); }}
               className="mt-5 text-xs font-bold text-ink-soft underline-offset-4 hover:text-ink-deep hover:underline"
             >
               ← back
@@ -383,17 +404,48 @@ export default function LoginEntry() {
           </>
         )}
 
-        {/* ── Guest passcode: create + confirm ────────────────── */}
+        {/* ── EMAIL CONFIRM: confirm passcode ──────────────────── */}
+        {step === "email-confirm" && (
+          <>
+            <h1 className="mt-4 text-xl font-bold tracking-tight text-ink-deep">
+              Confirm your passcode
+            </h1>
+            <p className="mt-2 text-sm text-ink-soft">
+              type it once more, just to be sure.
+            </p>
+            <p className="mt-1 text-[11px] font-semibold text-ink-soft">
+              for: {passcodeLabel}
+            </p>
+            <PasscodeUI
+              digits={digits}
+              error={error}
+              busy={busy}
+              shakeKey={shakeKey}
+              onDigit={pressDigit}
+              onBackspace={backspace}
+              mode="setup"
+            />
+            <button
+              type="button"
+              onClick={() => { setStep("email-passcode"); setTempCode(""); setDigits(""); setError(null); }}
+              className="mt-5 text-xs font-bold text-ink-soft underline-offset-4 hover:text-ink-deep hover:underline"
+            >
+              ← back
+            </button>
+          </>
+        )}
+
+        {/* ── GUEST PASSCODE: create ──────────────────────────── */}
         {step === "guest-passcode" && (
           <>
             <h1 className="mt-4 text-xl font-bold tracking-tight text-ink-deep">
-              {tempCode ? "Confirm your passcode" : "Create a 4-digit passcode"}
+              Create a 4-digit passcode
             </h1>
             <p className="mt-2 text-sm text-ink-soft">
               only you will ever know this. it never leaves your device.
             </p>
             <p className="mt-1 text-[11px] font-semibold text-ink-soft">
-              for: {username}
+              for: {passcodeLabel}
             </p>
             <PasscodeUI
               digits={digits}
@@ -406,7 +458,7 @@ export default function LoginEntry() {
             />
             <button
               type="button"
-              onClick={() => { setStep("guest-setup"); setTempCode(""); setDigits(""); setError(null); }}
+              onClick={() => { setStep("guest-setup"); setDigits(""); setError(null); }}
               className="mt-5 text-xs font-bold text-ink-soft underline-offset-4 hover:text-ink-deep hover:underline"
             >
               ← back
@@ -414,7 +466,38 @@ export default function LoginEntry() {
           </>
         )}
 
-        {/* ── Unlock: welcome back + passcode ─────────────────── */}
+        {/* ── GUEST CONFIRM: confirm passcode ──────────────────── */}
+        {step === "guest-confirm" && (
+          <>
+            <h1 className="mt-4 text-xl font-bold tracking-tight text-ink-deep">
+              Confirm your passcode
+            </h1>
+            <p className="mt-2 text-sm text-ink-soft">
+              type it once more, just to be sure.
+            </p>
+            <p className="mt-1 text-[11px] font-semibold text-ink-soft">
+              for: {passcodeLabel}
+            </p>
+            <PasscodeUI
+              digits={digits}
+              error={error}
+              busy={busy}
+              shakeKey={shakeKey}
+              onDigit={pressDigit}
+              onBackspace={backspace}
+              mode="setup"
+            />
+            <button
+              type="button"
+              onClick={() => { setStep("guest-passcode"); setTempCode(""); setDigits(""); setError(null); }}
+              className="mt-5 text-xs font-bold text-ink-soft underline-offset-4 hover:text-ink-deep hover:underline"
+            >
+              ← back
+            </button>
+          </>
+        )}
+
+        {/* ── UNLOCK: welcome back + passcode (returning users) ─── */}
         {step === "unlock" && (
           <>
             <h1 className="font-script mt-4 text-2xl font-bold tracking-tight text-ink-deep">
@@ -424,7 +507,7 @@ export default function LoginEntry() {
                 : userEmail
                   ? `, ${userEmail}`
                   : ""}
-              💜
+              {" "}💜
             </h1>
             <p className="mt-2 text-sm text-ink-soft">
               Only you can access your feelings.
@@ -441,17 +524,54 @@ export default function LoginEntry() {
               onBackspace={backspace}
               mode="unlock"
             />
-            <button
-              type="button"
-              onClick={() => setStep("forgot")}
-              className="mt-5 text-xs font-bold text-ink-soft underline-offset-4 hover:text-ink-deep hover:underline"
-            >
-              forgot?
-            </button>
+            <div className="mt-5 flex flex-col items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setStep("forgot")}
+                className="text-xs font-bold text-ink-soft underline-offset-4 hover:text-ink-deep hover:underline"
+              >
+                forgot?
+              </button>
+              <button
+                type="button"
+                onClick={() => { setStep("unlock-setup"); setError(null); setDigits(""); }}
+                className="text-xs font-bold text-[#5F6DBE] underline-offset-4 hover:underline"
+              >
+                use a different space / new user
+              </button>
+            </div>
           </>
         )}
 
-        {/* ── Forgot: honest message + start fresh ────────────── */}
+        {/* ── UNLOCK-SETUP: "use a different space" from unlock ─── */}
+        {step === "unlock-setup" && (
+          <>
+            <h1 className="mt-4 text-xl font-bold tracking-tight text-ink-deep">
+              Start a new space
+            </h1>
+            <p className="mt-2 text-sm text-ink-soft">
+              This will set up a fresh space with its own passcode.
+            </p>
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => { setStep("choose"); setError(null); }}
+                className="clay-btn w-full rounded-2xl px-5 py-3.5 text-sm font-bold text-white"
+              >
+                Continue
+              </button>
+              <button
+                type="button"
+                onClick={() => { setStep("unlock"); setError(null); setDigits(""); }}
+                className="w-full text-xs font-bold text-ink-soft underline-offset-4 hover:text-ink-deep hover:underline"
+              >
+                ← actually, go back
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ── FORGOT: honest message + start fresh ──────────────── */}
         {step === "forgot" && (
           <>
             <div className="mx-auto mt-2 flex h-16 w-16 items-center justify-center rounded-full bg-[#EDEBF6]">
