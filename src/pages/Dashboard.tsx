@@ -12,7 +12,6 @@ import {
   type KVPair,
 } from "@/lib/db";
 import { safeSessionGetItem, safeSessionSetItem } from "@/lib/safe-storage";
-import { isGuest } from "@/lib/guest";
 
 const LOCK_DISMISSED_KEY = "venting-lock-dismissed";
 
@@ -79,9 +78,7 @@ export default function Dashboard() {
   // during render (guarded, runs once) avoids effect cascades.
   if (hydrated && !lockInitDone) {
     setLockInitDone(true);
-    if (isGuest()) {
-      setLock("unlocked");
-    } else if (hasPasscode) {
+    if (hasPasscode) {
       setLock("unlock");
     } else if (safeSessionGetItem(LOCK_DISMISSED_KEY) !== "1") {
       setLock("setup");

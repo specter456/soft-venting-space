@@ -125,6 +125,11 @@ export interface KVPair extends LocalRow {
 export const KV_PASSCODE_HASH = "passcodeHash";
 export const KV_PASSCODE_SALT = "passcodeSalt";
 
+/** User identity keys — stored locally only, never sent anywhere. */
+export const KV_USER_TYPE = "userType"; // "email" | "guest"
+export const KV_USER_EMAIL = "userEmail";
+export const KV_USER_NAME = "userName";
+
 /* ─── Cache + subscription bus ─────────────────────────────────────── */
 
 const cache: Record<StoreName, LocalRow[]> = {
@@ -359,8 +364,6 @@ async function persistPut(name: StoreName, row: LocalRow): Promise<void> {
 /* ─── Key-value (passcode lock, device prefs) ──────────────────────── */
 
 export async function setKv(key: string, value: string): Promise<void> {
-  const { isGuest } = await import("@/lib/guest");
-  if (isGuest()) return;
   const existing = (cache.kv as KVPair[]).find((k) => k.key === key);
   if (existing) {
     const updated = { ...existing, value };
@@ -423,5 +426,11 @@ export async function wipeAll(): Promise<void> {
   for (const name of STORE_NAMES) {
     cache[name] = [];
   }
+  // Also clear localStorage keys so the next visit is a fresh start
+  try {
+    localStorage.removeItem("venting-profile-email");
+    localStorage.removeItem("venting-checkin");
+    localStorage.removeItem("venting-lock-dismissed");
+  } catch { /* ignore */ }
   notify();
 }

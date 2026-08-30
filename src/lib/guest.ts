@@ -1,17 +1,16 @@
 /**
- * Guest mode — in-memory flag.
+ * Guest mode removed. Every user now creates a private space with
+ * a username/email + hashed passcode. Data persists on-device for all users.
  *
- * When a user enters as guest, all storage writes are skipped. Every time
- * they open the app they see the full fresh flow: splash → login →
- * welcome → check-in → home. No data persists between sessions.
+ * This module is kept as a no-op for backwards compatibility — existing
+ * callers of isGuest() will always get false.
  */
 
-let _guest = false;
-
 export function isGuest(): boolean {
-  return _guest;
+  return false;
 }
 
+/** No-op — kept so existing call sites don't break. */
 export function setGuest(): void {
-  _guest = true;
+  // no-op
 }
