@@ -31,9 +31,9 @@ export default function Landing() {
   const [showSplash, setShowSplash] = useState(true);
   const [showExplanation, setShowExplanation] = useState(false);
 
-  // Splash fades out after 1.5 seconds
+  // Splash fades out after 1.2 seconds
   useEffect(() => {
-    const t = window.setTimeout(() => setShowSplash(false), 1500);
+    const t = window.setTimeout(() => setShowSplash(false), 1200);
     return () => window.clearTimeout(t);
   }, []);
 
