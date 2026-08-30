@@ -238,49 +238,71 @@ export default function GamesScreen() {
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            {BUILT_IN_GAMES.map((g) => (
-              <motion.button key={g.id} type="button" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-                onClick={() => openBuiltIn(g.id)}
-                className="clay-card group flex flex-col items-center gap-2 rounded-[1.8rem] px-4 py-5 sm:py-6 text-center transition-transform hover:-translate-y-0.5 h-full">
-                <span className={cn("flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl text-2xl sm:text-3xl transition-transform group-hover:scale-110", g.tile)}>
-                  <span aria-hidden className="drop-shadow-sm">{g.emoji}</span>
-                </span>
-                <span className="text-sm sm:text-base font-bold tracking-tight text-ink-deep">{g.name}</span>
-                <span className="text-[11px] sm:text-xs leading-snug font-medium text-ink-soft">{g.line}</span>
-              </motion.button>
-            ))}
+            {(() => {
+              const total = BUILT_IN_GAMES.length + customGames.length + 1; // +1 for creator card
+              const isOdd = total % 2 !== 0;
+              let idx = 0;
+              return (
+                <>
+                  {BUILT_IN_GAMES.map((g) => {
+                    const i = idx++;
+                    const last = isOdd && i === total - 1;
+                    return (
+                      <motion.button key={g.id} type="button" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+                        onClick={() => openBuiltIn(g.id)}
+                        className={cn("clay-card group flex flex-col items-center gap-2 rounded-[1.8rem] px-4 py-5 sm:py-6 text-center transition-transform hover:-translate-y-0.5 h-full",
+                          last && "col-span-2 justify-self-center w-[calc(50%-0.375rem)]")}>
+                        <span className={cn("flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl text-2xl sm:text-3xl transition-transform group-hover:scale-110", g.tile)}>
+                          <span aria-hidden className="drop-shadow-sm">{g.emoji}</span>
+                        </span>
+                        <span className="text-sm sm:text-base font-bold tracking-tight text-ink-deep">{g.name}</span>
+                        <span className="text-[11px] sm:text-xs leading-snug font-medium text-ink-soft">{g.line}</span>
+                      </motion.button>
+                    );
+                  })}
 
-            {/* Custom saved games */}
-            {customGames.map((cg) => (
-              <motion.div key={cg.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-                className="clay-card group flex flex-col items-center gap-2 rounded-[1.8rem] px-4 py-5 sm:py-6 text-center transition-transform hover:-translate-y-0.5 h-full relative">
-                <button type="button" onClick={(e) => { e.stopPropagation(); openCustom(cg); }}
-                  className="flex flex-col items-center gap-2 w-full">
-                  <span className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl text-2xl sm:text-3xl transition-transform group-hover:scale-110 tile-lavender">
-                    <span aria-hidden className="drop-shadow-sm">{getThingEmoji(cg.thing)}</span>
-                  </span>
-                  <span className="text-sm sm:text-base font-bold tracking-tight text-ink-deep">{cg.name || "My Game"}</span>
-                  <span className="text-[11px] sm:text-xs leading-snug font-medium text-ink-soft">{cg.thing} · {cg.touch}</span>
-                </button>
-                <div className="absolute top-2 right-2 flex gap-1">
-                  <button type="button" onClick={(e) => { e.stopPropagation(); openEditBuilder(cg); }}
-                    className="clay-chip h-6 w-6 rounded-full text-[10px] font-bold text-ink-soft hover:text-ink-deep flex items-center justify-center">✎</button>
-                  <button type="button" onClick={(e) => { e.stopPropagation(); deleteGame(cg.id); }}
-                    className="clay-chip h-6 w-6 rounded-full text-[10px] font-bold text-[#C48B9E] hover:text-[#A06070] flex items-center justify-center">✕</button>
-                </div>
-              </motion.div>
-            ))}
+                  {customGames.map((cg) => {
+                    const i = idx++;
+                    const last = isOdd && i === total - 1;
+                    return (
+                      <motion.div key={cg.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+                        className={cn("clay-card group flex flex-col items-center gap-2 rounded-[1.8rem] px-4 py-5 sm:py-6 text-center transition-transform hover:-translate-y-0.5 h-full relative",
+                          last && "col-span-2 justify-self-center w-[calc(50%-0.375rem)]")}>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); openCustom(cg); }}
+                          className="flex flex-col items-center gap-2 w-full">
+                          <span className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl text-2xl sm:text-3xl transition-transform group-hover:scale-110 tile-lavender">
+                            <span aria-hidden className="drop-shadow-sm">{getThingEmoji(cg.thing)}</span>
+                          </span>
+                          <span className="text-sm sm:text-base font-bold tracking-tight text-ink-deep">{cg.name || "My Game"}</span>
+                          <span className="text-[11px] sm:text-xs leading-snug font-medium text-ink-soft">{cg.thing} · {cg.touch}</span>
+                        </button>
+                        <div className="absolute top-2 right-2 flex gap-1">
+                          <button type="button" onClick={(e) => { e.stopPropagation(); openEditBuilder(cg); }}
+                            className="clay-chip h-6 w-6 rounded-full text-[10px] font-bold text-ink-soft hover:text-ink-deep flex items-center justify-center">✎</button>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); deleteGame(cg.id); }}
+                            className="clay-chip h-6 w-6 rounded-full text-[10px] font-bold text-[#C48B9E] hover:text-[#A06070] flex items-center justify-center">✕</button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
 
-            {/* Creator card */}
-            <motion.button type="button" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}
-              onClick={openBuilder}
-              className="flex flex-col items-center gap-2 rounded-[1.8rem] border-2 border-dashed border-[#8C9AD6]/50 bg-[#E4E8F8]/30 px-4 py-5 sm:py-6 text-center transition-all hover:-translate-y-0.5 hover:border-[#8C9AD6] hover:bg-[#E4E8F8]/50 h-full">
-              <span className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl text-2xl sm:text-3xl">
-                <span aria-hidden className="drop-shadow-sm">✨</span>
-              </span>
-              <span className="text-sm sm:text-base font-bold tracking-tight text-ink-deep">Create your own game</span>
-              <span className="text-[11px] sm:text-xs leading-snug font-medium text-ink-soft">build a tiny game the way you desire</span>
-            </motion.button>
+                  {(() => {
+                    return (
+                      <motion.button type="button" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}
+                        onClick={openBuilder}
+                        className={cn("flex flex-col items-center gap-2 rounded-[1.8rem] border-2 border-dashed border-[#8C9AD6]/50 bg-[#E4E8F8]/30 px-4 py-5 sm:py-6 text-center transition-all hover:-translate-y-0.5 hover:border-[#8C9AD6] hover:bg-[#E4E8F8]/50 h-full",
+                          isOdd && "col-span-2 justify-self-center w-[calc(50%-0.375rem)]")}>
+                        <span className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl text-2xl sm:text-3xl">
+                          <span aria-hidden className="drop-shadow-sm">✨</span>
+                        </span>
+                        <span className="text-sm sm:text-base font-bold tracking-tight text-ink-deep">Create your own game</span>
+                        <span className="text-[11px] sm:text-xs leading-snug font-medium text-ink-soft">build a tiny game the way you desire</span>
+                      </motion.button>
+                    );
+                  })()}
+                </>
+              );
+            })()}
           </div>
 
           <p className="pt-1 text-center text-[11px] font-semibold text-ink-soft">🔒 private, calm, and all on this device</p>
@@ -478,6 +500,152 @@ function GameBuilder({
       </div>
     </motion.div>
   );
+}
+
+/* ─── Moonlight Glide music ──────────────────────────────────────── */
+
+type MoonTrack = "dreamy-piano" | "warm-hum" | "night-wind" | "music-box" | "no-music";
+
+const MOON_TRACKS: { id: MoonTrack; label: string }[] = [
+  { id: "dreamy-piano", label: "dreamy piano" },
+  { id: "warm-hum", label: "warm hum" },
+  { id: "night-wind", label: "night wind" },
+  { id: "music-box", label: "quiet music box" },
+  { id: "no-music", label: "no music" },
+];
+
+const MOON_MUSIC_KEY = "venting-moon-track";
+
+function loadMoonTrack(): MoonTrack {
+  try {
+    const raw = safeGetItem(MOON_MUSIC_KEY);
+    if (raw && MOON_TRACKS.some((t) => t.id === raw)) return raw as MoonTrack;
+  } catch { /* ignore */ }
+  return "dreamy-piano";
+}
+
+function saveMoonTrack(track: MoonTrack) {
+  safeSetItem(MOON_MUSIC_KEY, track);
+}
+
+/* Soft ambient music engine for Moonlight Glide */
+let _moonCtx: AudioContext | null = null;
+let _moonNodes: (OscillatorNode | AudioBufferSourceNode)[] = [];
+let _moonGains: GainNode[] = [];
+
+function moonCtx(): AudioContext {
+  if (!_moonCtx) _moonCtx = new AudioContext();
+  return _moonCtx;
+}
+
+function stopMoonMusic() {
+  try {
+    _moonNodes.forEach((n) => { try { n.stop(); } catch { /* ignore */ } });
+    _moonGains.forEach((g) => { try { g.disconnect(); } catch { /* ignore */ } });
+  } catch { /* ignore */ }
+  _moonNodes = [];
+  _moonGains = [];
+}
+
+function playMoonTrack(track: MoonTrack) {
+  stopMoonMusic();
+  if (track === "no-music") return;
+  try {
+    const ctx = moonCtx();
+    if (ctx.state === "suspended") ctx.resume();
+
+    switch (track) {
+      case "dreamy-piano": {
+        // Slow ambient pad + occasional soft piano notes
+        const pad = ctx.createOscillator(); const padGain = ctx.createGain();
+        pad.type = "sine"; pad.frequency.value = 220;
+        padGain.gain.value = 0.06;
+        pad.connect(padGain); padGain.connect(ctx.destination);
+        pad.start(); _moonNodes.push(pad); _moonGains.push(padGain);
+
+        const pad2 = ctx.createOscillator(); const pad2Gain = ctx.createGain();
+        pad2.type = "sine"; pad2.frequency.value = 330;
+        pad2Gain.gain.value = 0.04;
+        pad2.connect(pad2Gain); pad2Gain.connect(ctx.destination);
+        pad2.start(); _moonNodes.push(pad2); _moonGains.push(pad2Gain);
+
+        // Occasional piano notes
+        const pianoNotes = [262, 294, 330, 392, 440, 523];
+        const playNote = () => {
+          if (track !== "dreamy-piano") return;
+          const osc = ctx.createOscillator(); const g = ctx.createGain();
+          osc.type = "sine"; osc.frequency.value = pianoNotes[Math.floor(Math.random() * pianoNotes.length)];
+          g.gain.setValueAtTime(0.12, ctx.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2);
+          osc.connect(g); g.connect(ctx.destination);
+          osc.start(); osc.stop(ctx.currentTime + 2);
+          setTimeout(playNote, 2000 + Math.random() * 4000);
+        };
+        setTimeout(playNote, 1500);
+        break;
+      }
+      case "warm-hum": {
+        // Low ambient drone
+        const osc = ctx.createOscillator(); const g = ctx.createGain();
+        osc.type = "sine"; osc.frequency.value = 110;
+        g.gain.value = 0.07;
+        osc.connect(g); g.connect(ctx.destination);
+        osc.start(); _moonNodes.push(osc); _moonGains.push(g);
+
+        const osc2 = ctx.createOscillator(); const g2 = ctx.createGain();
+        osc2.type = "sine"; osc2.frequency.value = 165;
+        g2.gain.value = 0.04;
+        osc2.connect(g2); g2.connect(ctx.destination);
+        osc2.start(); _moonNodes.push(osc2); _moonGains.push(g2);
+        break;
+      }
+      case "night-wind": {
+        // Soft filtered noise + distant chimes
+        const bufferSize = ctx.sampleRate * 2;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        const noise = ctx.createBufferSource(); noise.buffer = buffer; noise.loop = true;
+        const filter = ctx.createBiquadFilter(); filter.type = "lowpass"; filter.frequency.value = 400;
+        const g = ctx.createGain(); g.gain.value = 0.05;
+        noise.connect(filter); filter.connect(g); g.connect(ctx.destination);
+        noise.start(); _moonNodes.push(noise); _moonGains.push(g);
+
+        // Distant chimes
+        const chimeNotes = [800, 1000, 1200, 1400];
+        const playChime = () => {
+          if (track !== "night-wind") return;
+          const osc = ctx.createOscillator(); const cg = ctx.createGain();
+          osc.type = "sine"; osc.frequency.value = chimeNotes[Math.floor(Math.random() * chimeNotes.length)];
+          cg.gain.setValueAtTime(0.08, ctx.currentTime);
+          cg.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
+          osc.connect(cg); cg.connect(ctx.destination);
+          osc.start(); osc.stop(ctx.currentTime + 1.5);
+          setTimeout(playChime, 3000 + Math.random() * 5000);
+        };
+        setTimeout(playChime, 2000);
+        break;
+      }
+      case "music-box": {
+        // Music box tones — high, soft, slightly detuned
+        const notes = [523, 659, 784, 880, 1047];
+        let noteIdx = 0;
+        const playBox = () => {
+          if (track !== "music-box") return;
+          const osc = ctx.createOscillator(); const g = ctx.createGain();
+          osc.type = "sine"; osc.frequency.value = notes[noteIdx % notes.length];
+          g.gain.setValueAtTime(0.1, ctx.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1);
+          osc.connect(g); g.connect(ctx.destination);
+          osc.start(); osc.stop(ctx.currentTime + 1);
+          noteIdx++;
+          setTimeout(playBox, 800 + Math.random() * 600);
+        };
+        setTimeout(playBox, 500);
+        break;
+      }
+    }
+  } catch { /* audio unavailable */ }
 }
 
 /* ─── Tiny Game Engine ────────────────────────────────────────────── */
@@ -700,6 +868,16 @@ function MoonlightGlide() {
   const [caught, setCaught] = useState(0);
   const [sky, setSky] = useState<SkyPhase>("meadow");
   const nextId = useRef(0);
+  const [track, setTrack] = useState<MoonTrack>(loadMoonTrack);
+  const [showMusicMenu, setShowMusicMenu] = useState(false);
+  const musicPlaying = track !== "no-music";
+
+  // Start/stop music based on track selection
+  useEffect(() => {
+    playMoonTrack(track);
+    saveMoonTrack(track);
+    return () => { stopMoonMusic(); };
+  }, [track]);
 
   useEffect(() => { const phases: SkyPhase[] = ["meadow", "sunset", "starry"]; let idx = 0; const t = setInterval(() => { idx = (idx + 1) % 3; setSky(phases[idx]); }, 6000); return () => clearInterval(t); }, []);
   useEffect(() => { const emojis = ["⭐", "💛", "🏮"]; const t = setInterval(() => { setItems((prev) => { if (prev.length > 6) return prev; return [...prev, { id: nextId.current++, emoji: emojis[Math.floor(Math.random() * 3)], lane: Math.floor(Math.random() * 3), y: 0 }]; }); }, 1600); return () => clearInterval(t); }, []);
@@ -718,6 +896,28 @@ function MoonlightGlide() {
   return (
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
       <GameIntro emoji="🌙" title="Moonlight Glide" sub="tap left or right to drift lanes — catch stars as they fall softly" />
+
+      {/* Music CD button */}
+      <div className="absolute top-4 right-4 z-10">
+        <button type="button" onClick={() => setShowMusicMenu((v) => !v)}
+          className="relative flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#5F6DBE] to-[#8C9AD6] shadow-md transition-transform hover:scale-110 active:scale-95"
+          aria-label="Music settings">
+          <span className={cn("text-white text-sm", musicPlaying && "animate-spin")} style={{ animationDuration: "3s" }}>💿</span>
+        </button>
+        {showMusicMenu && (
+          <motion.div initial={{ opacity: 0, y: -4, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+            className="absolute top-11 right-0 w-40 rounded-2xl bg-[#FDF5E6]/95 shadow-lg border border-[#C4CBE8]/40 p-2 space-y-1">
+            {MOON_TRACKS.map((t) => (
+              <button key={t.id} type="button" onClick={() => { setTrack(t.id); setShowMusicMenu(false); }}
+                className={cn("w-full rounded-xl px-3 py-2 text-left text-xs font-bold transition-colors",
+                  track === t.id ? "bg-[#5F6DBE] text-white" : "text-ink-deep hover:bg-[#E4E8F8]/60")}>
+                {t.label}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </div>
+
       <div className={cn("relative mt-6 h-64 overflow-hidden rounded-2xl bg-gradient-to-b transition-all duration-[3000ms]", SKY_GRADIENTS[sky])}>
         {sky === "starry" && Array.from({ length: 12 }).map((_, i) => (
           <span key={i} className="absolute text-xs text-white/70 animate-twinkle" style={{ left: `${10 + (i * 17) % 80}%`, top: `${5 + (i * 13) % 50}%`, animationDelay: `${i * 0.3}s` }} aria-hidden>✦</span>
