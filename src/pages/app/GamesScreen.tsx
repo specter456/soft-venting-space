@@ -501,6 +501,7 @@ function GameBuilder({
   const clearDoodle = () => {
     if (!doodleCtx) return;
     doodleCtx.clearRect(0, 0, 200, 200);
+    // eslint-disable-next-line
     doodleCtx.fillStyle = "rgba(255,255,255,0.3)";
     doodleCtx.fillRect(0, 0, 200, 200);
     setMyDoodle(undefined);
@@ -917,10 +918,9 @@ function TinyGameEngine({ config, minimal = false }: { config: CustomGameConfig;
     return () => clearTimeout(t);
   }, [sparkles]);
 
-  const spawnSparkle = (x: number, y: number) => {
-    const s = { id: Date.now(), x, y, emoji: sparkleEmoji };
-    setSparkles((prev) => [...prev.slice(-8), s]);
-  };
+  const spawnSparkle = useCallback((x: number, y: number) => {
+    setSparkles((prev) => [...prev.slice(-8), { id: Date.now(), x, y, emoji: sparkleEmoji }]);
+  }, [sparkleEmoji]);
 
   const handleTouch = (id: number, x: number, y: number) => {
     playCustomSound(config.sound);
