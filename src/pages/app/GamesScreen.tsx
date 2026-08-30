@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 type World = "sky" | "sunset" | "starry" | "garden" | "sea" | "cozy";
 type FloatingThing = "bubbles" | "stars" | "clouds" | "petals" | "fireflies" | "hearts" | "fish";
 type TouchAction = "pop" | "catch" | "note" | "blow" | "soothe";
+type SparkleStyle = "sparkles" | "ripples" | "hearts" | "notes";
+type ObjectSize = "small" | "medium" | "large";
 type GameSound = "chimes" | "rain" | "wind" | "piano" | "none";
 type GamePace = "very-slow" | "slow" | "medium";
 
@@ -19,10 +21,15 @@ interface CustomGameConfig {
   id: string;
   name: string;
   world: World;
-  thing: FloatingThing;
+  things: FloatingThing[];
   touch: TouchAction;
+  sparkleStyle: SparkleStyle;
+  objectSize: ObjectSize;
+  whisper: string;
   sound: GameSound;
   pace: GamePace;
+  worldPhoto?: string;
+  myDoodle?: string;
   createdAt: number;
 }
 
@@ -85,8 +92,29 @@ const PACES: { id: GamePace; label: string; ms: number }[] = [
   { id: "medium", label: "Medium", ms: 1200 },
 ];
 
+const SPARKLE_STYLES: { id: SparkleStyle; emoji: string; label: string }[] = [
+  { id: "sparkles", emoji: "✨", label: "Sparkles" },
+  { id: "ripples", emoji: "🌊", label: "Ripples" },
+  { id: "hearts", emoji: "💜", label: "Hearts" },
+  { id: "notes", emoji: "🎵", label: "Music notes" },
+];
+
+const OBJECT_SIZES: { id: ObjectSize; label: string; cls: string }[] = [
+  { id: "small", label: "Small", cls: "text-lg" },
+  { id: "medium", label: "Medium", cls: "text-2xl" },
+  { id: "large", label: "Large", cls: "text-3xl" },
+];
+
 function getThingEmoji(thing: FloatingThing): string {
   return THINGS.find((t) => t.id === thing)?.emoji ?? "✨";
+}
+
+function getThingEmojis(things: FloatingThing[]): string[] {
+  return things.length > 0 ? things.map(getThingEmoji) : ["✨"];
+}
+
+function getSparkleEmoji(style: SparkleStyle): string {
+  return SPARKLE_STYLES.find((s) => s.id === style)?.emoji ?? "✨";
 }
 
 function getWorldGradient(world: World): string {
@@ -268,23 +296,36 @@ export default function GamesScreen() {
                   {customGames.map((cg) => {
                     const i = idx++;
                     const last = isOdd && i === total - 1;
+                    const mainEmoji = cg.myDoodle ? "✏️" : getThingEmojis(cg.things)[0] ?? "✨";
                     return (
                       <motion.div key={cg.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
                         className={cn("clay-card group flex flex-col items-center gap-2 rounded-[1.8rem] px-4 py-5 sm:py-6 text-center transition-transform hover:-translate-y-0.5 h-full relative",
                           last && "col-span-2 justify-self-center w-[calc(50%-0.375rem)]")}>
+                        <span className="absolute top-2 left-2 text-xs">✨</span>
                         <button type="button" onClick={(e) => { e.stopPropagation(); openCustom(cg); }}
                           className="flex flex-col items-center gap-2 w-full">
                           <span className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl text-2xl sm:text-3xl transition-transform group-hover:scale-110 tile-lavender">
-                            <span aria-hidden className="drop-shadow-sm">{getThingEmoji(cg.thing)}</span>
+                            <span aria-hidden className="drop-shadow-sm">{mainEmoji}</span>
                           </span>
                           <span className="text-sm sm:text-base font-bold tracking-tight text-ink-deep">{cg.name || "My Game"}</span>
-                          <span className="text-[11px] sm:text-xs leading-snug font-medium text-ink-soft">{cg.thing} · {cg.touch}</span>
+                          <span className="text-[11px] sm:text-xs leading-snug font-medium text-ink-soft">{cg.things.join(" + ")} · {cg.touch}</span>
                         </button>
-                        <div className="absolute top-2 right-2 flex gap-1">
+                        <div className="flex gap-1 mt-1">
+                          <button type="button" onClick={(e) => { e.stopPropagation(); openCustom(cg); }}
+                            className="clay-chip h-6 px-2 rounded-full text-[10px] font-bold text-ink-deep hover:scale-105 flex items-center gap-0.5">▶ play</button>
                           <button type="button" onClick={(e) => { e.stopPropagation(); openEditBuilder(cg); }}
-                            className="clay-chip h-6 w-6 rounded-full text-[10px] font-bold text-ink-soft hover:text-ink-deep flex items-center justify-center">✎</button>
-                          <button type="button" onClick={(e) => { e.stopPropagation(); deleteGame(cg.id); }}
-                            className="clay-chip h-6 w-6 rounded-full text-[10px] font-bold text-[#C48B9E] hover:text-[#A06070] flex items-center justify-center">✕</button>
+                            className="clay-chip h-6 px-2 rounded-full text-[10px] font-bold text-ink-soft hover:text-ink-deep flex items-center gap-0.5">✎ edit</button>
+                          <button type="button" onClick={(e) => {
+                              e.stopPropagation();
+                              const dup = { ...cg, id: `custom-${Date.now()}`, name: (cg.name || "My Game") + " copy", createdAt: Date.now() };
+                              saveGame(dup);
+                            }}
+                            className="clay-chip h-6 px-2 rounded-full text-[10px] font-bold text-ink-soft hover:text-ink-deep flex items-center gap-0.5">⧉ dup</button>
+                          <button type="button" onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm("remove this game?")) deleteGame(cg.id);
+                            }}
+                            className="clay-chip h-6 px-2 rounded-full text-[10px] font-bold text-[#C48B9E] hover:text-[#A06070] flex items-center gap-0.5">✕</button>
                         </div>
                       </motion.div>
                     );
@@ -373,30 +414,106 @@ function GameBuilder({
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [world, setWorld] = useState<World>(initial?.world ?? "sky");
-  const [thing, setThing] = useState<FloatingThing>(initial?.thing ?? "stars");
+  const [things, setThings] = useState<FloatingThing[]>(initial?.things ?? ["stars"]);
   const [touch, setTouch] = useState<TouchAction>(initial?.touch ?? "catch");
+  const [sparkleStyle, setSparkleStyle] = useState<SparkleStyle>(initial?.sparkleStyle ?? "sparkles");
+  const [objectSize, setObjectSize] = useState<ObjectSize>(initial?.objectSize ?? "medium");
+  const [whisper, setWhisper] = useState(initial?.whisper ?? "");
   const [sound, setSound] = useState<GameSound>(initial?.sound ?? "chimes");
   const [pace, setPace] = useState<GamePace>(initial?.pace ?? "slow");
+  const [worldPhoto, setWorldPhoto] = useState<string | undefined>(initial?.worldPhoto);
+  const [myDoodle, setMyDoodle] = useState<string | undefined>(initial?.myDoodle);
+  const [showDoodleCanvas, setShowDoodleCanvas] = useState(false);
+  const [doodleCtx, setDoodleCtx] = useState<CanvasRenderingContext2D | null>(null);
+  const doodleRef = useRef<HTMLCanvasElement>(null);
+  const doodleDrawing = useRef(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   // Update preview whenever options change
   useEffect(() => {
     const cfg: CustomGameConfig = {
       id: initial?.id ?? `custom-${Date.now()}`,
-      name, world, thing, touch, sound, pace,
+      name, world, things, touch, sparkleStyle, objectSize, whisper, sound, pace,
+      worldPhoto, myDoodle,
       createdAt: initial?.createdAt ?? Date.now(),
     };
     onPreview(cfg);
-  }, [name, world, thing, touch, sound, pace, initial, onPreview]);
+  }, [name, world, things, touch, sparkleStyle, objectSize, whisper, sound, pace, worldPhoto, myDoodle, initial, onPreview]);
 
   const buildConfig = (): CustomGameConfig => ({
     id: initial?.id ?? `custom-${Date.now()}`,
-    name, world, thing, touch, sound, pace,
+    name, world, things, touch, sparkleStyle, objectSize, whisper, sound, pace,
+    worldPhoto, myDoodle,
     createdAt: initial?.createdAt ?? Date.now(),
   });
 
   const handleSave = useTapGuard(() => {
     onSave(buildConfig());
   }, 500);
+
+  const toggleThing = (t: FloatingThing) => {
+    setThings((prev) => {
+      if (prev.includes(t)) return prev.filter((x) => x !== t);
+      if (prev.length >= 3) return prev; // max 3
+      return [...prev, t];
+    });
+  };
+
+  // Doodle canvas
+  const initDoodleCanvas = useCallback(() => {
+    const canvas = doodleRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.fillStyle = "rgba(255,255,255,0.3)";
+    ctx.fillRect(0, 0, 200, 200);
+    ctx.strokeStyle = "#5F6DBE";
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    setDoodleCtx(ctx);
+  }, []);
+
+  const startDoodle = (e: React.PointerEvent) => {
+    doodleDrawing.current = true;
+    const canvas = doodleRef.current;
+    if (!canvas || !doodleCtx) return;
+    const rect = canvas.getBoundingClientRect();
+    doodleCtx.beginPath();
+    doodleCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+  };
+
+  const moveDoodle = (e: React.PointerEvent) => {
+    if (!doodleDrawing.current || !doodleCtx) return;
+    const canvas = doodleRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    doodleCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    doodleCtx.stroke();
+  };
+
+  const endDoodle = () => {
+    doodleDrawing.current = false;
+    if (doodleRef.current) {
+      setMyDoodle(doodleRef.current.toDataURL());
+    }
+  };
+
+  const clearDoodle = () => {
+    if (!doodleCtx) return;
+    doodleCtx.clearRect(0, 0, 200, 200);
+    doodleCtx.fillStyle = "rgba(255,255,255,0.3)";
+    doodleCtx.fillRect(0, 0, 200, 200);
+    setMyDoodle(undefined);
+  };
+
+  const handleWorldPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setWorldPhoto(reader.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
 
   return (
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
@@ -405,11 +522,11 @@ function GameBuilder({
         <p className="text-base font-bold text-ink-deep">✨ {initial ? "Edit your game" : "Create your own game"}</p>
       </div>
 
-      {/* Live preview */}
+      {/* Big playable live preview */}
       {previewConfig && (
-        <div className="clay-card overflow-hidden rounded-[2.25rem] p-4">
-          <p className="mb-2 text-xs font-bold text-ink-soft">Live preview</p>
-          <div className={cn("relative h-40 overflow-hidden rounded-2xl bg-gradient-to-b", getWorldGradient(previewConfig.world))}>
+        <div className="clay-card overflow-hidden rounded-[2.25rem] p-3">
+          <p className="mb-2 text-xs font-bold text-ink-soft">tap inside to play ✨</p>
+          <div className="relative h-64 sm:h-80 overflow-hidden rounded-2xl">
             <TinyGameEngine config={previewConfig} minimal />
           </div>
         </div>
@@ -429,24 +546,72 @@ function GameBuilder({
           <label className="text-xs font-bold text-ink-deep">World</label>
           <div className="mt-1.5 flex flex-wrap gap-2">
             {WORLDS.map((w) => (
-              <button key={w.id} type="button" onClick={() => setWorld(w.id)}
+              <button key={w.id} type="button" onClick={() => { setWorld(w.id); setWorldPhoto(undefined); }}
                 className={cn("rounded-full px-3 py-1.5 text-xs font-bold transition-all",
-                  world === w.id ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
+                  world === w.id && !worldPhoto ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
                 {w.label}
               </button>
             ))}
+            <button type="button" onClick={() => fileRef.current?.click()}
+              className={cn("rounded-full px-3 py-1.5 text-xs font-bold transition-all",
+                worldPhoto ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
+              📷 my photo
+            </button>
           </div>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleWorldPhoto} />
+          {worldPhoto && (
+            <div className="mt-2 flex items-center gap-2">
+              <img src={worldPhoto} alt="" className="h-10 w-10 rounded-lg object-cover" />
+              <button type="button" onClick={() => setWorldPhoto(undefined)} className="text-[10px] font-bold text-blush-500">remove photo</button>
+            </div>
+          )}
         </div>
 
-        {/* Floating things */}
+        {/* Floating things (multi-select, up to 3) */}
         <div>
-          <label className="text-xs font-bold text-ink-deep">Floating things</label>
+          <label className="text-xs font-bold text-ink-deep">Floating things <span className="text-ink-soft">(tap up to 3)</span></label>
           <div className="mt-1.5 flex flex-wrap gap-2">
             {THINGS.map((t) => (
-              <button key={t.id} type="button" onClick={() => setThing(t.id)}
+              <button key={t.id} type="button" onClick={() => toggleThing(t.id)}
                 className={cn("flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition-all",
-                  thing === t.id ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
+                  things.includes(t.id) ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
                 <span>{t.emoji}</span> {t.label}
+              </button>
+            ))}
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <button type="button" onClick={() => setShowDoodleCanvas(!showDoodleCanvas)}
+              className={cn("rounded-full px-3 py-1.5 text-xs font-bold transition-all",
+                myDoodle ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
+              ✏️ my doodle {myDoodle ? "✓" : ""}
+            </button>
+          </div>
+          {showDoodleCanvas && (
+            <div className="mt-2 space-y-2">
+              <canvas ref={doodleRef} width={200} height={200}
+                onPointerDown={(e) => { initDoodleCanvas(); startDoodle(e); }}
+                onPointerMove={moveDoodle}
+                onPointerUp={endDoodle}
+                onPointerLeave={endDoodle}
+                className="rounded-xl border-2 border-dashed border-[#C4CBE8] bg-white/40 cursor-crosshair touch-none"
+                style={{ width: 160, height: 160 }} />
+              <div className="flex gap-2">
+                <button type="button" onClick={clearDoodle} className="text-[10px] font-bold text-ink-soft hover:text-ink-deep">clear doodle</button>
+                {myDoodle && <img src={myDoodle} alt="" className="h-8 w-8 rounded-lg border border-[#C4CBE8]" />}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Object size */}
+        <div>
+          <label className="text-xs font-bold text-ink-deep">Object size</label>
+          <div className="mt-1.5 flex flex-wrap gap-2">
+            {OBJECT_SIZES.map((s) => (
+              <button key={s.id} type="button" onClick={() => setObjectSize(s.id)}
+                className={cn("rounded-full px-3 py-1.5 text-xs font-bold transition-all",
+                  objectSize === s.id ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
+                {s.label}
               </button>
             ))}
           </div>
@@ -464,6 +629,28 @@ function GameBuilder({
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Sparkle style */}
+        <div>
+          <label className="text-xs font-bold text-ink-deep">Sparkle style</label>
+          <div className="mt-1.5 flex flex-wrap gap-2">
+            {SPARKLE_STYLES.map((s) => (
+              <button key={s.id} type="button" onClick={() => setSparkleStyle(s.id)}
+                className={cn("flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition-all",
+                  sparkleStyle === s.id ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
+                <span>{s.emoji}</span> {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Whisper line */}
+        <div>
+          <label className="text-xs font-bold text-ink-deep">Whisper line <span className="text-ink-soft">(optional)</span></label>
+          <input type="text" value={whisper} onChange={(e) => setWhisper(e.target.value)}
+            placeholder="a soft line your game will whisper…"
+            maxLength={100} className="mt-1.5 w-full rounded-xl border-0 bg-[#FDF5E6]/70 px-3 py-2.5 text-sm text-ink-deep placeholder:text-ink-soft/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8C9AD6]" />
         </div>
 
         {/* Sound */}
@@ -510,6 +697,7 @@ function GameBuilder({
   );
 }
 
+/* ─── Moonlight Glide music
 /* ─── Moonlight Glide music ──────────────────────────────────────── */
 
 type MoonTrack = "dreamy-piano" | "warm-hum" | "night-wind" | "music-box" | "no-music";
@@ -663,30 +851,41 @@ interface FloatingObj {
   x: number;
   y: number;
   opacity: number;
+  emoji: string;
+  sparkle: string;
 }
 
 function TinyGameEngine({ config, minimal = false }: { config: CustomGameConfig; minimal?: boolean }) {
   const [objects, setObjects] = useState<FloatingObj[]>([]);
   const [counter, setCounter] = useState(0);
+  const [sparkles, setSparkles] = useState<{ id: number; x: number; y: number; emoji: string }[]>([]);
+  const [whisperMsg, setWhisperMsg] = useState<string | null>(null);
   const nextId = useRef(0);
+  const whisperTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const paceMs = PACES.find((p) => p.id === config.pace)?.ms ?? 2000;
+  const sizeCls = OBJECT_SIZES.find((s) => s.id === config.objectSize)?.cls ?? "text-2xl";
+  const emojis = getThingEmojis(config.things);
+  const sparkleEmoji = getSparkleEmoji(config.sparkleStyle);
 
-  // Spawn objects
+  // Spawn objects (random from selected things)
   useEffect(() => {
     const timer = setInterval(() => {
       setObjects((prev) => {
-        if (prev.length > 12) return prev;
+        if (prev.length > 15) return prev;
+        const emoji = emojis[Math.floor(Math.random() * emojis.length)];
         return [...prev, {
           id: nextId.current++,
           x: 5 + Math.random() * 90,
           y: -5,
           opacity: 0.9,
+          emoji,
+          sparkle: sparkleEmoji,
         }];
       });
     }, paceMs);
     return () => clearInterval(timer);
-  }, [paceMs]);
+  }, [paceMs, emojis, sparkleEmoji]);
 
   // Move objects
   useEffect(() => {
@@ -701,8 +900,31 @@ function TinyGameEngine({ config, minimal = false }: { config: CustomGameConfig;
     return () => clearInterval(timer);
   }, [config.pace]);
 
-  const handleTouch = (id: number) => {
+  // Whisper messages
+  useEffect(() => {
+    if (!config.whisper) return;
+    whisperTimer.current = setInterval(() => {
+      setWhisperMsg(config.whisper);
+      setTimeout(() => setWhisperMsg(null), 3000);
+    }, 8000 + Math.random() * 5000);
+    return () => { if (whisperTimer.current) clearInterval(whisperTimer.current); };
+  }, [config.whisper]);
+
+  // Sparkle cleanup
+  useEffect(() => {
+    if (sparkles.length === 0) return;
+    const t = setTimeout(() => setSparkles((s) => s.slice(1)), 800);
+    return () => clearTimeout(t);
+  }, [sparkles]);
+
+  const spawnSparkle = (x: number, y: number) => {
+    const s = { id: Date.now(), x, y, emoji: sparkleEmoji };
+    setSparkles((prev) => [...prev.slice(-8), s]);
+  };
+
+  const handleTouch = (id: number, x: number, y: number) => {
     playCustomSound(config.sound);
+    spawnSparkle(x, y);
 
     switch (config.touch) {
       case "pop":
@@ -713,7 +935,6 @@ function TinyGameEngine({ config, minimal = false }: { config: CustomGameConfig;
         setCounter((c) => c + 1);
         break;
       case "note":
-        // note already played by playCustomSound
         break;
       case "blow":
         setObjects((prev) => prev.map((o) => o.id === id ? { ...o, x: o.x + (Math.random() > 0.5 ? 20 : -20), y: o.y - 5 } : o));
@@ -727,28 +948,68 @@ function TinyGameEngine({ config, minimal = false }: { config: CustomGameConfig;
     }
   };
 
-  const emoji = getThingEmoji(config.thing);
+  const worldStyle: React.CSSProperties = config.worldPhoto
+    ? { backgroundImage: `url(${config.worldPhoto})`, backgroundSize: "cover", backgroundPosition: "center" }
+    : {};
 
   return (
-    <div className={cn("relative overflow-hidden rounded-2xl bg-gradient-to-b", getWorldGradient(config.world), minimal ? "h-full" : "h-72")}>
+    <div className={cn(
+      "relative overflow-hidden rounded-2xl bg-gradient-to-b",
+      !config.worldPhoto && getWorldGradient(config.world),
+      minimal ? "h-full" : "h-72",
+    )} style={worldStyle}>
+      {/* Doodle object (if set) */}
+      {config.myDoodle && objects.filter(o => o.emoji === "✏️").length === 0 && (
+        <></>
+      )}
+
       {/* Objects */}
       {objects.map((obj) => (
         <motion.button
           key={obj.id}
           type="button"
-          onClick={() => handleTouch(obj.id)}
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const parent = (e.currentTarget.parentElement as HTMLElement)?.getBoundingClientRect();
+            if (parent) {
+              handleTouch(obj.id,
+                ((rect.left - parent.left + rect.width / 2) / parent.width) * 100,
+                ((rect.top - parent.top + rect.height / 2) / parent.height) * 100,
+              );
+            }
+          }}
           whileTap={{ scale: 0.7 }}
-          className="absolute text-2xl transition-opacity duration-200 cursor-pointer"
+          className={cn("absolute transition-opacity duration-200 cursor-pointer", sizeCls)}
           style={{ left: `${obj.x}%`, top: `${obj.y}%`, opacity: obj.opacity, transform: "translate(-50%, -50%)" }}
         >
-          {emoji}
+          {obj.emoji}
         </motion.button>
       ))}
+
+      {/* Sparkle effects */}
+      {sparkles.map((s) => (
+        <motion.span key={s.id} initial={{ scale: 0, opacity: 1 }} animate={{ scale: 1.5, opacity: 0 }}
+          transition={{ duration: 0.6 }}
+          className="absolute text-lg pointer-events-none"
+          style={{ left: `${s.x}%`, top: `${s.y}%`, transform: "translate(-50%, -50%)" }}>
+          {s.emoji}
+        </motion.span>
+      ))}
+
+      {/* Whisper message */}
+      {whisperMsg && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+          className="absolute bottom-12 left-0 right-0 text-center px-4">
+          <span className="inline-block rounded-full bg-white/70 px-4 py-1.5 text-xs font-bold text-ink-deep shadow-sm">
+            {whisperMsg}
+          </span>
+        </motion.div>
+      )}
 
       {!minimal && (
         <div className="absolute bottom-3 left-0 right-0 text-center">
           <p className="text-sm font-bold text-white/80 drop-shadow-sm">
-            {config.touch === "catch" ? `${emoji} ${counter} caught` : `${emoji} ${objects.length} floating`}
+            {config.touch === "catch" ? `${counter} caught` : `${objects.length} floating`}
           </p>
         </div>
       )}
@@ -756,7 +1017,7 @@ function TinyGameEngine({ config, minimal = false }: { config: CustomGameConfig;
   );
 }
 
-/* ─── Shared ──────────────────────────────────────────────────────── */
+/* ─── Shared ──────────────────────────────────────────────────────── *//* ─── Shared ──────────────────────────────────────────────────────── */
 
 function GameIntro({ emoji, title, sub }: { emoji: string; title: string; sub: string }) {
   return (
