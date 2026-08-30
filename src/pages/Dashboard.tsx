@@ -1,7 +1,8 @@
 import { Lock } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router";
-import { useUnsavedGuard, UnsavedDialog } from "@/lib/useUnsavedGuard";
+import { useUnsavedGuard } from "@/lib/useUnsavedGuard";
+import { UnsavedDialog } from "@/components/UnsavedDialog";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
 import MusicWidget from "@/components/MusicWidget";
