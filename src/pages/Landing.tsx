@@ -62,17 +62,7 @@ export default function Landing() {
         className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[#EDEBF6]/30 blur-2xl"
       />
 
-      {/* ─── Slim top bar ──────────────────────────────────────────── */}
-      <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-end px-5 py-5 sm:px-8">
-        <button
-          type="button"
-          onClick={primaryCta}
-          className="clay-btn flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold text-white"
-        >
-          Open Venting
-          <ArrowRight className="size-4" />
-        </button>
-      </header>
+
 
       {/* ─── Centered brand: icon → name → tagline → feeling line ──── */}
       <section className="relative z-10 mx-auto flex min-h-[70vh] w-full max-w-6xl flex-col items-center justify-center px-5 pt-4 pb-16 sm:px-8">
@@ -131,6 +121,14 @@ export default function Landing() {
           transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
           className="mt-12 flex flex-col items-center gap-4 sm:flex-row"
         >
+          <button
+            type="button"
+            onClick={primaryCta}
+            className="clay-btn flex items-center gap-2 rounded-full px-6 py-3.5 text-base font-bold text-white"
+          >
+            Open Venting
+            <ArrowRight className="size-4" />
+          </button>
           <button
             type="button"
             onClick={() => setShowExplanation(true)}
@@ -240,12 +238,6 @@ export default function Landing() {
           <p className="text-xs font-medium text-ink-soft">
             made with softness · private by design · feelings welcome
           </p>
-          <button
-            type="button"
-            onClick={primaryCta}                className="text-xs font-bold text-[#5F6DBE] underline-offset-4 hover:underline"
-          >
-            Open the app →
-          </button>
         </div>
       </footer>
     </div>
