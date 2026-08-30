@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
+import MusicWidget from "@/components/MusicWidget";
 import { LockScreen } from "@/components/LockScreen";
 import {
   KV_PASSCODE_HASH,
@@ -198,6 +199,7 @@ export default function Dashboard() {
 
         {/* ─── Current room ───────────────────────────────────────── */}
         <main className={cn("px-5", showBar ? "pb-32" : "pb-14")}>
+          <MusicWidget context="ambient" />
           {/* The shell paints instantly; room content fills in softly once
               the on-device cache is ready. No blocking "Loading…" screen. */}
           {hydrated ? (

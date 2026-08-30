@@ -17,6 +17,8 @@ import { safeGetItem, safeSetItem } from "./safe-storage";
 
 const KV_VOLUME = "venting-music-volume";
 const KV_TRACK = "venting-music-track";
+const KV_AMBIENT_UPLOADS = "venting-music-ambient-uploads";
+const KV_GAME_UPLOADS = "venting-music-game-uploads";
 
 export type BuiltinTrackId = "rain" | "hum" | "piano" | "wind";
 
@@ -34,6 +36,14 @@ export const BUILTIN_TRACKS: BuiltinTrack[] = [
   { id: "wind", label: "night wind", emoji: "🌙", hint: "a soft breeze through quiet trees" },
 ];
 
+export type MusicContext = "ambient" | "game";
+
+export interface UploadedTrack {
+  id: string;
+  name: string;
+  dataUrl: string; // base64 data URL — persists across reloads
+}
+
 export type MusicTrack =
   | { kind: "builtin"; id: BuiltinTrackId }
   | { kind: "local"; name: string; url: string };
@@ -45,6 +55,9 @@ export interface MusicState {
   active: boolean;
   track: MusicTrack | null;
   volume: number; // 0..1
+  context: MusicContext;
+  ambientUploads: UploadedTrack[];
+  gameUploads: UploadedTrack[];
 }
 
 function readVolume(): number {
@@ -57,6 +70,18 @@ function readVolume(): number {
 function readTrack(): BuiltinTrackId | null {
   const raw = safeGetItem(KV_TRACK);
   return BUILTIN_TRACKS.some((t) => t.id === raw) ? (raw as BuiltinTrackId) : null;
+}
+
+function readUploads(key: string): UploadedTrack[] {
+  try {
+    const raw = safeGetItem(key);
+    if (raw) return JSON.parse(raw) as UploadedTrack[];
+  } catch { /* ignore */ }
+  return [];
+}
+
+function writeUploads(key: string, tracks: UploadedTrack[]): void {
+  safeSetItem(key, JSON.stringify(tracks));
 }
 
 type Cleanup = () => void;
@@ -279,6 +304,9 @@ class MusicEngine {
     active: false,
     track: null,
     volume: readVolume(),
+    context: "ambient",
+    ambientUploads: readUploads(KV_AMBIENT_UPLOADS),
+    gameUploads: readUploads(KV_GAME_UPLOADS),
   };
 
   private listeners = new Set<() => void>();
@@ -482,6 +510,82 @@ class MusicEngine {
     const idx = current ? BUILTIN_TRACKS.findIndex((t) => t.id === current) : -1;
     const next = BUILTIN_TRACKS[(idx + 1) % BUILTIN_TRACKS.length];
     this.play({ kind: "builtin", id: next.id });
+  }
+
+  /** Set the current context (ambient or game). Affects which uploads are shown. */
+  setContext(ctx: MusicContext): void {
+    this.setState({ context: ctx });
+  }
+
+  /** Get the uploaded tracks for the current context. */
+  getUploadedTracks(): UploadedTrack[] {
+    return this.state.context === "ambient"
+      ? this.state.ambientUploads
+      : this.state.gameUploads;
+  }
+
+  /** Add an uploaded track to the current context's list and start playing it. */
+  addUploadedTrack(file: File): void {
+    try {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        const id = `ut-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        const track: UploadedTrack = { id, name: file.name, dataUrl };
+        const key = this.state.context === "ambient" ? KV_AMBIENT_UPLOADS : KV_GAME_UPLOADS;
+        const list = this.state.context === "ambient"
+          ? [...this.state.ambientUploads, track]
+          : [...this.state.gameUploads, track];
+        writeUploads(key, list);
+        if (this.state.context === "ambient") {
+          this.setState({ ambientUploads: list });
+        } else {
+          this.setState({ gameUploads: list });
+        }
+        // Start playing it
+        if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
+        const blobUrl = URL.createObjectURL(file);
+        this.objectUrl = blobUrl;
+        this.play({ kind: "local", name: file.name, url: blobUrl });
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /** Remove an uploaded track from the current context's list. */
+  removeUploadedTrack(id: string): void {
+    const key = this.state.context === "ambient" ? KV_AMBIENT_UPLOADS : KV_GAME_UPLOADS;
+    const list = (this.state.context === "ambient"
+      ? this.state.ambientUploads
+      : this.state.gameUploads
+    ).filter((t) => t.id !== id);
+    writeUploads(key, list);
+    if (this.state.context === "ambient") {
+      this.setState({ ambientUploads: list });
+    } else {
+      this.setState({ gameUploads: list });
+    }
+  }
+
+  /** Play an uploaded track by its stored data URL. */
+  playUploadedTrack(track: UploadedTrack): void {
+    try {
+      if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
+      // Convert data URL to blob for playback
+      const parts = track.dataUrl.split(",");
+      const mime = parts[0].match(/:(.*?);/)?.[1] ?? "audio/mpeg";
+      const raw = atob(parts[1] ?? "");
+      const arr = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+      const blob = new Blob([arr], { type: mime });
+      const url = URL.createObjectURL(blob);
+      this.objectUrl = url;
+      this.play({ kind: "local", name: track.name, url });
+    } catch {
+      /* ignore */
+    }
   }
 
   /** Play a local audio file picked by the user. Never leaves the device. */

@@ -228,7 +228,7 @@ export default function GamesScreen() {
 
   return (
     <div className="relative">
-      <MusicWidget />
+      <MusicWidget context="game" />
 
       {screen.kind === "grid" && (
         <div className="space-y-5">

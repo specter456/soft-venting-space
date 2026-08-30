@@ -1,23 +1,35 @@
 import { useRef, useState } from "react";
-import { BUILTIN_TRACKS, music, useMusicState, type MusicTrack } from "@/lib/music";
+import { BUILTIN_TRACKS, music, useMusicState, type MusicTrack, type MusicContext } from "@/lib/music";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 
 /**
- * The little floating "CD" for the Games section. Spins while music plays,
- * opens a soft music menu on tap: built-in tracks (offline, synthesized on
- * the device), a local file picked from the user's own downloads, play/pause,
- * next, and a small volume slider. Nothing is ever uploaded.
+ * Floating CD widget for music. Context-aware:
+ * - On app screens: shows ambient built-ins + "my ambient tracks"
+ * - In games: shows game built-ins + "my game tracks"
+ * Each context has its own upload list. Uploads are stored locally only.
  */
-export default function MusicWidget() {
+export default function MusicWidget({ context = "ambient" as MusicContext }) {
   const state = useMusicState();
   const [menuOpen, setMenuOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const activeTrack = state.track;
+  const isAmbient = context === "ambient";
+  const uploads = isAmbient ? state.ambientUploads : state.gameUploads;
+  const sectionLabel = isAmbient ? "my ambient tracks" : "my game tracks";
 
   const pickTrack = (track: MusicTrack) => {
     music.play(track);
+  };
+
+  const pickUpload = (track: { id: string; name: string; dataUrl: string }) => {
+    music.playUploadedTrack(track);
+  };
+
+  const deleteUpload = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    music.removeUploadedTrack(id);
   };
 
   return (
@@ -47,7 +59,7 @@ export default function MusicWidget() {
       {menuOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} aria-hidden />
-          <div className="clay-card absolute top-16 right-0 z-50 w-72 rounded-[1.8rem] p-4">
+          <div className="clay-card absolute top-16 right-0 z-50 w-72 rounded-[1.8rem] p-4 max-h-[70vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <p className="text-sm font-bold tracking-tight text-ink-deep">
                 🎵 soothing sounds
@@ -65,7 +77,7 @@ export default function MusicWidget() {
               plays only on this device · never uploaded
             </p>
 
-            {/* built-in tracks */}
+            {/* Built-in tracks */}
             <div className="mt-3 space-y-1.5">
               {BUILTIN_TRACKS.map((t) => {
                 const active = activeTrack?.kind === "builtin" && activeTrack.id === t.id;
@@ -79,46 +91,70 @@ export default function MusicWidget() {
                       active ? "bg-lavender-200/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]" : "hover:bg-lavender-100/60",
                     )}
                   >
-                    <span className="text-lg" aria-hidden>
-                      {t.emoji}
-                    </span>
+                    <span className="text-lg" aria-hidden>{t.emoji}</span>
                     <span className="min-w-0">
-                      <span
-                        className={cn(
-                          "block truncate text-xs font-bold",
-                          active ? "text-ink-deep" : "text-ink",
-                        )}
-                      >
+                      <span className={cn("block truncate text-xs font-bold", active ? "text-ink-deep" : "text-ink")}>
                         {t.label}
                         {active && (state.playing ? " · playing" : " · paused")}
                       </span>
-                      <span className="block truncate text-[10px] font-medium text-ink-soft">
-                        {t.hint}
-                      </span>
+                      <span className="block truncate text-[10px] font-medium text-ink-soft">{t.hint}</span>
                     </span>
                   </button>
                 );
               })}
             </div>
 
-            {/* local file from the user's own downloads */}
+            {/* My tracks section */}
+            <div className="mt-3 border-t border-lavender-200/50 pt-3">
+              <p className="text-[11px] font-bold text-ink-soft uppercase tracking-wide">{sectionLabel}</p>
+              {uploads.length === 0 ? (
+                <p className="mt-1.5 text-[11px] text-ink-soft">no tracks yet — upload one below</p>
+              ) : (
+                <div className="mt-1.5 space-y-1">
+                  {uploads.map((t) => {
+                    const active = activeTrack?.kind === "local" && activeTrack.name === t.name;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => pickUpload(t)}
+                        className={cn(
+                          "flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left transition-colors",
+                          active ? "bg-lavender-200/70" : "hover:bg-lavender-100/60",
+                        )}
+                      >
+                        <span className="text-sm" aria-hidden>🎶</span>
+                        <span className="min-w-0 flex-1">
+                          <span className={cn("block truncate text-[11px] font-bold", active ? "text-ink-deep" : "text-ink")}>
+                            {t.name}
+                            {active && (state.playing ? " · playing" : " · paused")}
+                          </span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => deleteUpload(t.id, e)}
+                          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-ink-soft transition-colors hover:bg-blush-100 hover:text-blush-500"
+                          aria-label={`Remove ${t.name}`}
+                        >
+                          ✕
+                        </button>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Upload button */}
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
               className="mt-2 flex w-full items-center gap-2.5 rounded-2xl px-3 py-2 text-left hover:bg-lavender-100/60"
             >
-              <span className="text-lg" aria-hidden>
-                📂
-              </span>
+              <span className="text-lg" aria-hidden>📂</span>
               <span className="min-w-0">
-                <span className="block truncate text-xs font-bold text-ink">
-                  From your downloads
-                </span>
-                <span className="block truncate text-[10px] font-medium text-ink-soft">
-                  {activeTrack?.kind === "local"
-                    ? activeTrack.name
-                    : "play any audio file from this device"}
-                </span>
+                <span className="block truncate text-xs font-bold text-ink">+ from your downloads</span>
+                <span className="block truncate text-[10px] font-medium text-ink-soft">play any audio file from this device</span>
               </span>
             </button>
             <input
@@ -128,11 +164,12 @@ export default function MusicWidget() {
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) music.playLocalFile(file);
+                if (file) music.addUploadedTrack(file);
+                e.target.value = "";
               }}
             />
 
-            {/* controls */}
+            {/* Controls */}
             <div className="mt-3 flex items-center gap-2">
               <button
                 type="button"
@@ -172,6 +209,15 @@ export default function MusicWidget() {
                 className="flex-1"
               />
             </div>
+
+            {/* No music option */}
+            <button
+              type="button"
+              onClick={() => { music.stop(400); }}
+              className="mt-2 w-full rounded-full py-1.5 text-[11px] font-bold text-ink-soft transition-colors hover:bg-lavender-100/60"
+            >
+              no music
+            </button>
           </div>
         </>
       )}
