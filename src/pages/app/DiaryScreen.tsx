@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
-import { useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { useSetDirty } from "@/lib/useUnsavedGuard";
 import { useSearchParams } from "react-router";
 import {
   Check,
@@ -165,6 +166,10 @@ export default function DiaryScreen() {
   // ─── composer state ──────────────────────────────────────────────
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const setDirty = useSetDirty();
+  useEffect(() => {
+    setDirty(view === "compose" && (title.trim().length > 0 || body.trim().length > 0));
+  }, [view, title, body, setDirty]);
   const [weather, setWeather] = useState(DIARY_WEATHER[0]);
   const [stickers, setStickers] = useState<string[]>(["💗"]);
   const [mood, setMood] = useState<MoodId | null>(null);

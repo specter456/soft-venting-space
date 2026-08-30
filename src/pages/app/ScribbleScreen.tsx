@@ -1,5 +1,6 @@
 import { toast } from "sonner";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useSetDirty } from "@/lib/useUnsavedGuard";
 import { Eraser, Loader2, Paintbrush, Pen, Save, Square, ImageDown, Copy, Grid2x2 } from "lucide-react";
 import { createVaultItem } from "@/lib/db";
 import { saveToGallery } from "@/lib/save-to-gallery";
@@ -65,12 +66,18 @@ export default function ScribbleScreen() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const lastPoint = useRef<{ x: number; y: number } | null>(null);
+  const hasDrawn = useRef(false);
 
   const [tool, setTool] = useState<ToolId>("pencil");
   const [color, setColor] = useState(COLORS[0]);
   const [bg, setBg] = useState(BACKGROUNDS[0]);
   const [saving, setSaving] = useState(false);
   const [versions, setVersions] = useState<string[]>([]);
+
+  const setDirty = useSetDirty();
+  useEffect(() => {
+    setDirty(hasDrawn.current && versions.length === 0);
+  }, [versions.length, setDirty]);
 
   const bgClass = BACKGROUNDS.find((b) => b.id === bg.id)!.cls;
 
@@ -159,6 +166,7 @@ export default function ScribbleScreen() {
             onPointerDown={(e) => {
               e.preventDefault();
               drawing.current = true;
+              hasDrawn.current = true;
               lastPoint.current = null;
               (e.target as HTMLElement).setPointerCapture(e.pointerId);
               stroke(e);

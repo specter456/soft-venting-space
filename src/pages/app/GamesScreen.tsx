@@ -1,8 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
-import MusicWidget from "@/components/MusicWidget";
 import { WORRY_BUBBLES } from "@/lib/art";
-import { music } from "@/lib/music";
+import { music, type BuiltinTrackId } from "@/lib/music";
 import { useTapGuard } from "@/lib/useTapGuard";
 import { safeGetItem, safeSetItem } from "@/lib/safe-storage";
 import { cn } from "@/lib/utils";
@@ -214,20 +213,40 @@ export default function GamesScreen() {
   const [customGames, setCustomGames] = useState<CustomGameConfig[]>(loadCustomGames);
 
   useEffect(() => {
-    return () => { music.stop(1000); };
+    return () => { music.stopGameTrack(); };
   }, []);
+
+  // Games that have their own continuous music override ambient
+  const GAMES_WITH_OWN_MUSIC: BuiltInGameId[] = ["moon"];
 
   const openBuiltIn = useCallback((id: BuiltInGameId) => {
     setScreen({ kind: "play", game: id });
-    music.playDefault();
+    // Moonlight Glide uses the main music engine; others keep ambient
+    if (id === "moon") {
+      const saved = loadMoonTrack();
+      if (saved !== "no-music") {
+        const moonToMain: Record<string, BuiltinTrackId> = {
+          "dreamy-piano": "piano", "warm-hum": "hum", "night-wind": "wind",
+        };
+        const mainId = moonToMain[saved] ?? "piano";
+        music.startGameTrack({ kind: "builtin", id: mainId });
+      }
+    }
+    // tiles, pop, breathe, dandelion, buddy, jars, star, shelf, coloring, bloom, pond, cloud, custom: ambient continues
   }, []);
 
   const openCustom = useCallback((config: CustomGameConfig) => {
     setScreen({ kind: "custom-play-saved", config });
-    music.playDefault();
+    // Custom games keep ambient playing
   }, []);
 
-  const goGrid = useCallback(() => setScreen({ kind: "grid" }), []);
+  const goGrid = useCallback(() => {
+    // Stop game music and resume ambient
+    if (screen.kind === "play" && GAMES_WITH_OWN_MUSIC.includes(screen.game)) {
+      music.stopGameTrack();
+    }
+    setScreen({ kind: "grid" });
+  }, [screen]);
 
   const openBuilder = useCallback(() => {
     setScreen({ kind: "builder" });
@@ -260,7 +279,6 @@ export default function GamesScreen() {
 
   return (
     <div className="relative">
-      <MusicWidget context="game" />
 
       {screen.kind === "grid" && (
         <div className="space-y-5">

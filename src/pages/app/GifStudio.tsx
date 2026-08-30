@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useEffect, useRef, useState, useCallback, type PointerEvent as ReactPointerEvent } from "react";
+import { useSetDirty } from "@/lib/useUnsavedGuard";
 import { Loader2, Pause, Play, Plus, RotateCcw, Save, Trash2, Download, Share2, Minus, X, Copy, Grid2x2 } from "lucide-react";
 import { createVaultItem } from "@/lib/db";
 import { combineIntoCollage } from "@/lib/collage";
@@ -135,6 +136,11 @@ export default function GifStudio() {
   const [selectedText, setSelectedText] = useState<number | null>(null);
   const textIdRef = useRef(0);
   const [encouragement, setEncouragement] = useState(MAGIC_MESSAGES[0]);
+  const setDirty = useSetDirty();
+  // Mark dirty when there are frames, stamps, or doodles
+  useEffect(() => {
+    setDirty(frames.length > 0 || stamps.length > 0 || undoStack.current.length > 0 || canvasTexts.length > 0);
+  }, [frames.length, stamps.length, canvasTexts.length, setDirty]);
 
   // Drawing settings
   const [inkColor, setInkColor] = useState<InkColor>(INK_COLORS[5].value);

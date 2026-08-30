@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSetDirty } from "@/lib/useUnsavedGuard";
 import { Loader2, Save, ImageDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { createVaultItem } from "@/lib/db";
@@ -33,6 +34,10 @@ export default function StickerStudio() {
   const [tear, setTear] = useState(false);
   const [accessory, setAccessory] = useState<string | null>("💗");
   const [name, setName] = useState("");
+  const setDirty = useSetDirty();
+  useEffect(() => {
+    setDirty(name.trim().length > 0);
+  }, [name, setDirty]);
   const [saving, setSaving] = useState(false);
 
   const applyExpression = (id: string) => {

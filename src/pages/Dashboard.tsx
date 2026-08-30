@@ -1,6 +1,7 @@
 import { Lock } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Link, Outlet, useLocation } from "react-router";
+import { useEffect, useState, useCallback } from "react";
+import { Link, Outlet, useLocation, useNavigate } from "react-router";
+import { useUnsavedGuard, UnsavedDialog } from "@/lib/useUnsavedGuard";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
 import MusicWidget from "@/components/MusicWidget";
@@ -69,6 +70,9 @@ export default function Dashboard() {
 
   const [lock, setLock] = useState<"setup" | "unlock" | "unlocked">("unlocked");
   const [lockInitDone, setLockInitDone] = useState(false);
+  const navigate = useNavigate();
+  const goHome = useCallback(() => navigate("/dashboard"), [navigate]);
+  const { showGuard, handleSave, handleLeave, handleBack } = useUnsavedGuard(goHome);
 
   // Scroll to top on every route change so header/greeting is always visible first.
   useEffect(() => {
@@ -165,8 +169,9 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="flex items-center gap-2.5">
-                <Link
-                  to="/dashboard"
+                <button
+                  type="button"
+                  onClick={handleBack}
                   className="clay-chip flex h-10 w-10 items-center justify-center rounded-full text-ink-deep transition-transform hover:scale-105 active:scale-95"
                   aria-label="Back home"
                   title="Back home"
@@ -174,7 +179,7 @@ export default function Dashboard() {
                   <span aria-hidden className="text-base leading-none">
                     ←
                   </span>
-                </Link>
+                </button>
                 <p className="text-base font-bold tracking-tight text-ink-deep">
                   {title}
                 </p>
@@ -204,7 +209,7 @@ export default function Dashboard() {
 
         {/* ─── Current room ───────────────────────────────────────── */}
         <main className={cn("px-5", showBar ? "pb-32" : "pb-14")}>
-          <MusicWidget context="ambient" />
+          <MusicWidget />
           {/* The shell paints instantly; room content fills in softly once
               the on-device cache is ready. No blocking "Loading…" screen. */}
           {hydrated ? (
@@ -218,6 +223,8 @@ export default function Dashboard() {
             </div>
           )}
         </main>
+
+        {showGuard && <UnsavedDialog onSave={handleSave} onLeave={handleLeave} />}
 
         {/* ─── Bottom taskbar — Home | Games | Settings ───────────── */}
         {showBar && (

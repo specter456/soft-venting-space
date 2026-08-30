@@ -1,23 +1,21 @@
 import { useRef, useState } from "react";
-import { BUILTIN_TRACKS, music, useMusicState, type MusicTrack, type MusicContext } from "@/lib/music";
+import { BUILTIN_TRACKS, music, useMusicState, type MusicTrack } from "@/lib/music";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 
 /**
- * Floating CD widget for music. Context-aware:
- * - On app screens: shows ambient built-ins + "my ambient tracks"
- * - In games: shows game built-ins + "my game tracks"
- * Each context has its own upload list. Uploads are stored locally only.
+ * Single floating CD widget — one brain, one button, everywhere.
+ * Shows ambient tracks on app screens, game tracks when in a game.
+ * Only one CD visible at any time.
  */
-export default function MusicWidget({ context = "ambient" as MusicContext }) {
+export default function MusicWidget() {
   const state = useMusicState();
   const [menuOpen, setMenuOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
-  const activeTrack = state.track;
-  const isAmbient = context === "ambient";
-  const uploads = isAmbient ? state.ambientUploads : state.gameUploads;
-  const sectionLabel = isAmbient ? "my ambient tracks" : "my game tracks";
+  const isGame = state.layer === "game";
+  const uploads = isGame ? state.gameUploads : state.ambientUploads;
+  const sectionLabel = isGame ? "my game tracks" : "my ambient tracks";
 
   const pickTrack = (track: MusicTrack) => {
     music.play(track);
@@ -29,7 +27,7 @@ export default function MusicWidget({ context = "ambient" as MusicContext }) {
 
   const deleteUpload = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    music.removeUploadedTrack(id);
+    music.removeUploadedTrack(id, isGame ? "game" : "ambient");
   };
 
   return (
@@ -37,7 +35,7 @@ export default function MusicWidget({ context = "ambient" as MusicContext }) {
       {/* ─── The CD itself ──────────────────────────────────────── */}
       <button
         type="button"
-        onClick={() => { music.prime(); setMenuOpen((v) => !v); }}
+        onClick={() => { music.prime(); setMenuOpen(v => !v); }}
         aria-label={state.playing ? "Soothing music is playing — open the music menu" : "Open the music menu"}
         aria-expanded={menuOpen}
         title="Soothing sounds"
@@ -62,7 +60,7 @@ export default function MusicWidget({ context = "ambient" as MusicContext }) {
           <div className="clay-card absolute top-16 right-0 z-50 w-72 rounded-[1.8rem] p-4 max-h-[70vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <p className="text-sm font-bold tracking-tight text-ink-deep">
-                🎵 soothing sounds
+                {isGame ? "🎮 game music" : "🎵 soothing sounds"}
               </p>
               <button
                 type="button"
@@ -79,8 +77,8 @@ export default function MusicWidget({ context = "ambient" as MusicContext }) {
 
             {/* Built-in tracks */}
             <div className="mt-3 space-y-1.5">
-              {BUILTIN_TRACKS.map((t) => {
-                const active = activeTrack?.kind === "builtin" && activeTrack.id === t.id;
+              {BUILTIN_TRACKS.map(t => {
+                const active = state.track?.kind === "builtin" && state.track.id === t.id;
                 return (
                   <button
                     key={t.id}
@@ -111,8 +109,8 @@ export default function MusicWidget({ context = "ambient" as MusicContext }) {
                 <p className="mt-1.5 text-[11px] text-ink-soft">no tracks yet — upload one below</p>
               ) : (
                 <div className="mt-1.5 space-y-1">
-                  {uploads.map((t) => {
-                    const active = activeTrack?.kind === "local" && activeTrack.name === t.name;
+                  {uploads.map(t => {
+                    const active = state.track?.kind === "local" && state.track.name === t.name;
                     return (
                       <button
                         key={t.id}
@@ -164,7 +162,7 @@ export default function MusicWidget({ context = "ambient" as MusicContext }) {
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) music.addUploadedTrack(file);
+                if (file) music.addUploadedTrack(file, isGame ? "game" : "ambient");
                 e.target.value = "";
               }}
             />
@@ -174,7 +172,7 @@ export default function MusicWidget({ context = "ambient" as MusicContext }) {
               <button
                 type="button"
                 onClick={() => music.toggle()}
-                aria-label={state.playing ? "Pause the music" : state.active ? "Resume the music" : "Play soothing music"}
+                aria-label={state.playing ? "Pause the music" : state.track ? "Resume the music" : "Play soothing music"}
                 className="clay-btn-soft flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full text-xs font-bold text-ink-deep"
               >
                 {state.playing ? "❚❚ pause" : "▶ play"}
@@ -189,11 +187,11 @@ export default function MusicWidget({ context = "ambient" as MusicContext }) {
               </button>
               <button
                 type="button"
-                onClick={() => music.toggle()}
-                aria-label={state.playing ? "Mute" : "Unmute"}
+                onClick={() => music.setMuted(!state.muted)}
+                aria-label={state.muted ? "Unmute" : "Mute"}
                 className="clay-chip flex h-9 w-9 items-center justify-center rounded-full text-sm transition-transform hover:scale-105 active:scale-95"
               >
-                {state.playing ? "🔊" : "🔇"}
+                {state.muted ? "🔇" : "🔊"}
               </button>
             </div>
 
@@ -213,7 +211,7 @@ export default function MusicWidget({ context = "ambient" as MusicContext }) {
             {/* No music option */}
             <button
               type="button"
-              onClick={() => { music.stop(400); }}
+              onClick={() => music.setMuted(true)}
               className="mt-2 w-full rounded-full py-1.5 text-[11px] font-bold text-ink-soft transition-colors hover:bg-lavender-100/60"
             >
               no music

@@ -1,5 +1,6 @@
 import { toast } from "sonner";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSetDirty } from "@/lib/useUnsavedGuard";
 import { useNavigate, useSearchParams } from "react-router";
 import { Check, Loader2, Mic, Video } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +22,8 @@ export default function NoteEditor() {
   const recordings = useTable<Recording>("recordings");
 
   const [body, setBody] = useState("");
+  const setDirty = useSetDirty();
+  useEffect(() => { setDirty(body.trim().length > 0); }, [body, setDirty]);
   const [mood, setMood] = useState<MoodId | null>(null);
   // pre-select the recording we were sent here with (from Record → Reflect in Notes)
   const [recordingId, setRecordingId] = useState<string | null>(attachId);
