@@ -1,17 +1,160 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import MusicWidget from "@/components/MusicWidget";
 import { WORRY_BUBBLES } from "@/lib/art";
 import { music } from "@/lib/music";
 import { useTapGuard } from "@/lib/useTapGuard";
+import { safeGetItem, safeSetItem } from "@/lib/safe-storage";
 import { cn } from "@/lib/utils";
 
-/* ─── Game registry — six games, two per row ──────────────────────── */
+/* ─── Custom game types & storage ─────────────────────────────────── */
 
-type GameId = "pop" | "tiles" | "moon" | "honeycomb" | "nimbus" | "garden";
+type World = "sky" | "sunset" | "starry" | "garden" | "sea" | "cozy";
+type FloatingThing = "bubbles" | "stars" | "clouds" | "petals" | "fireflies" | "hearts" | "fish";
+type TouchAction = "pop" | "catch" | "note" | "blow" | "soothe";
+type GameSound = "chimes" | "rain" | "wind" | "piano" | "none";
+type GamePace = "very-slow" | "slow" | "medium";
 
-const GAMES: {
-  id: GameId;
+interface CustomGameConfig {
+  id: string;
+  name: string;
+  world: World;
+  thing: FloatingThing;
+  touch: TouchAction;
+  sound: GameSound;
+  pace: GamePace;
+  createdAt: number;
+}
+
+const STORAGE_KEY = "venting-custom-games";
+
+function loadCustomGames(): CustomGameConfig[] {
+  try {
+    const raw = safeGetItem(STORAGE_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as CustomGameConfig[];
+  } catch {
+    return [];
+  }
+}
+
+function saveCustomGames(games: CustomGameConfig[]) {
+  safeSetItem(STORAGE_KEY, JSON.stringify(games));
+}
+
+/* ─── Option data ─────────────────────────────────────────────────── */
+
+const WORLDS: { id: World; label: string; gradient: string }[] = [
+  { id: "sky", label: "Sky", gradient: "from-[#B8D4E8] via-[#D0E4F0] to-[#E8F0F8]" },
+  { id: "sunset", label: "Sunset", gradient: "from-[#E8C8A0] via-[#E0A888] to-[#D090B0]" },
+  { id: "starry", label: "Starry", gradient: "from-[#283058] via-[#383868] to-[#484078]" },
+  { id: "garden", label: "Garden", gradient: "from-[#B4D8B0] via-[#C8E8C0] to-[#E0F0D8]" },
+  { id: "sea", label: "Sea", gradient: "from-[#80C0D8] via-[#A0D8E8] to-[#C0E8F0]" },
+  { id: "cozy", label: "Cozy room", gradient: "from-[#E8D8C8] via-[#F0E4D8] to-[#F8F0E8]" },
+];
+
+const THINGS: { id: FloatingThing; emoji: string; label: string }[] = [
+  { id: "bubbles", emoji: "🫧", label: "Bubbles" },
+  { id: "stars", emoji: "⭐", label: "Stars" },
+  { id: "clouds", emoji: "☁️", label: "Clouds" },
+  { id: "petals", emoji: "🌸", label: "Petals" },
+  { id: "fireflies", emoji: "✨", label: "Fireflies" },
+  { id: "hearts", emoji: "💜", label: "Hearts" },
+  { id: "fish", emoji: "🐟", label: "Fish" },
+];
+
+const TOUCHES: { id: TouchAction; emoji: string; label: string }[] = [
+  { id: "pop", emoji: "💥", label: "Pop it" },
+  { id: "catch", emoji: "🫳", label: "Catch it" },
+  { id: "note", emoji: "🎵", label: "Play a note" },
+  { id: "blow", emoji: "🌬️", label: "Blow it away" },
+  { id: "soothe", emoji: "😊", label: "Soothe it" },
+];
+
+const SOUNDS: { id: GameSound; label: string }[] = [
+  { id: "chimes", label: "Chimes" },
+  { id: "rain", label: "Rain" },
+  { id: "wind", label: "Wind" },
+  { id: "piano", label: "Piano" },
+  { id: "none", label: "None" },
+];
+
+const PACES: { id: GamePace; label: string; ms: number }[] = [
+  { id: "very-slow", label: "Very slow", ms: 3000 },
+  { id: "slow", label: "Slow", ms: 2000 },
+  { id: "medium", label: "Medium", ms: 1200 },
+];
+
+function getThingEmoji(thing: FloatingThing): string {
+  return THINGS.find((t) => t.id === thing)?.emoji ?? "✨";
+}
+
+function getWorldGradient(world: World): string {
+  return WORLDS.find((w) => w.id === world)?.gradient ?? WORLDS[0].gradient;
+}
+
+/* ─── Tiny sound engine ───────────────────────────────────────────── */
+
+let _audioCtx: AudioContext | null = null;
+function audioCtx(): AudioContext {
+  if (!_audioCtx) _audioCtx = new AudioContext();
+  return _audioCtx;
+}
+
+function playCustomSound(sound: GameSound) {
+  if (sound === "none") return;
+  try {
+    const ctx = audioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    switch (sound) {
+      case "chimes":
+        osc.type = "sine";
+        osc.frequency.value = 800 + Math.random() * 400;
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.6);
+        break;
+      case "rain":
+        osc.type = "triangle";
+        osc.frequency.value = 200 + Math.random() * 100;
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.3);
+        break;
+      case "wind":
+        osc.type = "sine";
+        osc.frequency.value = 150 + Math.sin(Date.now() / 200) * 50;
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.8);
+        break;
+      case "piano":
+        osc.type = "sine";
+        osc.frequency.value = [262, 294, 330, 392, 440][Math.floor(Math.random() * 5)];
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.5);
+        break;
+    }
+  } catch {
+    /* audio unavailable */
+  }
+}
+
+/* ─── Game registry ───────────────────────────────────────────────── */
+
+type BuiltInGameId = "pop" | "tiles" | "moon" | "honeycomb" | "nimbus" | "garden";
+
+const BUILT_IN_GAMES: {
+  id: BuiltInGameId;
   emoji: string;
   name: string;
   line: string;
@@ -25,238 +168,481 @@ const GAMES: {
   { id: "garden", emoji: "🌱", name: "Memory Garden", line: "match the feelings, grow a little garden", tile: "tile-lavender" },
 ];
 
-/**
- * Games — gentle emotional regulation, never competitive. No scores, no
- * timers, no winning or losing. Each game is a small safe room of its own.
- */
-export default function GamesScreen() {
-  const [open, setOpen] = useState<GameId | null>(null);
+/* ─── Main component ──────────────────────────────────────────────── */
 
-  // Leaving the Games section softly fades the music out and stops it.
+type ScreenState =
+  | { kind: "grid" }
+  | { kind: "play"; game: BuiltInGameId }
+  | { kind: "custom-play"; config: CustomGameConfig }
+  | { kind: "builder"; editing?: CustomGameConfig }
+  | { kind: "custom-play-saved"; config: CustomGameConfig };
+
+export default function GamesScreen() {
+  const [screen, setScreen] = useState<ScreenState>({ kind: "grid" });
+  const [customGames, setCustomGames] = useState<CustomGameConfig[]>(loadCustomGames);
+
   useEffect(() => {
-    return () => {
-      music.stop(1000);
-    };
+    return () => { music.stop(1000); };
   }, []);
 
-  // Opening a game is a user gesture, so the browser allows audio — the
-  // gentle music starts softly (default on, low volume).
-  const openGame = (id: GameId) => {
-    setOpen(id);
+  const openBuiltIn = useCallback((id: BuiltInGameId) => {
+    setScreen({ kind: "play", game: id });
     music.playDefault();
-  };
+  }, []);
+
+  const openCustom = useCallback((config: CustomGameConfig) => {
+    setScreen({ kind: "custom-play-saved", config });
+    music.playDefault();
+  }, []);
+
+  const goGrid = useCallback(() => setScreen({ kind: "grid" }), []);
+
+  const openBuilder = useCallback(() => {
+    setScreen({ kind: "builder" });
+  }, []);
+
+  const openEditBuilder = useCallback((config: CustomGameConfig) => {
+    setScreen({ kind: "builder", editing: config });
+  }, []);
+
+  const saveGame = useCallback((config: CustomGameConfig) => {
+    setCustomGames((prev) => {
+      const exists = prev.findIndex((g) => g.id === config.id);
+      const next = exists >= 0 ? prev.map((g, i) => (i === exists ? config : g)) : [...prev, config];
+      saveCustomGames(next);
+      return next;
+    });
+    setScreen({ kind: "grid" });
+  }, []);
+
+  const deleteGame = useCallback((id: string) => {
+    setCustomGames((prev) => {
+      const next = prev.filter((g) => g.id !== id);
+      saveCustomGames(next);
+      return next;
+    });
+    setScreen({ kind: "grid" });
+  }, []);
+
+  const previewConfig = useState<CustomGameConfig | null>(null);
 
   return (
     <div className="relative">
       <MusicWidget />
 
-      {open ? (
-        <div className="space-y-4">
-          <button
-            type="button"
-            onClick={() => setOpen(null)}
-            className="clay-chip rounded-full px-4 py-2 text-xs font-bold text-ink-deep transition-transform hover:scale-105 active:scale-95"
-          >
-            ← all games
-          </button>
-          {open === "pop" && <BubblePop />}
-          {open === "tiles" && <SoftTiles />}
-          {open === "moon" && <MoonlightGlide />}
-          {open === "honeycomb" && <HoneycombPop />}
-          {open === "nimbus" && <NimbusFriend />}
-          {open === "garden" && <MemoryGarden />}
-        </div>
-      ) : (
+      {screen.kind === "grid" && (
         <div className="space-y-5">
           <div className="text-center">
-            <p className="text-lg font-bold tracking-tight text-ink-deep">
-              Games
-            </p>
-            <p className="mt-1 text-sm font-medium text-ink-soft">
-              gentle places to land — no scores, no timers, no rush
-            </p>
+            <p className="text-lg font-bold tracking-tight text-ink-deep">Games</p>
+            <p className="mt-1 text-sm font-medium text-ink-soft">gentle places to land — no scores, no timers, no rush</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            {GAMES.map((g, i) => (
-              <motion.button
-                key={g.id}
-                type="button"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: i * 0.05 }}
-                onClick={() => openGame(g.id)}
-                className={cn(
-                  "clay-card group flex flex-col items-center gap-2 rounded-[1.8rem] px-4 py-5 sm:py-6 text-center transition-transform hover:-translate-y-0.5",
-                  i === GAMES.length - 1 ? "col-span-2 justify-self-center w-[calc(50%-0.375rem)]" : "h-full",
-                )}
-              >              <span
-                className={cn(
-                  "flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl text-2xl sm:text-3xl transition-transform group-hover:scale-110",
-                  g.tile,
-                )}
-            >
-              <span aria-hidden className="drop-shadow-sm">
-                {g.emoji}
-              </span>
-            </span>
-            <span className="text-sm sm:text-base font-bold tracking-tight text-ink-deep">
-              {g.name}
-            </span>
-            <span className="text-[11px] sm:text-xs leading-snug font-medium text-ink-soft">
-              {g.line}
-            </span>
-          </motion.button>
-          ))}
-        </div>
+            {BUILT_IN_GAMES.map((g) => (
+              <motion.button key={g.id} type="button" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+                onClick={() => openBuiltIn(g.id)}
+                className="clay-card group flex flex-col items-center gap-2 rounded-[1.8rem] px-4 py-5 sm:py-6 text-center transition-transform hover:-translate-y-0.5 h-full">
+                <span className={cn("flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl text-2xl sm:text-3xl transition-transform group-hover:scale-110", g.tile)}>
+                  <span aria-hidden className="drop-shadow-sm">{g.emoji}</span>
+                </span>
+                <span className="text-sm sm:text-base font-bold tracking-tight text-ink-deep">{g.name}</span>
+                <span className="text-[11px] sm:text-xs leading-snug font-medium text-ink-soft">{g.line}</span>
+              </motion.button>
+            ))}
 
-        <p className="pt-1 text-center text-[11px] font-semibold text-ink-soft">
-          🔒 private, calm, and all on this device
-        </p>
-      </div>
+            {/* Custom saved games */}
+            {customGames.map((cg) => (
+              <motion.div key={cg.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+                className="clay-card group flex flex-col items-center gap-2 rounded-[1.8rem] px-4 py-5 sm:py-6 text-center transition-transform hover:-translate-y-0.5 h-full relative">
+                <button type="button" onClick={(e) => { e.stopPropagation(); openCustom(cg); }}
+                  className="flex flex-col items-center gap-2 w-full">
+                  <span className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl text-2xl sm:text-3xl transition-transform group-hover:scale-110 tile-lavender">
+                    <span aria-hidden className="drop-shadow-sm">{getThingEmoji(cg.thing)}</span>
+                  </span>
+                  <span className="text-sm sm:text-base font-bold tracking-tight text-ink-deep">{cg.name || "My Game"}</span>
+                  <span className="text-[11px] sm:text-xs leading-snug font-medium text-ink-soft">{cg.thing} · {cg.touch}</span>
+                </button>
+                <div className="absolute top-2 right-2 flex gap-1">
+                  <button type="button" onClick={(e) => { e.stopPropagation(); openEditBuilder(cg); }}
+                    className="clay-chip h-6 w-6 rounded-full text-[10px] font-bold text-ink-soft hover:text-ink-deep flex items-center justify-center">✎</button>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); deleteGame(cg.id); }}
+                    className="clay-chip h-6 w-6 rounded-full text-[10px] font-bold text-[#C48B9E] hover:text-[#A06070] flex items-center justify-center">✕</button>
+                </div>
+              </motion.div>
+            ))}
+
+            {/* Creator card */}
+            <motion.button type="button" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}
+              onClick={openBuilder}
+              className="flex flex-col items-center gap-2 rounded-[1.8rem] border-2 border-dashed border-[#8C9AD6]/50 bg-[#E4E8F8]/30 px-4 py-5 sm:py-6 text-center transition-all hover:-translate-y-0.5 hover:border-[#8C9AD6] hover:bg-[#E4E8F8]/50 h-full">
+              <span className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl text-2xl sm:text-3xl">
+                <span aria-hidden className="drop-shadow-sm">✨</span>
+              </span>
+              <span className="text-sm sm:text-base font-bold tracking-tight text-ink-deep">Create your own game</span>
+              <span className="text-[11px] sm:text-xs leading-snug font-medium text-ink-soft">build a tiny game the way you desire</span>
+            </motion.button>
+          </div>
+
+          <p className="pt-1 text-center text-[11px] font-semibold text-ink-soft">🔒 private, calm, and all on this device</p>
+        </div>
+      )}
+
+      {screen.kind === "play" && (
+        <div className="space-y-4">
+          <button type="button" onClick={goGrid} className="clay-chip rounded-full px-4 py-2 text-xs font-bold text-ink-deep transition-transform hover:scale-105 active:scale-95">← all games</button>
+          {screen.game === "pop" && <BubblePop />}
+          {screen.game === "tiles" && <SoftTiles />}
+          {screen.game === "moon" && <MoonlightGlide />}
+          {screen.game === "honeycomb" && <HoneycombPop />}
+          {screen.game === "nimbus" && <NimbusFriend />}
+          {screen.game === "garden" && <MemoryGarden />}
+        </div>
+      )}
+
+      {screen.kind === "custom-play" && (
+        <div className="space-y-4">
+          <button type="button" onClick={goGrid} className="clay-chip rounded-full px-4 py-2 text-xs font-bold text-ink-deep transition-transform hover:scale-105 active:scale-95">← all games</button>
+          <TinyGameEngine config={screen.config} />
+        </div>
+      )}
+
+      {screen.kind === "custom-play-saved" && (
+        <div className="space-y-4">
+          <button type="button" onClick={goGrid} className="clay-chip rounded-full px-4 py-2 text-xs font-bold text-ink-deep transition-transform hover:scale-105 active:scale-95">← all games</button>
+          <TinyGameEngine config={screen.config} />
+        </div>
+      )}
+
+      {screen.kind === "builder" && (
+        <GameBuilder
+          initial={screen.editing ?? null}
+          onSave={saveGame}
+          onCancel={goGrid}
+          onPreview={previewConfig[1]}
+          previewConfig={previewConfig[0]}
+        />
       )}
     </div>
   );
 }
 
-/* ─── shared ───────────────────────────────────────────────────────── */
+/* ─── Game Builder ────────────────────────────────────────────────── */
 
-function GameIntro({
-  emoji,
-  title,
-  sub,
+function GameBuilder({
+  initial,
+  onSave,
+  onCancel,
+  onPreview,
+  previewConfig,
 }: {
-  emoji: string;
-  title: string;
-  sub: string;
+  initial: CustomGameConfig | null;
+  onSave: (config: CustomGameConfig) => void;
+  onCancel: () => void;
+  onPreview: (config: CustomGameConfig | null) => void;
+  previewConfig: CustomGameConfig | null;
 }) {
+  const [name, setName] = useState(initial?.name ?? "");
+  const [world, setWorld] = useState<World>(initial?.world ?? "sky");
+  const [thing, setThing] = useState<FloatingThing>(initial?.thing ?? "stars");
+  const [touch, setTouch] = useState<TouchAction>(initial?.touch ?? "catch");
+  const [sound, setSound] = useState<GameSound>(initial?.sound ?? "chimes");
+  const [pace, setPace] = useState<GamePace>(initial?.pace ?? "slow");
+
+  // Update preview whenever options change
+  useEffect(() => {
+    const cfg: CustomGameConfig = {
+      id: initial?.id ?? `custom-${Date.now()}`,
+      name, world, thing, touch, sound, pace,
+      createdAt: initial?.createdAt ?? Date.now(),
+    };
+    onPreview(cfg);
+  }, [name, world, thing, touch, sound, pace, initial, onPreview]);
+
+  const buildConfig = (): CustomGameConfig => ({
+    id: initial?.id ?? `custom-${Date.now()}`,
+    name, world, thing, touch, sound, pace,
+    createdAt: initial?.createdAt ?? Date.now(),
+  });
+
+  const handleSave = useTapGuard(() => {
+    onSave(buildConfig());
+  }, 500);
+
   return (
-    <div className="text-center">
-      <p className="text-xl font-bold tracking-tight text-ink-deep">
-        {emoji} {title}
-      </p>
-      <p className="mt-1 text-sm font-medium text-ink-soft">{sub}</p>
-    </div>
-  );
-}
-
-/* ─── 1. Bubble Pop ────────────────────────────────────────────────── */
-
-function BubblePop() {
-  const [worries, setWorries] = useState(
-    () => WORRY_BUBBLES.map((w, i) => ({ id: i, text: w, popped: false })),
-  );
-  const popped = worries.filter((w) => w.popped).length;
-
-  const reset = useTapGuard(() => {
-    setWorries((prev) => prev.map((w) => ({ ...w, popped: false })));
-  }, 400);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7"
-    >
-      {/* soft floating sparkles */}
-      <span className="pointer-events-none absolute top-6 left-8 text-sm text-blush-200 animate-twinkle" aria-hidden>✦</span>
-      <span className="pointer-events-none absolute top-12 right-10 text-xs text-lavender-200 animate-twinkle" style={{ animationDelay: "0.8s" }} aria-hidden>✧</span>
-      <span className="pointer-events-none absolute bottom-16 left-12 text-xs text-mint-200 animate-twinkle" style={{ animationDelay: "1.5s" }} aria-hidden>✦</span>
-      <span className="pointer-events-none absolute bottom-10 right-14 text-sm text-peach-200 animate-twinkle" style={{ animationDelay: "2.2s" }} aria-hidden>✧</span>
-
-      <GameIntro
-        emoji="🫧"
-        title="Bubble Pop"
-        sub="Each bubble holds a worry — tap it and watch it burst. Lighter, not forgotten."
-      />
-
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {worries.map((w) => (
-          <AnimatePresence key={w.id}>
-            {!w.popped ? (
-              <motion.button
-                type="button"
-                exit={{ scale: 0, opacity: 0, rotate: 12 }}
-                transition={{ duration: 0.3 }}
-                onClick={() =>
-                  setWorries((prev) => prev.map((x) => (x.id === w.id ? { ...x, popped: true } : x)))
-                }
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.94 }}
-                className="clay-chip flex h-24 items-center justify-center rounded-full p-4 text-center text-xs leading-snug font-bold text-ink"
-              >
-                {w.text}
-              </motion.button>
-            ) : (
-              <motion.span
-                key={`popped-${w.id}`}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="flex h-24 items-center justify-center text-2xl"
-                aria-hidden
-              >
-                💨
-              </motion.span>
-            )}
-          </AnimatePresence>
-        ))}
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+      <div className="flex items-center gap-3">
+        <button type="button" onClick={onCancel} className="clay-chip rounded-full px-4 py-2 text-xs font-bold text-ink-deep transition-transform hover:scale-105 active:scale-95">← cancel</button>
+        <p className="text-base font-bold text-ink-deep">✨ {initial ? "Edit your game" : "Create your own game"}</p>
       </div>
 
-      <div className="mt-6 flex items-center justify-between">
-        <p className="text-sm font-bold text-mint-500">
-          {popped}/{worries.length} worries floated away
-        </p>
-        <button
-          type="button"
-          onClick={reset}
-          className="clay-btn-soft rounded-full px-4 py-2 text-xs font-bold text-ink-deep"
-        >
-          Fill them again
+      {/* Live preview */}
+      {previewConfig && (
+        <div className="clay-card overflow-hidden rounded-[2.25rem] p-4">
+          <p className="mb-2 text-xs font-bold text-ink-soft">Live preview</p>
+          <div className={cn("relative h-40 overflow-hidden rounded-2xl bg-gradient-to-b", getWorldGradient(previewConfig.world))}>
+            <TinyGameEngine config={previewConfig} minimal />
+          </div>
+        </div>
+      )}
+
+      {/* Builder options */}
+      <div className="clay-card rounded-[2.25rem] px-5 py-6 space-y-5">
+        {/* Name */}
+        <div>
+          <label className="text-xs font-bold text-ink-deep">Name (optional)</label>
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="name your game…"
+            maxLength={40} className="mt-1.5 w-full rounded-xl border-0 bg-[#FDF5E6]/70 px-3 py-2.5 text-sm text-ink-deep placeholder:text-ink-soft/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8C9AD6]" />
+        </div>
+
+        {/* World */}
+        <div>
+          <label className="text-xs font-bold text-ink-deep">World</label>
+          <div className="mt-1.5 flex flex-wrap gap-2">
+            {WORLDS.map((w) => (
+              <button key={w.id} type="button" onClick={() => setWorld(w.id)}
+                className={cn("rounded-full px-3 py-1.5 text-xs font-bold transition-all",
+                  world === w.id ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
+                {w.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Floating things */}
+        <div>
+          <label className="text-xs font-bold text-ink-deep">Floating things</label>
+          <div className="mt-1.5 flex flex-wrap gap-2">
+            {THINGS.map((t) => (
+              <button key={t.id} type="button" onClick={() => setThing(t.id)}
+                className={cn("flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition-all",
+                  thing === t.id ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
+                <span>{t.emoji}</span> {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Touch action */}
+        <div>
+          <label className="text-xs font-bold text-ink-deep">What touch does</label>
+          <div className="mt-1.5 flex flex-wrap gap-2">
+            {TOUCHES.map((t) => (
+              <button key={t.id} type="button" onClick={() => setTouch(t.id)}
+                className={cn("flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition-all",
+                  touch === t.id ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
+                <span>{t.emoji}</span> {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Sound */}
+        <div>
+          <label className="text-xs font-bold text-ink-deep">Sound</label>
+          <div className="mt-1.5 flex flex-wrap gap-2">
+            {SOUNDS.map((s) => (
+              <button key={s.id} type="button" onClick={() => setSound(s.id)}
+                className={cn("rounded-full px-3 py-1.5 text-xs font-bold transition-all",
+                  sound === s.id ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Pace */}
+        <div>
+          <label className="text-xs font-bold text-ink-deep">Pace</label>
+          <div className="mt-1.5 flex flex-wrap gap-2">
+            {PACES.map((p) => (
+              <button key={p.id} type="button" onClick={() => setPace(p.id)}
+                className={cn("rounded-full px-3 py-1.5 text-xs font-bold transition-all",
+                  pace === p.id ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-3">
+        <button type="button" onClick={handleSave}
+          className="clay-btn flex-1 rounded-2xl px-5 py-3 text-sm font-bold text-white">
+          save to my games
+        </button>
+        <button type="button" onClick={() => onSave(buildConfig())}
+          className="clay-btn-soft flex-1 rounded-2xl px-5 py-3 text-sm font-bold text-ink-deep">
+          play it ✨
         </button>
       </div>
     </motion.div>
   );
 }
 
+/* ─── Tiny Game Engine ────────────────────────────────────────────── */
+
+interface FloatingObj {
+  id: number;
+  x: number;
+  y: number;
+  opacity: number;
+}
+
+function TinyGameEngine({ config, minimal = false }: { config: CustomGameConfig; minimal?: boolean }) {
+  const [objects, setObjects] = useState<FloatingObj[]>([]);
+  const [counter, setCounter] = useState(0);
+  const nextId = useRef(0);
+
+  const paceMs = PACES.find((p) => p.id === config.pace)?.ms ?? 2000;
+
+  // Spawn objects
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setObjects((prev) => {
+        if (prev.length > 12) return prev;
+        return [...prev, {
+          id: nextId.current++,
+          x: 5 + Math.random() * 90,
+          y: -5,
+          opacity: 0.9,
+        }];
+      });
+    }, paceMs);
+    return () => clearInterval(timer);
+  }, [paceMs]);
+
+  // Move objects
+  useEffect(() => {
+    const speed = config.pace === "very-slow" ? 0.3 : config.pace === "slow" ? 0.5 : 0.8;
+    const timer = setInterval(() => {
+      setObjects((prev) =>
+        prev
+          .map((o) => ({ ...o, y: o.y + speed, x: o.x + Math.sin(o.y / 10) * 0.2 }))
+          .filter((o) => o.y < 110),
+      );
+    }, 50);
+    return () => clearInterval(timer);
+  }, [config.pace]);
+
+  const handleTouch = (id: number) => {
+    playCustomSound(config.sound);
+
+    switch (config.touch) {
+      case "pop":
+        setObjects((prev) => prev.filter((o) => o.id !== id));
+        break;
+      case "catch":
+        setObjects((prev) => prev.filter((o) => o.id !== id));
+        setCounter((c) => c + 1);
+        break;
+      case "note":
+        // note already played by playCustomSound
+        break;
+      case "blow":
+        setObjects((prev) => prev.map((o) => o.id === id ? { ...o, x: o.x + (Math.random() > 0.5 ? 20 : -20), y: o.y - 5 } : o));
+        break;
+      case "soothe":
+        setObjects((prev) => prev.map((o) => o.id === id ? { ...o, opacity: 0.5 } : o));
+        setTimeout(() => {
+          setObjects((prev) => prev.map((o) => o.id === id ? { ...o, opacity: 0.9 } : o));
+        }, 600);
+        break;
+    }
+  };
+
+  const emoji = getThingEmoji(config.thing);
+
+  return (
+    <div className={cn("relative overflow-hidden rounded-2xl bg-gradient-to-b", getWorldGradient(config.world), minimal ? "h-full" : "h-72")}>
+      {/* Objects */}
+      {objects.map((obj) => (
+        <motion.button
+          key={obj.id}
+          type="button"
+          onClick={() => handleTouch(obj.id)}
+          whileTap={{ scale: 0.7 }}
+          className="absolute text-2xl transition-opacity duration-200 cursor-pointer"
+          style={{ left: `${obj.x}%`, top: `${obj.y}%`, opacity: obj.opacity, transform: "translate(-50%, -50%)" }}
+        >
+          {emoji}
+        </motion.button>
+      ))}
+
+      {!minimal && (
+        <div className="absolute bottom-3 left-0 right-0 text-center">
+          <p className="text-sm font-bold text-white/80 drop-shadow-sm">
+            {config.touch === "catch" ? `${emoji} ${counter} caught` : `${emoji} ${objects.length} floating`}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Shared ──────────────────────────────────────────────────────── */
+
+function GameIntro({ emoji, title, sub }: { emoji: string; title: string; sub: string }) {
+  return (
+    <div className="text-center">
+      <p className="text-xl font-bold tracking-tight text-ink-deep">{emoji} {title}</p>
+      <p className="mt-1 text-sm font-medium text-ink-soft">{sub}</p>
+    </div>
+  );
+}
+
+/* ─── 1. Bubble Pop ───────────────────────────────────────────────── */
+
+function BubblePop() {
+  const [worries, setWorries] = useState(() => WORRY_BUBBLES.map((w, i) => ({ id: i, text: w, popped: false })));
+  const popped = worries.filter((w) => w.popped).length;
+  const reset = useTapGuard(() => { setWorries((prev) => prev.map((w) => ({ ...w, popped: false }))); }, 400);
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
+      <span className="pointer-events-none absolute top-6 left-8 text-sm text-blush-200 animate-twinkle" aria-hidden>✦</span>
+      <span className="pointer-events-none absolute top-12 right-10 text-xs text-lavender-200 animate-twinkle" style={{ animationDelay: "0.8s" }} aria-hidden>✧</span>
+      <span className="pointer-events-none absolute bottom-16 left-12 text-xs text-mint-200 animate-twinkle" style={{ animationDelay: "1.5s" }} aria-hidden>✦</span>
+      <span className="pointer-events-none absolute bottom-10 right-14 text-sm text-peach-200 animate-twinkle" style={{ animationDelay: "2.2s" }} aria-hidden>✧</span>
+      <GameIntro emoji="🫧" title="Bubble Pop" sub="Each bubble holds a worry — tap it and watch it burst. Lighter, not forgotten." />
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {worries.map((w) => (
+          <AnimatePresence key={w.id}>
+            {!w.popped ? (
+              <motion.button type="button" exit={{ scale: 0, opacity: 0, rotate: 12 }} transition={{ duration: 0.3 }}
+                onClick={() => setWorries((prev) => prev.map((x) => (x.id === w.id ? { ...x, popped: true } : x)))}
+                whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.94 }}
+                className="clay-chip flex h-24 items-center justify-center rounded-full p-4 text-center text-xs leading-snug font-bold text-ink">{w.text}</motion.button>
+            ) : (
+              <motion.span key={`popped-${w.id}`} initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                className="flex h-24 items-center justify-center text-2xl" aria-hidden>💨</motion.span>
+            )}
+          </AnimatePresence>
+        ))}
+      </div>
+      <div className="mt-6 flex items-center justify-between">
+        <p className="text-sm font-bold text-mint-500">{popped}/{worries.length} worries floated away</p>
+        <button type="button" onClick={reset} className="clay-btn-soft rounded-full px-4 py-2 text-xs font-bold text-ink-deep">Fill them again</button>
+      </div>
+    </motion.div>
+  );
+}
 
 /* ─── 2. Soft Tiles ───────────────────────────────────────────────── */
 
 const TILE_NOTES = [262, 294, 330, 392];
-
 let _tileAudioCtx: AudioContext | null = null;
-function tileAudioCtx(): AudioContext {
-  if (!_tileAudioCtx) _tileAudioCtx = new AudioContext();
-  return _tileAudioCtx;
-}
-
+function tileAudioCtx(): AudioContext { if (!_tileAudioCtx) _tileAudioCtx = new AudioContext(); return _tileAudioCtx; }
 function playTileNote(freq: number) {
   try {
-    const ctx = tileAudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.value = freq;
-    gain.gain.setValueAtTime(0.25, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.5);
+    const ctx = tileAudioCtx(); const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.type = "sine"; osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.25, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+    osc.connect(gain); gain.connect(ctx.destination); osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.5);
   } catch { /* audio unavailable */ }
 }
-
-const TILE_COLORS = [
-  "bg-[#E8B4C8]/80",
-  "bg-[#B4BCE8]/80",
-  "bg-[#B4E0D0]/80",
-  "bg-[#E8D4B4]/80",
-];
-
-interface DriftTile {
-  id: number;
-  col: number;
-  born: number;
-}
+const TILE_COLORS = ["bg-[#E8B4C8]/80", "bg-[#B4BCE8]/80", "bg-[#B4E0D0]/80", "bg-[#E8D4B4]/80"];
+interface DriftTile { id: number; col: number; born: number; }
 
 function SoftTiles() {
   const [tiles, setTiles] = useState<DriftTile[]>([]);
@@ -265,37 +651,19 @@ function SoftTiles() {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTiles((prev) => {
-        if (prev.length > 8) return prev;
-        return [...prev, { id: nextId.current++, col: Math.floor(Math.random() * 4), born: Date.now() }];
-      });
-    }, 1200);
+    const timer = setInterval(() => { setTiles((prev) => { if (prev.length > 8) return prev; return [...prev, { id: nextId.current++, col: Math.floor(Math.random() * 4), born: Date.now() }]; }); }, 1200);
     return () => clearInterval(timer);
   }, []);
-
   useEffect(() => {
-    const timer = setInterval(() => {
-      const now = Date.now();
-      setTiles((prev) => prev.filter((t) => now - t.born < 4200));
-    }, 500);
+    const timer = setInterval(() => { setTiles((prev) => prev.filter((t) => Date.now() - t.born < 4200)); }, 500);
     return () => clearInterval(timer);
   }, []);
+  useEffect(() => { const t = setInterval(() => setElapsed((e) => e + 1), 1000); return () => clearInterval(t); }, []);
 
-  // Track elapsed time
-  useEffect(() => {
-    const timer = setInterval(() => setElapsed((e) => e + 1), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const tapTile = (col: number) => {
-    playTileNote(TILE_NOTES[col]);
-    setPlayed((p) => p + 1);
-  };
+  const tapTile = (col: number) => { playTileNote(TILE_NOTES[col]); setPlayed((p) => p + 1); };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-      className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
       <span className="pointer-events-none absolute top-6 left-8 text-sm text-blush-200 animate-twinkle" aria-hidden>✦</span>
       <span className="pointer-events-none absolute bottom-10 right-14 text-xs text-lavender-200 animate-twinkle" style={{ animationDelay: "1.2s" }} aria-hidden>✧</span>
       <GameIntro emoji="🎹" title="Soft Tiles" sub="tap tiles before they fade — every tap sounds like a soft piano note" />
@@ -305,11 +673,7 @@ function SoftTiles() {
             <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-lg text-ink-soft/30">{["♪","♫","♩","♬"][col]}</span>
             {tiles.filter((t) => t.col === col).map((t) => {
               const pct = Math.min(((Date.now() - t.born) / 4000) * 100, 100);
-              return (
-                <button key={t.id} type="button" onClick={() => tapTile(col)}
-                  className={cn("absolute left-1 right-1 h-14 rounded-xl transition-opacity", TILE_COLORS[col], pct > 85 ? "opacity-40" : "opacity-90")}
-                  style={{ top: `${pct}%` }} />
-              );
+              return <button key={t.id} type="button" onClick={() => tapTile(col)} className={cn("absolute left-1 right-1 h-14 rounded-xl transition-opacity", TILE_COLORS[col], pct > 85 ? "opacity-40" : "opacity-90")} style={{ top: `${pct}%` }} />;
             })}
           </div>
         ))}
@@ -328,7 +692,6 @@ const SKY_GRADIENTS: Record<SkyPhase, string> = {
   sunset: "from-[#E8C8A0] via-[#E0A888] to-[#D090B0]",
   starry: "from-[#283058] via-[#383868] to-[#484078]",
 };
-
 interface FallingItem { id: number; emoji: string; lane: number; y: number; }
 
 function MoonlightGlide() {
@@ -338,47 +701,22 @@ function MoonlightGlide() {
   const [sky, setSky] = useState<SkyPhase>("meadow");
   const nextId = useRef(0);
 
+  useEffect(() => { const phases: SkyPhase[] = ["meadow", "sunset", "starry"]; let idx = 0; const t = setInterval(() => { idx = (idx + 1) % 3; setSky(phases[idx]); }, 6000); return () => clearInterval(t); }, []);
+  useEffect(() => { const emojis = ["⭐", "💛", "🏮"]; const t = setInterval(() => { setItems((prev) => { if (prev.length > 6) return prev; return [...prev, { id: nextId.current++, emoji: emojis[Math.floor(Math.random() * 3)], lane: Math.floor(Math.random() * 3), y: 0 }]; }); }, 1600); return () => clearInterval(t); }, []);
   useEffect(() => {
-    const phases: SkyPhase[] = ["meadow", "sunset", "starry"];
-    let idx = 0;
-    const timer = setInterval(() => { idx = (idx + 1) % phases.length; setSky(phases[idx]); }, 6000);
-    return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const emojis = ["⭐", "💛", "🏮"];
-      setItems((prev) => {
-        if (prev.length > 6) return prev;
-        return [...prev, { id: nextId.current++, emoji: emojis[Math.floor(Math.random() * emojis.length)], lane: Math.floor(Math.random() * 3), y: 0 }];
-      });
-    }, 1600);
-    return () => clearInterval(timer);
-  }, []);
-
-  // Move items down and check catches in one pass
-  useEffect(() => {
-    const timer = setInterval(() => {
+    const t = setInterval(() => {
       setItems((prev) => {
         const updated = prev.map((it) => ({ ...it, y: it.y + 2.5 }));
-        const caughtItems = updated.filter(
-          (it) => it.lane === lane && it.y >= 70 && it.y <= 90,
-        );
-        if (caughtItems.length > 0) {
-          setCaught((c) => c + caughtItems.length);
-          return updated.filter(
-            (it) => !caughtItems.some((c) => c.id === it.id) && it.y < 110,
-          );
-        }
+        const caughtItems = updated.filter((it) => it.lane === lane && it.y >= 70 && it.y <= 90);
+        if (caughtItems.length > 0) { setCaught((c) => c + caughtItems.length); return updated.filter((it) => !caughtItems.some((c) => c.id === it.id) && it.y < 110); }
         return updated.filter((it) => it.y < 110);
       });
     }, 80);
-    return () => clearInterval(timer);
+    return () => clearInterval(t);
   }, [lane]);
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-      className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
       <GameIntro emoji="🌙" title="Moonlight Glide" sub="tap left or right to drift lanes — catch stars as they fall softly" />
       <div className={cn("relative mt-6 h-64 overflow-hidden rounded-2xl bg-gradient-to-b transition-all duration-[3000ms]", SKY_GRADIENTS[sky])}>
         {sky === "starry" && Array.from({ length: 12 }).map((_, i) => (
@@ -409,41 +747,28 @@ function HoneycombPop() {
 
   const popCell = (id: number) => {
     setCells((prev) => prev.map((c) => (c.id === id ? { ...c, popped: true } : c)));
-    const adjacent = new Set<number>();
-    if (id > 0) adjacent.add(id - 1);
-    if (id < HEX_COUNT - 1) adjacent.add(id + 1);
-    setNeighbors(adjacent);
-    setTimeout(() => setNeighbors(new Set()), 300);
+    const adjacent = new Set<number>(); if (id > 0) adjacent.add(id - 1); if (id < HEX_COUNT - 1) adjacent.add(id + 1);
+    setNeighbors(adjacent); setTimeout(() => setNeighbors(new Set()), 300);
   };
-
-  const refill = useTapGuard(() => {
-    setCells((prev) => prev.map((c) => ({ ...c, popped: false })));
-  }, 500);
-
+  const refill = useTapGuard(() => { setCells((prev) => prev.map((c) => ({ ...c, popped: false }))); }, 500);
   const allPopped = poppedCount === HEX_COUNT;
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-      className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
       <span className="pointer-events-none absolute top-6 right-10 text-sm text-peach-200 animate-twinkle" aria-hidden>✦</span>
       <span className="pointer-events-none absolute bottom-10 left-12 text-xs text-mint-200 animate-twinkle" style={{ animationDelay: "1s" }} aria-hidden>✧</span>
       <GameIntro emoji="🍯" title="Honeycomb Pop" sub="tap the honey cells — each one pops with a soft thock" />
       <div className="mt-6 grid grid-cols-5 gap-2 justify-items-center">
         {cells.map((cell) => (
-          <motion.button key={cell.id} type="button"
-            animate={neighbors.has(cell.id) ? { scale: [1, 0.92, 1.04, 1] } : { scale: 1 }}
-            transition={{ duration: 0.3 }} disabled={cell.popped} onClick={() => popCell(cell.id)}
-            className={cn("h-14 w-14 rounded-xl transition-all duration-200 flex items-center justify-center",
-              cell.popped ? "bg-transparent" : "bg-gradient-to-br from-[#F0D080] to-[#D4A840] shadow-[inset_0_2px_4px_rgba(255,255,255,0.5),0_3px_8px_rgba(200,160,60,0.3)] hover:scale-105 active:scale-95 cursor-pointer")}>
-            {cell.popped ? <motion.span initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-lg">💧</motion.span>
-              : <span className="text-sm font-bold text-[#8B6820]">🍯</span>}
+          <motion.button key={cell.id} type="button" animate={neighbors.has(cell.id) ? { scale: [1, 0.92, 1.04, 1] } : { scale: 1 }} transition={{ duration: 0.3 }} disabled={cell.popped} onClick={() => popCell(cell.id)}
+            className={cn("h-14 w-14 rounded-xl transition-all duration-200 flex items-center justify-center", cell.popped ? "bg-transparent" : "bg-gradient-to-br from-[#F0D080] to-[#D4A840] shadow-[inset_0_2px_4px_rgba(255,255,255,0.5),0_3px_8px_rgba(200,160,60,0.3)] hover:scale-105 active:scale-95 cursor-pointer")}>
+            {cell.popped ? <motion.span initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-lg">💧</motion.span> : <span className="text-sm font-bold text-[#8B6820]">🍯</span>}
           </motion.button>
         ))}
       </div>
       <div className="mt-6 flex items-center justify-between">
         <p className="text-sm font-bold text-[#C4960A]">{poppedCount}/{HEX_COUNT} cells popped</p>
-        {allPopped ? <button type="button" onClick={refill} className="clay-btn rounded-full px-4 py-2 text-xs font-bold text-white">pour a new comb 🍯</button>
-          : <span className="text-xs font-medium text-ink-soft">tap each cell</span>}
+        {allPopped ? <button type="button" onClick={refill} className="clay-btn rounded-full px-4 py-2 text-xs font-bold text-white">pour a new comb 🍯</button> : <span className="text-xs font-medium text-ink-soft">tap each cell</span>}
       </div>
       {allPopped && <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-3 text-center text-sm font-bold text-[#C4960A]">all that honey tension is gone ✨</motion.p>}
     </motion.div>
@@ -460,10 +785,8 @@ function NimbusFriend() {
 
   const setMoodTemp = (m: "happy" | "boing" | "eat", dur = 1200) => {
     if (moodTimer.current) clearTimeout(moodTimer.current);
-    setMood(m);
-    moodTimer.current = setTimeout(() => setMood("idle"), dur);
+    setMood(m); moodTimer.current = setTimeout(() => setMood("idle"), dur);
   };
-
   const onPointerDown = () => { dragging.current = true; };
   const onPointerMove = () => { if (dragging.current) { setMood("happy"); setBlush(true); } };
   const onPointerUp = () => { dragging.current = false; setTimeout(() => setBlush(false), 800); };
@@ -471,8 +794,7 @@ function NimbusFriend() {
   const feedStar = useTapGuard(() => { setMoodTemp("eat", 1500); }, 600);
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-      className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
       <span className="pointer-events-none absolute top-6 left-8 text-sm text-mint-200 animate-twinkle" aria-hidden>✦</span>
       <span className="pointer-events-none absolute bottom-10 right-10 text-xs text-lavender-200 animate-twinkle" style={{ animationDelay: "1.5s" }} aria-hidden>✧</span>
       <GameIntro emoji="☁️" title="Nimbus Friend" sub="drag over the cloud to pet it — it loves your company" />
@@ -511,16 +833,10 @@ function NimbusFriend() {
 /* ─── 6. Memory Garden ────────────────────────────────────────────── */
 
 const GARDEN_STICKERS = [
-  { emoji: "❤️", label: "heart" },
-  { emoji: "⭐", label: "star" },
-  { emoji: "🐰", label: "bunny" },
-  { emoji: "🌸", label: "flower" },
-  { emoji: "☁️", label: "cloud" },
-  { emoji: "🐻", label: "bear" },
+  { emoji: "❤️", label: "heart" }, { emoji: "⭐", label: "star" }, { emoji: "🐰", label: "bunny" },
+  { emoji: "🌸", label: "flower" }, { emoji: "☁️", label: "cloud" }, { emoji: "🐻", label: "bear" },
 ];
-
 interface Card { id: number; sticker: (typeof GARDEN_STICKERS)[number]; flipped: boolean; matched: boolean; }
-
 function shuffleCards(): Card[] {
   const pairs = GARDEN_STICKERS.flatMap((s, i) => [
     { id: i * 2, sticker: s, flipped: false, matched: false },
@@ -540,37 +856,23 @@ function MemoryGarden() {
     if (lockRef.current) return;
     const card = cards.find((c) => c.id === id);
     if (!card || card.flipped || card.matched || selected.includes(id)) return;
-    const next = [...selected, id];
-    setSelected(next);
+    const next = [...selected, id]; setSelected(next);
     setCards((prev) => prev.map((c) => (c.id === id ? { ...c, flipped: true } : c)));
     if (next.length === 2) {
-      lockRef.current = true;
-      const [first, second] = next;
-      const a = cards.find((c) => c.id === first)!;
-      const b = cards.find((c) => c.id === second)!;
+      lockRef.current = true; const [first, second] = next;
+      const a = cards.find((c) => c.id === first)!; const b = cards.find((c) => c.id === second)!;
       if (a.sticker.label === b.sticker.label) {
-        setTimeout(() => {
-          setCards((prev) => prev.map((c) => (c.id === first || c.id === second ? { ...c, matched: true, flipped: true } : c)));
-          setMatched((m) => m + 1);
-          setSelected([]);
-          lockRef.current = false;
-        }, 500);
+        setTimeout(() => { setCards((prev) => prev.map((c) => (c.id === first || c.id === second ? { ...c, matched: true, flipped: true } : c))); setMatched((m) => m + 1); setSelected([]); lockRef.current = false; }, 500);
       } else {
-        setTimeout(() => {
-          setCards((prev) => prev.map((c) => (c.id === first || c.id === second ? { ...c, flipped: false } : c)));
-          setSelected([]);
-          lockRef.current = false;
-        }, 800);
+        setTimeout(() => { setCards((prev) => prev.map((c) => (c.id === first || c.id === second ? { ...c, flipped: false } : c))); setSelected([]); lockRef.current = false; }, 800);
       }
     }
   };
-
   const replant = useTapGuard(() => { setCards(shuffleCards()); setSelected([]); setMatched(0); }, 500);
   const allMatched = matched === GARDEN_STICKERS.length;
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-      className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
       <span className="pointer-events-none absolute top-6 left-8 text-sm text-mint-200 animate-twinkle" aria-hidden>✦</span>
       <span className="pointer-events-none absolute bottom-10 right-14 text-xs text-blush-200 animate-twinkle" style={{ animationDelay: "1s" }} aria-hidden>✧</span>
       <GameIntro emoji="🌱" title="Memory Garden" sub="flip two cards — when they match, they plant into your garden" />
@@ -587,14 +889,11 @@ function MemoryGarden() {
         ))}
       </div>
       <div className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-[#B4E0D0]/30 py-2">
-        {GARDEN_STICKERS.map((s, i) => (
-          <motion.span key={i} initial={false} animate={i < matched ? { scale: 1, opacity: 1, y: 0 } : { scale: 0.6, opacity: 0.2, y: 4 }} className="text-xl">🌸</motion.span>
-        ))}
+        {GARDEN_STICKERS.map((_, i) => (<motion.span key={i} initial={false} animate={i < matched ? { scale: 1, opacity: 1, y: 0 } : { scale: 0.6, opacity: 0.2, y: 4 }} className="text-xl">🌸</motion.span>))}
       </div>
       <div className="mt-4 flex items-center justify-between">
         <p className="text-sm font-bold text-mint-500">{matched}/{GARDEN_STICKERS.length} planted</p>
-        {allMatched ? <button type="button" onClick={replant} className="clay-btn rounded-full px-4 py-2 text-xs font-bold text-white">plant again 🌱</button>
-          : <span className="text-xs font-medium text-ink-soft">no rush — take your time</span>}
+        {allMatched ? <button type="button" onClick={replant} className="clay-btn rounded-full px-4 py-2 text-xs font-bold text-white">plant again 🌱</button> : <span className="text-xs font-medium text-ink-soft">no rush — take your time</span>}
       </div>
       {allMatched && <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-3 text-center text-sm font-bold text-mint-500">your feeling garden is in bloom 🌸</motion.p>}
     </motion.div>
