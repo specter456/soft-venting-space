@@ -142,6 +142,9 @@ export default function LoginEntry() {
             await setKv(KV_USER_NAME, username.trim());
           }
           setDigits("");
+          // Mark that we JUST completed onboarding this session so
+          // Dashboard skips its own lock screen (user just typed the code).
+          sessionStorage.setItem("venting-just-onboarded", "1");
           setStep("welcome"); // SCREEN 8
         } catch {
           setError("couldn't save your passcode — try again.");

@@ -37,7 +37,7 @@ export default function MusicWidget({ context = "ambient" as MusicContext }) {
       {/* ─── The CD itself ──────────────────────────────────────── */}
       <button
         type="button"
-        onClick={() => setMenuOpen((v) => !v)}
+        onClick={() => { music.prime(); setMenuOpen((v) => !v); }}
         aria-label={state.playing ? "Soothing music is playing — open the music menu" : "Open the music menu"}
         aria-expanded={menuOpen}
         title="Soothing sounds"

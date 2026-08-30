@@ -311,6 +311,23 @@ class MusicEngine {
 
   private listeners = new Set<() => void>();
 
+  /**
+   * One-time global gesture listener: primes the AudioContext on the first
+   * user interaction anywhere in the page so the first play() call works.
+   */
+  private gestureListener = (): void => {
+    this.prime();
+    window.removeEventListener("click", this.gestureListener);
+    window.removeEventListener("touchstart", this.gestureListener);
+  };
+
+  constructor() {
+    if (typeof window !== "undefined") {
+      window.addEventListener("click", this.gestureListener, { once: false });
+      window.addEventListener("touchstart", this.gestureListener, { once: false });
+    }
+  }
+
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
     return () => {
@@ -502,6 +519,20 @@ class MusicEngine {
     if (this.state.playing) this.pause();
     else if (this.state.active) this.resume();
     else this.playDefault();
+  }
+
+  /**
+   * Prime the AudioContext on a user gesture so subsequent play() calls
+   * work immediately. Browsers require a user interaction before audio
+   * can play — call this from any tap handler.
+   */
+  prime(): void {
+    try {
+      const ctx = this.ensureCtx();
+      if (ctx && ctx.state === "suspended") void ctx.resume();
+    } catch {
+      /* ignore */
+    }
   }
 
   /** Cycle to the next built-in track. */

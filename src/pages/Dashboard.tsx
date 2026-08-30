@@ -79,7 +79,12 @@ export default function Dashboard() {
   // during render (guarded, runs once) avoids effect cascades.
   if (hydrated && !lockInitDone) {
     setLockInitDone(true);
-    if (hasPasscode) {
+    // If the user JUST completed onboarding in this session, skip the lock
+    // (they already typed their passcode moments ago).
+    if (sessionStorage.getItem("venting-just-onboarded") === "1") {
+      sessionStorage.removeItem("venting-just-onboarded");
+      // stays "unlocked"
+    } else if (hasPasscode) {
       setLock("unlock");
     } else if (safeSessionGetItem(LOCK_DISMISSED_KEY) !== "1") {
       setLock("setup");
