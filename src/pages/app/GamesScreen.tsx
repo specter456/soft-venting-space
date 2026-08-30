@@ -978,57 +978,338 @@ function HoneycombPop() {
   );
 }
 
-/* ─── 5. Nimbus Friend ────────────────────────────────────────────── */
+/* ─── 5. Nimbus Friend — a real companion ────────────────────────────── */
+
+type NimbusMood = "idle" | "happy" | "boing" | "eat" | "tickle" | "dozing" | "waking";
+type NimbusColor = "white" | "lavender" | "pink" | "mint";
+
+const NIMBUS_COLORS: { id: NimbusColor; label: string; bg: string; shadow: string }[] = [
+  { id: "white", label: "white", bg: "bg-white", shadow: "rgba(180,200,220,0.4)" },
+  { id: "lavender", label: "lavender", bg: "bg-[#E4E0F4]", shadow: "rgba(160,140,200,0.4)" },
+  { id: "pink", label: "pink", bg: "bg-[#F4E0E8]", shadow: "rgba(200,160,180,0.4)" },
+  { id: "mint", label: "mint", bg: "bg-[#E0F0EC]", shadow: "rgba(140,180,170,0.4)" },
+];
+
+const NIMBUS_STORAGE_KEY = "venting-nimbus-color";
 
 function NimbusFriend() {
-  const [mood, setMood] = useState<"idle" | "happy" | "boing" | "eat">("idle");
+  const [mood, setMood] = useState<NimbusMood>("idle");
   const [blush, setBlush] = useState(false);
-  const dragging = useRef(false);
-  const moodTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [color, setColor] = useState<NimbusColor>(() => {
+    try { return (localStorage.getItem(NIMBUS_STORAGE_KEY) as NimbusColor) || "white"; } catch { return "white"; }
+  });
+  const [showPalette, setShowPalette] = useState(false);
+  const [sparkles, setSparkles] = useState<{ id: number; x: number; y: number }[]>([]);
+  const [hearts, setHearts] = useState<{ id: number; x: number }[]>([]);
+  const [zzz, setZzz] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [echoing, setEchoing] = useState(false);
 
-  const setMoodTemp = (m: "happy" | "boing" | "eat", dur = 1200) => {
-    if (moodTimer.current) clearTimeout(moodTimer.current);
-    setMood(m); moodTimer.current = setTimeout(() => setMood("idle"), dur);
+  const dragging = useRef(false);
+  const lastTap = useRef(0);
+  const tapCount = useRef(0);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const idleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const moodTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const nextSparkleId = useRef(0);
+
+  const colorData = NIMBUS_COLORS.find((c) => c.id === color) ?? NIMBUS_COLORS[0];
+
+  // Save color preference
+  useEffect(() => {
+    try { localStorage.setItem(NIMBUS_STORAGE_KEY, color); } catch { /* ignore */ }
+  }, [color]);
+
+  // Reset idle timer on any interaction
+  const resetIdleTimer = useCallback(() => {
+    clearTimeout(idleTimer.current);
+    idleTimer.current = setTimeout(() => {
+      setMood("dozing");
+      setZzz(true);
+    }, 20000);
+  }, []);
+
+  // Start idle timer on mount
+  useEffect(() => {
+    resetIdleTimer();
+    return () => { clearTimeout(idleTimer.current); clearTimeout(moodTimer.current); };
+  }, [resetIdleTimer]);
+
+  const setMoodTemp = (m: NimbusMood, dur = 1200) => {
+    clearTimeout(moodTimer.current);
+    setMood(m);
+    if (m !== "dozing") {
+      moodTimer.current = setTimeout(() => setMood("idle"), dur);
+    }
   };
-  const onPointerDown = () => { dragging.current = true; };
-  const onPointerMove = () => { if (dragging.current) { setMood("happy"); setBlush(true); } };
-  const onPointerUp = () => { dragging.current = false; setTimeout(() => setBlush(false), 800); };
-  const onTap = () => { if (mood === "idle") setMoodTemp("boing"); };
-  const feedStar = useTapGuard(() => { setMoodTemp("eat", 1500); }, 600);
+
+  const addSparkle = (x: number, y: number) => {
+    const id = nextSparkleId.current++;
+    setSparkles((prev) => [...prev.slice(-8), { id, x, y }]);
+    setTimeout(() => setSparkles((prev) => prev.filter((s) => s.id !== id)), 800);
+  };
+
+  const addHeart = (x: number) => {
+    const id = nextSparkleId.current++;
+    setHearts((prev) => [...prev.slice(-5), { id, x }]);
+    setTimeout(() => setHearts((prev) => prev.filter((h) => h.id !== id)), 1200);
+  };
+
+  // Wake up if dozing
+  const wakeUp = useCallback(() => {
+    if (mood === "dozing" || mood === "waking") {
+      setMood("waking");
+      setZzz(false);
+      setTimeout(() => setMood("idle"), 600);
+    }
+    resetIdleTimer();
+  }, [mood, resetIdleTimer]);
+
+  // Poke (tap)
+  const onTap = () => {
+    wakeUp();
+    if (mood === "dozing") return;
+    const now = Date.now();
+    const timeSinceLastTap = now - lastTap.current;
+    lastTap.current = now;
+
+    if (timeSinceLastTap < 400) {
+      // Quick successive taps = tickle
+      tapCount.current++;
+      clearTimeout(tapTimer.current);
+      tapTimer.current = setTimeout(() => { tapCount.current = 0; }, 600);
+      if (tapCount.current >= 3) {
+        setMoodTemp("tickle", 1500);
+        // Add sparkles around
+        for (let i = 0; i < 5; i++) {
+          setTimeout(() => addSparkle(30 + Math.random() * 40, 20 + Math.random() * 40), i * 100);
+        }
+        tapCount.current = 0;
+        return;
+      }
+    } else {
+      tapCount.current = 1;
+    }
+
+    // Single tap = boing
+    setMoodTemp("boing", 800);
+    addSparkle(40 + Math.random() * 20, 30 + Math.random() * 20);
+  };
+
+  // Stroke (drag)
+  const onPointerDown = () => { dragging.current = true; wakeUp(); };
+  const onPointerMove = () => {
+    if (dragging.current) {
+      setMood("happy");
+      setBlush(true);
+      resetIdleTimer();
+    }
+  };
+  const onPointerUp = () => {
+    dragging.current = false;
+    setTimeout(() => setBlush(false), 800);
+  };
+
+  // Feed a star
+  const feedStar = useTapGuard(() => {
+    wakeUp();
+    setMoodTemp("eat", 1500);
+    addHeart(50);
+    setTimeout(() => addHeart(35), 200);
+    setTimeout(() => addHeart(65), 400);
+  }, 600);
+
+  // Talk to it — mic
+  const startTalking = async () => {
+    wakeUp();
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      chunksRef.current = [];
+      const recorder = new MediaRecorder(stream);
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+        if (chunksRef.current.length === 0) { setIsRecording(false); return; }
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        // Echo back in cute chipmunk style
+        try {
+          const audioCtx = new AudioContext();
+          const arrayBuffer = await blob.arrayBuffer();
+          const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+          // Play with pitch shift (faster = higher pitch)
+          const source = audioCtx.createBufferSource();
+          source.buffer = audioBuffer;
+          source.playbackRate.value = 1.6; // chipmunk speed
+          const gain = audioCtx.createGain();
+          gain.gain.value = 0.6;
+          source.connect(gain);
+          gain.connect(audioCtx.destination);
+          setEchoing(true);
+          setMoodTemp("happy", 3000);
+          source.start();
+          source.onended = () => { setEchoing(false); audioCtx.close(); };
+        } catch { /* audio decode failed — skip gracefully */ }
+        setIsRecording(false);
+      };
+      recorderRef.current = recorder;
+      recorder.start();
+      setIsRecording(true);
+    } catch {
+      // Mic denied or unavailable
+      setIsRecording(false);
+      setMoodTemp("idle", 0);
+    }
+  };
+
+  const stopTalking = () => {
+    if (recorderRef.current && recorderRef.current.state === "recording") {
+      recorderRef.current.stop();
+      recorderRef.current = null;
+    } else if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    setIsRecording(false);
+  };
+
+  // Eye rendering
+  const renderEyes = () => {
+    switch (mood) {
+      case "happy":
+        return (<><span className="absolute top-6 left-10 text-sm">~</span><span className="absolute top-6 right-10 text-sm">~</span></>);
+      case "eat":
+        return (<><span className="absolute top-6 left-10 text-sm">🧡</span><span className="absolute top-6 right-10 text-sm">🧡</span></>);
+      case "tickle":
+        return (<><span className="absolute top-6 left-10 text-sm"> XD</span><span className="absolute top-6 right-10 text-sm">XD </span></>);
+      case "boing":
+        return (<><span className="absolute top-5 left-9 h-2 w-2 rounded-full bg-[#5C5470]" /><span className="absolute top-5 right-9 h-2 w-2 rounded-full bg-[#5C5470]" /></>);
+      case "dozing":
+        return (<><span className="absolute top-6 left-10 text-sm">–</span><span className="absolute top-6 right-10 text-sm">–</span></>);
+      case "waking":
+        return (<><span className="absolute top-6 left-10 text-sm">o</span><span className="absolute top-6 right-10 text-sm">o</span></>);
+      default: // idle
+        return (<><span className="absolute top-6 left-10 h-1.5 w-1.5 rounded-full bg-[#5C5470]" /><span className="absolute top-6 right-10 h-1.5 w-1.5 rounded-full bg-[#5C5470]" /></>);
+    }
+  };
+
+  // Mouth rendering
+  const renderMouth = () => {
+    switch (mood) {
+      case "boing": return "o";
+      case "eat": return "😮";
+      case "tickle": return ":D";
+      case "happy": return "◡";
+      case "dozing": return "zzz";
+      case "waking": return "o";
+      default: return "◡";
+    }
+  };
+
+  const motionAnim = (() => {
+    switch (mood) {
+      case "boing": return { y: [0, -20, 0, -8, 0] };
+      case "eat": return { scale: [1, 1.15, 1] };
+      case "tickle": return { rotate: [0, -5, 5, -3, 3, 0], y: [0, -4, 0] };
+      case "waking": return { scale: [0.95, 1.05, 1] };
+      case "dozing": return { y: [0, 2, 0] };
+      default: return { y: [0, -4, 0] };
+    }
+  })();
+
+  const motionTransition = mood === "boing"
+    ? { duration: 0.5, ease: "easeOut" as const }
+    : mood === "tickle"
+      ? { duration: 0.6, ease: "easeInOut" as const }
+      : { duration: 2.5, repeat: Infinity, ease: "easeInOut" as const };
 
   return (
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
       <span className="pointer-events-none absolute top-6 left-8 text-sm text-mint-200 animate-twinkle" aria-hidden>✦</span>
       <span className="pointer-events-none absolute bottom-10 right-10 text-xs text-lavender-200 animate-twinkle" style={{ animationDelay: "1.5s" }} aria-hidden>✧</span>
-      <GameIntro emoji="☁️" title="Nimbus Friend" sub="drag over the cloud to pet it — it loves your company" />
+      <GameIntro emoji="☁️" title="Nimbus Friend" sub="poke, stroke, tickle, feed, and talk to your cloud friend" />
+
+      {/* Color palette button */}
+      <div className="absolute top-4 right-4 z-10">
+        <button type="button" onClick={() => setShowPalette((v) => !v)}
+          className="clay-chip flex h-8 w-8 items-center justify-center rounded-full text-sm transition-transform hover:scale-110 active:scale-95"
+          aria-label="Change nimbus color">🎨</button>
+        {showPalette && (
+          <motion.div initial={{ opacity: 0, y: -4, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+            className="absolute top-10 right-0 flex gap-1.5 rounded-2xl bg-[#FDF5E6]/95 p-2 shadow-lg border border-[#C4CBE8]/40">
+            {NIMBUS_COLORS.map((c) => (
+              <button key={c.id} type="button" onClick={() => { setColor(c.id); setShowPalette(false); }}
+                className={`h-7 w-7 rounded-full border-2 transition-all ${color === c.id ? "border-[#5F6DBE] scale-110" : "border-white/70 hover:scale-105"} ${c.bg}`}
+                title={c.label} />
+            ))}
+          </motion.div>
+        )}
+      </div>
+
+      {/* The cloud companion */}
       <div className="relative mx-auto mt-6 flex h-48 w-full max-w-xs items-center justify-center rounded-2xl bg-gradient-to-b from-[#D8E8F8] to-[#E8F0F8]"
         onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerLeave={onPointerUp}>
-        <motion.div animate={mood === "boing" ? { y: [0, -20, 0, -8, 0] } : mood === "eat" ? { scale: [1, 1.15, 1] } : { y: [0, -4, 0] }}
-          transition={mood === "boing" ? { duration: 0.5, ease: "easeOut" } : { duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+        <motion.div animate={motionAnim} transition={motionTransition}
           className="relative cursor-pointer select-none" onClick={onTap}>
           <div className="relative flex flex-col items-center">
             <div className="relative">
-              <div className="h-24 w-36 rounded-full bg-white shadow-[0_8px_24px_rgba(180,200,220,0.4)]" />
-              <div className="absolute -top-4 left-4 h-16 w-16 rounded-full bg-white" />
-              <div className="absolute -top-6 left-12 h-14 w-14 rounded-full bg-white" />
-              <div className="absolute -top-2 right-4 h-14 w-14 rounded-full bg-white" />
+              <div className={`h-24 w-36 rounded-full ${colorData.bg} shadow-[0_8px_24px_${colorData.shadow}]`} />
+              <div className={`absolute -top-4 left-4 h-16 w-16 rounded-full ${colorData.bg}`} />
+              <div className={`absolute -top-6 left-12 h-14 w-14 rounded-full ${colorData.bg}`} />
+              <div className={`absolute -top-2 right-4 h-14 w-14 rounded-full ${colorData.bg}`} />
               <div className="absolute inset-0 flex items-center justify-center pt-2">
-                {mood === "happy" ? (<><span className="absolute top-6 left-10 text-sm">~</span><span className="absolute top-6 right-10 text-sm">~</span></>)
-                  : mood === "eat" ? (<><span className="absolute top-6 left-10 text-sm">🧡</span><span className="absolute top-6 right-10 text-sm">🧡</span></>)
-                  : (<><span className="absolute top-6 left-10 h-1.5 w-1.5 rounded-full bg-[#5C5470]" /><span className="absolute top-6 right-10 h-1.5 w-1.5 rounded-full bg-[#5C5470]" /></>)}
+                {renderEyes()}
                 {blush && (<><span className="absolute top-9 left-6 h-3 w-5 rounded-full bg-[#E8B4C8]/60" /><span className="absolute top-9 right-6 h-3 w-5 rounded-full bg-[#E8B4C8]/60" /></>)}
-                <span className="absolute top-10 left-1/2 -translate-x-1/2 text-sm">{mood === "eat" ? "😮" : mood === "boing" ? ":D" : "◡"}</span>
+                <span className="absolute top-10 left-1/2 -translate-x-1/2 text-sm">{renderMouth()}</span>
               </div>
+              {/* Zzz when dozing */}
+              {zzz && (
+                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1, y: -10 }}
+                  className="absolute -top-4 right-2 text-sm font-bold text-[#8C9AD6]">zzz</motion.span>
+              )}
             </div>
-            {mood === "happy" && <motion.span initial={{ opacity: 0, y: 0 }} animate={{ opacity: 1, y: -20 }} className="absolute -top-8 text-lg">💜</motion.span>}
-            {mood === "eat" && <motion.span initial={{ opacity: 0, y: 30, scale: 0.5 }} animate={{ opacity: 1, y: -10, scale: 1 }} className="absolute -top-4 text-2xl">⭐</motion.span>}
+            {/* Floating hearts on feed */}
+            {hearts.map((h) => (
+              <motion.span key={h.id} initial={{ opacity: 0, y: 10, scale: 0.5 }} animate={{ opacity: 1, y: -30, scale: 1 }}
+                exit={{ opacity: 0 }} className="absolute -top-6 text-lg" style={{ left: `${h.x}%` }}>💜</motion.span>
+            ))}
+            {/* Sparkles on poke/tickle */}
+            {sparkles.map((s) => (
+              <motion.span key={s.id} initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1.2 }}
+                exit={{ opacity: 0 }} className="absolute text-xs text-[#C9A96A]" style={{ left: `${s.x}%`, top: `${s.y}%` }}>✦</motion.span>
+            ))}
+            {/* Echo visual */}
+            {echoing && (
+              <motion.span initial={{ opacity: 0 }} animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1 }}
+                className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-lg">🎵</motion.span>
+            )}
           </div>
         </motion.div>
       </div>
-      <div className="mt-4 flex justify-center">
-        <button type="button" onClick={feedStar} className="clay-chip rounded-full px-5 py-2.5 text-sm font-bold text-ink-deep transition-transform hover:scale-105 active:scale-95">feed a star ⭐</button>
+
+      {/* Action buttons */}
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+        <button type="button" onClick={feedStar}
+          className="clay-chip rounded-full px-4 py-2 text-xs font-bold text-ink-deep transition-transform hover:scale-105 active:scale-95">feed a star ⭐</button>
+        <button type="button"
+          onPointerDown={(e) => { e.stopPropagation(); startTalking(); }}
+          onPointerUp={(e) => { e.stopPropagation(); stopTalking(); }}
+          onPointerLeave={() => { if (isRecording) stopTalking(); }}
+          className={`clay-chip rounded-full px-4 py-2 text-xs font-bold transition-transform hover:scale-105 active:scale-95 ${isRecording ? "bg-[#C48B9E]/20 text-[#C48B9E] ring-2 ring-[#C48B9E]/40" : "text-ink-deep"}`}>
+          {isRecording ? "🔴 listening…" : "🎤 say something"}
+        </button>
       </div>
-      <p className="mt-3 text-center text-xs font-medium text-ink-soft">drag over the cloud to pet it — it always loves your company</p>
+
+      {isRecording && (
+        <p className="mt-2 text-center text-[10px] font-semibold text-ink-soft">hold to talk · release to hear nimbus echo you</p>
+      )}
+      {!isRecording && !echoing && (
+        <p className="mt-2 text-center text-[10px] font-medium text-ink-soft">poke · drag to pet · quick taps to tickle · feed a star · talk to it</p>
+      )}
     </motion.div>
   );
 }

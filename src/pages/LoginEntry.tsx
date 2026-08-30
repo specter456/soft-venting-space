@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router";
 import { Delete, LockKeyhole, RotateCcw } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { SplashScreen } from "@/components/SplashScreen";
 import { useTapGuard } from "@/lib/useTapGuard";
 import {
   KV_PASSCODE_HASH,
@@ -42,6 +43,12 @@ export default function LoginEntry() {
   const [error, setError] = useState<string | null>(null);
   const [shakeKey, setShakeKey] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setShowSplash(false), 1500);
+    return () => window.clearTimeout(t);
+  }, []);
 
   // Read stored identity from kv
   const storedHash =
@@ -170,6 +177,7 @@ export default function LoginEntry() {
 
   return (
     <div className="relative flex min-h-dvh items-center justify-center px-5 text-ink">
+      <SplashScreen visible={showSplash} />
       {/* background blobs */}
       <div
         aria-hidden
