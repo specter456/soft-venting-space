@@ -61,6 +61,7 @@ export interface DiaryPageSticker {
   x: number;
   y: number;
   size: number;
+  rotation?: number;
 }
 
 export interface DiaryPagePhoto {

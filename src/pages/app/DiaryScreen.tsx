@@ -71,6 +71,7 @@ function DraggableItem({
   children,
   x,
   y,
+  rotation,
   onMove,
   onTap,
   selected,
@@ -78,6 +79,7 @@ function DraggableItem({
   children: React.ReactNode;
   x: number;
   y: number;
+  rotation?: number;
   onMove: (dx: number, dy: number) => void;
   onTap: () => void;
   selected: boolean;
@@ -122,7 +124,7 @@ function DraggableItem({
       style={{
         left: `${x}%`,
         top: `${y}%`,
-        transform: "translate(-50%, -50%)",
+        transform: `translate(-50%, -50%) rotate(${rotation ?? 0}deg)`,
         zIndex: selected ? 30 : 10,
       }}
       onPointerDown={(e) => {
@@ -302,7 +304,19 @@ export default function DiaryScreen() {
       if (!e) return;
       const ps = [...(e.positionedStickers ?? [])];
       if (!ps[idx]) return;
-      ps[idx] = { ...ps[idx], x: Math.max(0, Math.min(100, ps[idx].x + (dx / 3) * 1.2)), y: Math.max(0, Math.min(100, ps[idx].y + (dy / 3) * 1.2)) };
+      ps[idx] = { ...ps[idx], x: ps[idx].x + (dx / 3) * 1.2, y: ps[idx].y + (dy / 3) * 1.2 };
+      updateDiaryEntry(entryId, { positionedStickers: ps });
+    },
+    [sorted],
+  );
+
+  const rotatePageSticker = useCallback(
+    (entryId: string, idx: number, angle: number) => {
+      const e = sorted.find((x) => x._id === entryId);
+      if (!e) return;
+      const ps = [...(e.positionedStickers ?? [])];
+      if (!ps[idx]) return;
+      ps[idx] = { ...ps[idx], rotation: ((ps[idx].rotation ?? 0) + angle + 360) % 360 };
       updateDiaryEntry(entryId, { positionedStickers: ps });
     },
     [sorted],
@@ -338,7 +352,7 @@ export default function DiaryScreen() {
       if (!e) return;
       const ph = [...(e.photos ?? [])];
       if (!ph[idx]) return;
-      ph[idx] = { ...ph[idx], x: Math.max(0, Math.min(100, ph[idx].x + (dx / 3) * 1.2)), y: Math.max(0, Math.min(100, ph[idx].y + (dy / 3) * 1.2)) };
+      ph[idx] = { ...ph[idx], x: ph[idx].x + (dx / 3) * 1.2, y: ph[idx].y + (dy / 3) * 1.2 };
       updateDiaryEntry(entryId, { photos: ph });
     },
     [sorted],
@@ -865,7 +879,7 @@ export default function DiaryScreen() {
             exit={{ rotateY: 80, opacity: 0, x: 40 }}
             transition={{ duration: 0.55, ease: "easeInOut" }}
             style={{ transformStyle: "preserve-3d" }}
-            className="clay-card relative min-h-[26rem] overflow-hidden rounded-[1.6rem] p-6"
+            className="clay-card relative min-h-[26rem] overflow-visible rounded-[1.6rem] p-6"
           >
             {/* Background photo (softened) */}
             {bgPhoto && (
@@ -945,6 +959,7 @@ export default function DiaryScreen() {
                 key={`s-${i}-${ps.emoji}`}
                 x={ps.x}
                 y={ps.y}
+                rotation={ps.rotation}
                 selected={selectedSticker === i}
                 onTap={() => {
                   setSelectedSticker(selectedSticker === i ? null : i);
@@ -955,7 +970,7 @@ export default function DiaryScreen() {
                 }
               >
                 <span
-                  className="drop-shadow-sm"
+                  className="drop-shadow-[0_2px_4px_rgba(90,70,120,0.25)]"
                   style={{ fontSize: ps.size, lineHeight: 1 }}
                   aria-hidden
                 >
@@ -987,6 +1002,28 @@ export default function DiaryScreen() {
                       aria-label="Smaller"
                     >
                       <Minus className="size-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        rotatePageSticker(entry._id, i, -15);
+                      }}
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-ink-deep shadow-md text-[10px] font-bold transition-transform hover:scale-110"
+                      aria-label="Tilt left"
+                    >
+                      ⟲
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        rotatePageSticker(entry._id, i, 15);
+                      }}
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-ink-deep shadow-md text-[10px] font-bold transition-transform hover:scale-110"
+                      aria-label="Tilt right"
+                    >
+                      ⟳
                     </button>
                     <button
                       type="button"

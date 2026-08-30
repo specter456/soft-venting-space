@@ -28,9 +28,10 @@ interface PlacedItem {
   emoji?: string; // for built-in stickers
   vaultId?: string; // for vault items
   src?: string; // data URL for vault items
-  x: number; // percent
+  x: number; // percent (can be negative or >100 for free placement)
   y: number; // percent
   size: number; // px
+  rotation?: number; // degrees
 }
 
 interface CalendarDecorations {
@@ -136,7 +137,7 @@ export default function CalendarScreen() {
     setDecor((d) => ({
       ...d,
       stickers: d.stickers.map((s) =>
-        s.id === id ? { ...s, x: Math.max(0, Math.min(90, s.x + dx)), y: Math.max(0, Math.min(90, s.y + dy)) } : s,
+        s.id === id ? { ...s, x: s.x + dx, y: s.y + dy } : s,
       ),
     }));
   };
@@ -146,6 +147,15 @@ export default function CalendarScreen() {
       ...d,
       stickers: d.stickers.map((s) =>
         s.id === id ? { ...s, size: Math.max(16, Math.min(96, s.size + delta)) } : s,
+      ),
+    }));
+  };
+
+  const rotateItem = (id: string, angle: number) => {
+    setDecor((d) => ({
+      ...d,
+      stickers: d.stickers.map((s) =>
+        s.id === id ? { ...s, rotation: ((s.rotation ?? 0) + angle + 360) % 360 } : s,
       ),
     }));
   };
@@ -310,7 +320,7 @@ export default function CalendarScreen() {
       </div>
 
       {/* ─── Day grid with wallpaper + decorations ──────────────── */}
-      <div className={cn("relative overflow-hidden rounded-2xl", wallStyle.className ?? "")}
+      <div className={cn("relative overflow-visible rounded-2xl", wallStyle.className ?? "")}
         style={wallStyle.backgroundImage ? { backgroundImage: wallStyle.backgroundImage, backgroundSize: "cover", backgroundPosition: "center" } : undefined}>
         {/* Light overlay for readability */}
         {decor.wallpaper && <div className="absolute inset-0 bg-[#FDF5E6]/40 z-0" />}
@@ -322,6 +332,7 @@ export default function CalendarScreen() {
             onMove={(dx, dy) => moveItem(item.id, dx, dy)}
             onBigger={() => resizeItem(item.id, 8)}
             onSmaller={() => resizeItem(item.id, -8)}
+            onRotate={(angle) => rotateItem(item.id, angle)}
             onRemove={() => removeItem(item.id)} />
         ))}
 
@@ -382,7 +393,7 @@ export default function CalendarScreen() {
 /* ─── Draggable decoration item ──────────────────────────────────── */
 
 function DraggableDecor({
-  item, selected, onSelect, onMove, onBigger, onSmaller, onRemove,
+  item, selected, onSelect, onMove, onBigger, onSmaller, onRotate, onRemove,
 }: {
   item: PlacedItem;
   selected: boolean;
@@ -390,6 +401,7 @@ function DraggableDecor({
   onMove: (dx: number, dy: number) => void;
   onBigger: () => void;
   onSmaller: () => void;
+  onRotate: (angle: number) => void;
   onRemove: () => void;
 }) {
   const dragRef = useRef<{ startX: number; startY: number } | null>(null);
@@ -405,28 +417,34 @@ function DraggableDecor({
     const dx = e.clientX - dragRef.current.startX;
     const dy = e.clientY - dragRef.current.startY;
     dragRef.current = { startX: e.clientX, startY: e.clientY };
-    onMove(dx / 3, dy / 3); // scale down for sensitivity
+    onMove(dx / 3, dy / 3);
   };
 
   const onPointerUp = () => { dragRef.current = null; };
 
+  const rot = item.rotation ?? 0;
+
   return (
-    <div className="absolute z-20" style={{ left: `${item.x}%`, top: `${item.y}%`, transform: "translate(-50%, -50%)" }}>
+    <div className="absolute z-20" style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `translate(-50%, -50%) rotate(${rot}deg)` }}>
       <div className="relative cursor-grab active:cursor-grabbing"
         onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp}
         onClick={(e) => { e.stopPropagation(); onSelect(); }}>
         {item.kind === "gif" && item.src ? (
           <img src={item.src} alt="" className="rounded-lg" style={{ width: item.size, height: item.size, objectFit: "contain" }} />
         ) : (
-          <span style={{ fontSize: item.size }} className="drop-shadow-sm" aria-hidden>{item.emoji}</span>
+          <span style={{ fontSize: item.size }} className="drop-shadow-[0_2px_4px_rgba(90,70,120,0.25)]" aria-hidden>{item.emoji}</span>
         )}
       </div>
       {selected && (
-        <div className="absolute -top-9 left-1/2 flex -translate-x-1/2 gap-1" onPointerDown={(e) => e.stopPropagation()}>
+        <div className="absolute -top-10 left-1/2 flex -translate-x-1/2 gap-1" onPointerDown={(e) => e.stopPropagation()}>
           <button type="button" onClick={(e) => { e.stopPropagation(); onBigger(); }}
             className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-ink-deep shadow-md text-[10px] font-bold transition-transform hover:scale-110">+</button>
           <button type="button" onClick={(e) => { e.stopPropagation(); onSmaller(); }}
             className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-ink-deep shadow-md text-[10px] font-bold transition-transform hover:scale-110">−</button>
+          <button type="button" onClick={(e) => { e.stopPropagation(); onRotate(-15); }}
+            className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-ink-deep shadow-md text-[10px] font-bold transition-transform hover:scale-110">⟲</button>
+          <button type="button" onClick={(e) => { e.stopPropagation(); onRotate(15); }}
+            className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-ink-deep shadow-md text-[10px] font-bold transition-transform hover:scale-110">⟳</button>
           <button type="button" onClick={(e) => { e.stopPropagation(); onRemove(); }}
             className="flex h-6 w-6 items-center justify-center rounded-full bg-[#C48B9E]/20 text-[#C48B9E] shadow-md text-[10px] font-bold transition-transform hover:scale-110">✕</button>
         </div>
