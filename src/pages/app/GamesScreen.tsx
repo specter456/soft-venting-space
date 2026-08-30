@@ -151,7 +151,7 @@ function playCustomSound(sound: GameSound) {
 
 /* ─── Game registry ───────────────────────────────────────────────── */
 
-type BuiltInGameId = "pop" | "tiles" | "moon" | "honeycomb" | "nimbus" | "garden";
+type BuiltInGameId = "pop" | "tiles" | "moon" | "honeycomb" | "nimbus" | "garden" | "coloring" | "bloom" | "pond" | "clouds";
 
 const BUILT_IN_GAMES: {
   id: BuiltInGameId;
@@ -166,6 +166,10 @@ const BUILT_IN_GAMES: {
   { id: "honeycomb", emoji: "🍯", name: "Honeycomb Pop", line: "pop the honey cells — soft thocks, golden calm", tile: "tile-peach" },
   { id: "nimbus", emoji: "☁️", name: "Nimbus Friend", line: "a little cloud friend who loves your company", tile: "tile-mint" },
   { id: "garden", emoji: "🌱", name: "Memory Garden", line: "match the feelings, grow a little garden", tile: "tile-lavender" },
+  { id: "coloring", emoji: "🎨", name: "Soft Coloring", line: "fill the lines with your favorite calm", tile: "tile-lavender" },
+  { id: "bloom", emoji: "🌱", name: "Bloom Garden", line: "plant a seed, water it, watch it bloom", tile: "tile-mint" },
+  { id: "pond", emoji: "🎣", name: "Pond Pals", line: "cast a line into the calm pond, meet little friends", tile: "tile-sky" },
+  { id: "clouds", emoji: "☁️", name: "Cloud Stack", line: "stack soft clouds into a cozy tower", tile: "tile-mint" },
 ];
 
 /* ─── Main component ──────────────────────────────────────────────── */
@@ -318,6 +322,10 @@ export default function GamesScreen() {
           {screen.game === "honeycomb" && <HoneycombPop />}
           {screen.game === "nimbus" && <NimbusFriend />}
           {screen.game === "garden" && <MemoryGarden />}
+          {screen.game === "coloring" && <SoftColoring />}
+          {screen.game === "bloom" && <BloomGarden />}
+          {screen.game === "pond" && <PondPals />}
+          {screen.game === "clouds" && <CloudStack />}
         </div>
       )}
 
@@ -1383,3 +1391,408 @@ function MemoryGarden() {
     </motion.div>
   );
 }
+
+
+/* ─── Soft Coloring ─────────────────────────────────────────────── */
+
+const COLORING_PALETTES = [
+  "#F3B8C9", "#BCA9EE", "#A8CFEF", "#BFE5DC", "#F0AFC6",
+  "#9CCBE8", "#B7ADEF", "#F2BE93", "#E8D0E8", "#C8E8C0",
+];
+
+const COLORING_PICTURES: { id: string; name: string; regions: { d: string; fill: string }[] }[] = [
+  { id: "cat", name: "Cat", regions: [
+    { d: "M50,20 L30,5 L10,25 L25,35 Z", fill: "" },
+    { d: "M90,20 L110,5 L130,25 L115,35 Z", fill: "" },
+    { d: "M50,35 Q70,10 90,35 Q95,60 90,80 Q70,95 50,80 Q45,60 50,35 Z", fill: "" },
+    { d: "M58,50 A4,4 0 1,1 58,50.01 Z", fill: "" },
+    { d: "M78,50 A4,4 0 1,1 78,50.01 Z", fill: "" },
+    { d: "M65,62 Q70,68 75,62", fill: "" },
+    { d: "M30,80 Q20,100 35,105 Q50,110 50,95 Z", fill: "" },
+    { d: "M110,80 Q120,100 105,105 Q90,110 90,95 Z", fill: "" },
+  ]},
+  { id: "heart", name: "Heart", regions: [
+    { d: "M70,30 Q70,10 50,10 Q30,10 30,30 Q30,50 70,80 Q110,50 110,30 Q110,10 90,10 Q70,10 70,30 Z", fill: "" },
+  ]},
+  { id: "flower", name: "Flower", regions: [
+    { d: "M70,35 Q60,10 70,5 Q80,10 70,35 Z", fill: "" },
+    { d: "M90,50 Q110,40 115,55 Q100,65 90,50 Z", fill: "" },
+    { d: "M85,75 Q105,85 95,95 Q80,90 85,75 Z", fill: "" },
+    { d: "M55,75 Q35,85 45,95 Q60,90 55,75 Z", fill: "" },
+    { d: "M50,50 Q30,40 25,55 Q40,65 50,50 Z", fill: "" },
+    { d: "M65,55 A10,10 0 1,1 75,55 A10,10 0 1,1 65,55 Z", fill: "" },
+    { d: "M68,65 L66,95 L74,95 L72,65 Z", fill: "" },
+  ]},
+  { id: "moon", name: "Moon", regions: [
+    { d: "M60,10 Q95,10 100,50 Q105,90 60,100 Q40,85 45,50 Q50,15 60,10 Z", fill: "" },
+    { d: "M55,30 A5,5 0 1,1 55,30.01 Z", fill: "" },
+    { d: "M75,55 A3,3 0 1,1 75,55.01 Z", fill: "" },
+    { d: "M60,70 A4,4 0 1,1 60,70.01 Z", fill: "" },
+  ]},
+  { id: "cloud", name: "Cloud House", regions: [
+    { d: "M30,60 Q20,40 40,35 Q45,15 70,15 Q95,15 100,35 Q120,40 110,60 Z", fill: "" },
+    { d: "M55,60 L55,90 L85,90 L85,60 Z", fill: "" },
+    { d: "M62,72 L62,82 L78,82 L78,72 Z", fill: "" },
+  ]},
+  { id: "butterfly", name: "Butterfly", regions: [
+    { d: "M70,40 Q40,10 20,40 Q10,70 40,80 Q55,85 70,70 Z", fill: "" },
+    { d: "M70,40 Q100,10 120,40 Q130,70 100,80 Q85,85 70,70 Z", fill: "" },
+    { d: "M70,70 Q50,90 45,105 Q55,100 70,85 Q85,100 95,105 Q90,90 70,70 Z", fill: "" },
+    { d: "M68,40 L68,85 M72,40 L72,85", fill: "" },
+  ]},
+];
+
+function SoftColoring() {
+  const [picIdx, setPicIdx] = useState(0);
+  const palette = COLORING_PALETTES;
+  const [selectedColor, setSelectedColor] = useState(palette[0]);
+  const [fills, setFills] = useState<Record<string, string>>({});
+  const [history, setHistory] = useState<Record<string, string>[]>([]);
+
+  const pic = COLORING_PICTURES[picIdx];
+
+  const fillRegion = (regionIdx: number) => {
+    const key = `${pic.id}-${regionIdx}`;
+    if (fills[key] === selectedColor) return;
+    setHistory((h) => [...h, { ...fills }]);
+    setFills((f) => ({ ...f, [key]: selectedColor }));
+  };
+
+  const undo = () => {
+    if (history.length === 0) return;
+    const prev = history[history.length - 1];
+    setFills(prev);
+    setHistory((h) => h.slice(0, -1));
+  };
+
+  const clearAll = () => {
+    setHistory((h) => [...h, { ...fills }]);
+    setFills({});
+  };
+
+  const savePic = () => {
+    const data = { picture: pic.id, fills };
+    safeSetItem("venting-coloring-" + pic.id, JSON.stringify(data));
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+      <GameIntro emoji="🎨" title="Soft Coloring" sub="tap a color, then tap a region to fill it" />
+      <p className="text-center text-xs font-bold text-ink-soft">picture: {pic.name}</p>
+      <div className="flex justify-center">
+        <svg viewBox="0 0 140 110" className="w-full max-w-xs rounded-2xl bg-white/60 border border-lavender-200/50" style={{ touchAction: "manipulation" }}>
+          {pic.regions.map((r, i) => {
+            const key = `${pic.id}-${i}`;
+            const fill = fills[key] || "#F0F0F0";
+            return (
+              <path key={i} d={r.d} fill={fill} stroke="#9AA5D6" strokeWidth="1.5" className="cursor-pointer transition-colors" onClick={() => fillRegion(i)} />
+            );
+          })}
+        </svg>
+      </div>
+      <div className="flex flex-wrap justify-center gap-1.5">
+        {palette.map((c) => (
+          <button key={c} type="button" onClick={() => setSelectedColor(c)}
+            className={cn("h-8 w-8 rounded-full border-2 transition-transform hover:scale-110", selectedColor === c ? "border-ink-deep scale-110 shadow-md" : "border-white/70")}
+            style={{ backgroundColor: c }} />
+        ))}
+      </div>
+      <div className="flex justify-center gap-2">
+        <button type="button" onClick={undo} disabled={history.length === 0}
+          className="clay-chip rounded-full px-3 py-1.5 text-xs font-bold text-ink-deep disabled:opacity-40">undo</button>
+        <button type="button" onClick={clearAll}
+          className="clay-chip rounded-full px-3 py-1.5 text-xs font-bold text-ink-deep">clear</button>
+        <button type="button" onClick={savePic}
+          className="clay-btn rounded-full px-3 py-1.5 text-xs font-bold text-white">save to vault</button>
+        <button type="button" onClick={() => { setPicIdx((p) => (p + 1) % COLORING_PICTURES.length); setFills({}); setHistory([]); }}
+          className="clay-chip rounded-full px-3 py-1.5 text-xs font-bold text-ink-deep">new picture</button>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─── Bloom Garden ─────────────────────────────────────────────── */
+
+const SEEDS = [
+  { id: "rose", emoji: "🌹", name: "Rose" },
+  { id: "tulip", emoji: "🌷", name: "Tulip" },
+  { id: "sunflower", emoji: "🌻", name: "Sunflower" },
+  { id: "daisy", emoji: "🌼", name: "Daisy" },
+  { id: "lavender", emoji: "💐", name: "Lavender" },
+  { id: "cherry", emoji: "🌸", name: "Cherry Blossom" },
+];
+
+type PlantStage = "empty" | "seed" | "sprout" | "bud" | "bloom";
+
+interface Plant {
+  stage: PlantStage;
+  seed: typeof SEEDS[0] | null;
+  watered: number;
+}
+
+function BloomGarden() {
+  const [bed, setBed] = useState<Plant[]>(() =>
+    Array.from({ length: 6 }, () => ({ stage: "empty" as PlantStage, seed: null, watered: 0 }))
+  );
+  const [pickSlot, setPickSlot] = useState<number | null>(null);
+
+  const plantSeed = (slotIdx: number, seed: typeof SEEDS[0]) => {
+    setBed((b) => b.map((p, i) => i === slotIdx ? { ...p, stage: "seed", seed, watered: 0 } : p));
+    setPickSlot(null);
+  };
+
+  const water = (slotIdx: number) => {
+    setBed((b) => b.map((p, i) => {
+      if (i !== slotIdx || !p.seed) return p;
+      const next = { ...p, watered: p.watered + 1 };
+      if (p.stage === "seed" && next.watered >= 2) next.stage = "sprout";
+      else if (p.stage === "sprout" && next.watered >= 4) next.stage = "bud";
+      else if (p.stage === "bud" && next.watered >= 6) next.stage = "bloom";
+      return next;
+    }));
+  };
+
+  const bloomCount = bed.filter((p) => p.stage === "bloom").length;
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+      <GameIntro emoji="🌱" title="Bloom Garden" sub="plant a seed, water it, watch it bloom" />
+      <div className="grid grid-cols-3 gap-3">
+        {bed.map((plant, i) => (
+          <button key={i} type="button"
+            onClick={() => plant.stage === "empty" ? setPickSlot(i) : water(i)}
+            onPointerDown={(e) => { if (plant.stage !== "empty") { e.preventDefault(); water(i); } }}
+            className="relative flex h-28 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-mint-300/60 bg-mint-50/40 transition-all hover:scale-105 active:scale-95">
+            {plant.stage === "empty" && <span className="text-2xl text-mint-300">+</span>}
+            {plant.stage === "seed" && <span className="text-2xl">🫘</span>}
+            {plant.stage === "sprout" && <span className="text-2xl">🌱</span>}
+            {plant.stage === "bud" && <span className="text-2xl">🪴</span>}
+            {plant.stage === "bloom" && (
+              <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-3xl">{plant.seed?.emoji}</motion.span>
+            )}
+            {plant.seed && <span className="mt-1 text-[10px] font-bold text-mint-600">{plant.seed.name}</span>}
+            {plant.stage !== "empty" && plant.stage !== "bloom" && (
+              <span className="absolute bottom-1 text-[9px] text-mint-400">hold to water 💧</span>
+            )}
+          </button>
+        ))}
+      </div>
+      {bloomCount >= 3 && (
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-sm font-bold text-mint-500">
+          🦋 butterflies are visiting your garden!
+        </motion.p>
+      )}
+      <p className="text-center text-xs font-bold text-ink-soft">{bloomCount}/6 bloomed</p>
+
+      {pickSlot !== null && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+          className="clay-card rounded-2xl p-4 space-y-3">
+          <p className="text-xs font-bold text-ink-soft">choose a seed</p>
+          <div className="flex flex-wrap gap-2">
+            {SEEDS.map((s) => (
+              <button key={s.id} type="button" onClick={() => plantSeed(pickSlot, s)}
+                className="clay-chip flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold text-ink-deep hover:scale-105 active:scale-95">
+                <span>{s.emoji}</span> {s.name}
+              </button>
+            ))}
+          </div>
+          <button type="button" onClick={() => setPickSlot(null)}
+            className="w-full text-[11px] font-bold text-ink-soft hover:text-ink-deep">cancel</button>
+        </motion.div>
+      )}
+    </motion.div>
+  );
+}
+
+/* ─── Pond Pals ─────────────────────────────────────────────── */
+
+const POND_CATCHES = [
+  { emoji: "🐟", name: "Goldfish", msg: "a tiny friend with a big smile" },
+  { emoji: "🐸", name: "Frog", msg: "ribbit! thanks for the visit" },
+  { emoji: "⭐", name: "Starfish", msg: "you found a star from the sea" },
+  { emoji: "🐢", name: "Turtle", msg: "slow and steady, always calm" },
+  { emoji: "🍾", name: "Message in a Bottle", msg: "someone left you a kind note" },
+  { emoji: "🥾", name: "Old Boot", msg: "someone lost this! but it makes a nice planter" },
+  { emoji: "🐙", name: "Octopus", msg: "eight arms, eight hugs" },
+  { emoji: "🦀", name: "Crab", msg: "snapping with joy to meet you" },
+];
+
+const POND_SHELF_KEY = "venting-pond-pals";
+
+function PondPals() {
+  const [state, setState] = useState<"idle" | "cast" | "nibble" | "caught">("idle");
+  const [catch_, setCatch] = useState<typeof POND_CATCHES[0] | null>(null);
+  const [shelf, setShelf] = useState<string[]>(() => {
+    try { const r = safeGetItem(POND_SHELF_KEY); return r ? JSON.parse(r) : []; } catch { return []; }
+  });
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cast = () => {
+    setState("cast");
+    const delay = 1000 + Math.random() * 2000;
+    timerRef.current = setTimeout(() => setState("nibble"), delay);
+  };
+
+  const reel = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    const c = POND_CATCHES[Math.floor(Math.random() * POND_CATCHES.length)];
+    setCatch(c);
+    setState("caught");
+    const next = [...new Set([...shelf, c.name])];
+    setShelf(next);
+    safeSetItem(POND_SHELF_KEY, JSON.stringify(next));
+  };
+
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+
+  const reset = () => { setState("idle"); setCatch(null); };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+      <GameIntro emoji="🎣" title="Pond Pals" sub="cast a line into the calm pond, meet little friends" />
+      <div className="relative mx-auto flex h-48 w-full max-w-sm items-center justify-center overflow-hidden rounded-3xl bg-gradient-to-b from-[#A8D8EA]/60 to-[#88C0D8]/80 border border-[#88C0D8]/40">
+        {/* ripples */}
+        {(state === "cast" || state === "nibble") && (
+          <motion.div initial={{ scale: 0.5, opacity: 0.6 }} animate={{ scale: 2, opacity: 0 }} transition={{ duration: 1.5, repeat: Infinity }}
+            className="absolute h-8 w-8 rounded-full border-2 border-white/40" />
+        )}
+        {state === "idle" && (
+          <button type="button" onClick={cast}
+            className="clay-btn rounded-full px-6 py-3 text-sm font-bold text-white">🎣 cast</button>
+        )}
+        {state === "cast" && (
+          <span className="text-2xl">🪝</span>
+        )}
+        {state === "nibble" && (
+          <motion.button type="button" onClick={reel} initial={{ scale: 1 }} animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 0.5, repeat: Infinity }}
+            className="clay-btn rounded-full px-6 py-3 text-sm font-bold text-white">
+            something's nibbling… tap!
+          </motion.button>
+        )}
+        {state === "caught" && catch_ && (
+          <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+            className="text-center">
+            <span className="text-4xl">{catch_.emoji}</span>
+            <p className="mt-1 text-sm font-bold text-white">{catch_.name}</p>
+            <p className="mt-0.5 text-xs text-white/80">{catch_.msg}</p>
+          </motion.div>
+        )}
+      </div>
+      {state === "caught" && (
+        <button type="button" onClick={reset}
+          className="clay-btn w-full rounded-full py-2.5 text-sm font-bold text-white">cast again 🎣</button>
+      )}
+      {shelf.length > 0 && (
+        <div className="clay-card rounded-2xl p-3 space-y-2">
+          <p className="text-[11px] font-bold text-ink-soft">friends met ({shelf.length})</p>
+          <div className="flex flex-wrap gap-1.5">
+            {shelf.map((name) => {
+              const c = POND_CATCHES.find((x) => x.name === name);
+              return (
+                <span key={name} className="clay-chip flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold text-ink-deep">
+                  <span>{c?.emoji}</span> {name}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+/* ─── Cloud Stack ─────────────────────────────────────────────── */
+
+function CloudStack() {
+  const [stack, setStack] = useState<number[]>([]);
+  const [cloudX, setCloudX] = useState(50);
+  const [dir, setDir] = useState(1);
+  const [wobble, setWobble] = useState<number | null>(null);
+  const [visitors, setVisitors] = useState<string[]>([]);
+  const rafRef = useRef<number>(0);
+  const speedRef = useRef(0.4);
+
+  // Animate cloud
+  useEffect(() => {
+    let last = performance.now();
+    const tick = (now: number) => {
+      const dt = (now - last) / 16;
+      last = now;
+      setCloudX((x) => {
+        let nx = x + dir * speedRef.current * dt;
+        if (nx > 90) { setDir(-1); nx = 90; }
+        if (nx < 10) { setDir(1); nx = 10; }
+        return nx;
+      });
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [dir]);
+
+  const drop = () => {
+    const x = cloudX;
+    setStack((s) => {
+      const next = [...s, x];
+      // Every 5 clouds, a visitor appears
+      if (next.length % 5 === 0) {
+        const v = Math.random() < 0.5 ? "🐦" : "⭐";
+        setVisitors((vs) => [...vs, v]);
+        setTimeout(() => setVisitors((vs) => vs.slice(1)), 3000);
+      }
+      return next;
+    });
+    setWobble(stack.length);
+    setTimeout(() => setWobble(null), 400);
+    // Speed up slightly
+    speedRef.current = Math.min(1.5, 0.4 + stack.length * 0.05);
+  };
+
+  const skyHue = 200 + stack.length * 3;
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+      <GameIntro emoji="☁️" title="Cloud Stack" sub="stack soft clouds into a cozy tower" />
+      <div className="relative mx-auto h-80 w-full max-w-sm overflow-hidden rounded-3xl border border-white/30"
+        style={{ background: `linear-gradient(180deg, hsl(${skyHue},50%,85%) 0%, hsl(${skyHue + 20},40%,92%) 100%)` }}>
+        {/* Stacked clouds */}
+        {stack.map((x, i) => (
+          <motion.div key={i}
+            initial={{ y: -20, scale: 1.1 }}
+            animate={{ y: 0, scale: wobble === i ? 1.05 : 1 }}
+            transition={{ type: "spring", stiffness: 200, damping: 15 }}
+            className="absolute rounded-full bg-white/90 shadow-md"
+            style={{
+              left: `${x}%`,
+              bottom: `${10 + i * 28}px`,
+              width: "80px",
+              height: "32px",
+              transform: "translateX(-50%)",
+            }} />
+        ))}
+        {/* Visitor */}
+        {visitors.length > 0 && (
+          <motion.span initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute right-4 text-2xl"
+            style={{ bottom: `${10 + stack.length * 28 + 20}px` }}>
+            {visitors[visitors.length - 1]}
+          </motion.span>
+        )}
+        {/* Sliding cloud */}
+        <motion.div
+          className="absolute top-4 h-10 w-20 rounded-full bg-white/95 shadow-lg cursor-pointer"
+          style={{ left: `${cloudX}%`, transform: "translateX(-50%)" }}
+          onClick={drop}
+          whileTap={{ scale: 0.9 }} />
+        <button type="button" onClick={drop}
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 clay-btn rounded-full px-5 py-2 text-xs font-bold text-white">
+          drop ☁️
+        </button>
+      </div>
+      <p className="text-center text-sm font-bold text-ink-deep">{stack.length} clouds high</p>
+    </motion.div>
+  );
+}
+
