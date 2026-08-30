@@ -900,9 +900,12 @@ function MoonlightGlide() {
       {/* Music CD button */}
       <div className="absolute top-4 right-4 z-10">
         <button type="button" onClick={() => setShowMusicMenu((v) => !v)}
-          className="relative flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#5F6DBE] to-[#8C9AD6] shadow-md transition-transform hover:scale-110 active:scale-95"
+          className={cn("relative flex h-10 w-10 items-center justify-center rounded-full shadow-md transition-transform hover:scale-110 active:scale-95",
+            musicPlaying ? "ring-2 ring-[#C4CBE8]/60" : "bg-[#E4E8F8]/60")}
           aria-label="Music settings">
-          <span className={cn("text-white text-sm", musicPlaying && "animate-spin")} style={{ animationDuration: "3s" }}>💿</span>
+          <span
+            className={cn("cd-disc block h-8 w-8 rounded-full", musicPlaying && "animate-cd-spin")}
+          />
         </button>
         {showMusicMenu && (
           <motion.div initial={{ opacity: 0, y: -4, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}

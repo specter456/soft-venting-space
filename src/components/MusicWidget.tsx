@@ -30,14 +30,14 @@ export default function MusicWidget() {
         aria-expanded={menuOpen}
         title="Soothing sounds"
         className={cn(
-          "clay-chip flex h-14 w-14 items-center justify-center rounded-full transition-transform hover:scale-105 active:scale-95",
-          state.playing && "ring-2 ring-lavender-300/60",
+          "clay-chip flex h-12 w-12 items-center justify-center rounded-full transition-transform hover:scale-105 active:scale-95",
+          state.playing && "ring-2 ring-[#C4CBE8]/60",
         )}
       >
         <span
           aria-hidden
           className={cn(
-            "cd-disc block h-10 w-10 rounded-full",
+            "cd-disc relative block h-9 w-9 rounded-full",
             state.playing && "animate-cd-spin",
           )}
         />
