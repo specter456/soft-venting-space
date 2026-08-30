@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { Delete, LockKeyhole, RotateCcw } from "lucide-react";
 import { Logo } from "@/components/Logo";
@@ -80,15 +80,8 @@ export default function LoginEntry() {
   const userName = kv.find((k) => k.key === KV_USER_NAME)?.value ?? null;
   const hasReturningUser = hydrated && storedHash && storedSalt && userType;
 
-  // Returning users: jump to unlock on mount
-  const initDoneRef = useRef(false);
-  useEffect(() => {
-    if (!initDoneRef.current && hydrated && hasReturningUser) {
-      initDoneRef.current = true;
-      setStep("unlock");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, hasReturningUser]);
+  // No auto-jump — returning users see the entry choice screen first,
+  // with an "Already have a space? Log in" link at the bottom.
 
   // ─── Passcode handling ────────────────────────────────────────────
   const finishCode = useCallback(
@@ -260,7 +253,13 @@ export default function LoginEntry() {
                   Continue as guest
                 </button>
               </div>
-              <p className="mt-5 text-[11px] font-semibold text-ink-soft">
+              {hasReturningUser && (
+                <button type="button" onClick={() => setStep("unlock")}
+                  className="mt-5 text-xs font-bold text-[#5F6DBE] underline-offset-4 hover:underline">
+                  Already have a space? Log in 💜
+                </button>
+              )}
+              <p className="mt-4 text-[11px] font-semibold text-ink-soft">
                 🔒 Nothing is uploaded. Ever.
               </p>
             </motion.div>
