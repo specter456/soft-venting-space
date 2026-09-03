@@ -6,6 +6,7 @@ import { UnsavedDialog } from "@/components/UnsavedDialog";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
 import MusicWidget from "@/components/MusicWidget";
+import BreathingMinute from "@/components/BreathingMinute";
 import { LockScreen } from "@/components/LockScreen";
 import {
   KV_PASSCODE_HASH,
@@ -231,6 +232,9 @@ export default function Dashboard() {
         </main>
 
         {showGuard && <UnsavedDialog onSave={handleSave} onLeave={handleLeave} />}
+
+        {/* ─── "I need a minute" breathing bubble ──────────────── */}
+        <BreathingMinute />
 
         {/* ─── Bottom taskbar — Home | Games | Settings ───────────── */}
         {showBar && (

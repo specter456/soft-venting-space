@@ -6,6 +6,8 @@ import { removeItem, saveCheckin, useTable, type MoodCheckin } from "@/lib/db";
 import { type MoodId, moodById, todayDateKey } from "@/lib/moods";
 import { useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
+import FutureNoteSection from "@/components/FutureNoteSection";
+import OnThisDay from "@/components/OnThisDay"
 
 /** Exactly four quick moods — one tap selects only that one. */
 const QUICK_MOODS: MoodId[] = ["happy", "sad", "angry", "nervous"];
@@ -195,6 +197,12 @@ export default function HomeScreen() {
           )}
         </div>
       </section>
+
+      {/* ─── On This Day — memories from the same date ──────────── */}
+      <OnThisDay />
+
+      {/* ─── A Note for Future You ──────────────────────────────── */}
+      <FutureNoteSection />
 
       {/* ─── Feature grid — exactly two per row ───────────────────── */}
       <section>
