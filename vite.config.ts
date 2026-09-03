@@ -17,7 +17,7 @@ export default defineConfig({
     dedupe: ["react", "react/jsx-runtime", "react-dom", "react-dom/client"],
   },
   build: {
-    // Enable source maps for better debugging (disable in production if needed)
+    // No source maps in production
     sourcemap: false,
     // Optimize chunk splitting
     rollupOptions: {

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 import { Delete, LockKeyhole, RotateCcw } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useTapGuard } from "@/lib/useTapGuard";
+import { DocumentHead } from "@/components/DocumentHead";
 import {
   KV_PASSCODE_HASH,
   KV_PASSCODE_SALT,
@@ -207,6 +208,11 @@ export default function LoginEntry() {
   // ─── RENDER ────────────────────────────────────────────────────────
   return (
     <div className="relative flex min-h-dvh items-center justify-center px-5 text-ink">
+      <DocumentHead
+        title="Open your safe room"
+        description="Enter your private Venting space. No account needed — your feelings stay right here on your device."
+        canonical="/login"
+      />
       {/* background blobs */}
       <div aria-hidden className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full bg-[#AAB6E3]/30 blur-2xl" />
       <div aria-hidden className="pointer-events-none fixed top-72 -right-24 h-80 w-80 rounded-full bg-[#F3E7C9]/30 blur-2xl" />

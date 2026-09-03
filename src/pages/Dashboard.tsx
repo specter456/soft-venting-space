@@ -80,6 +80,15 @@ export default function Dashboard() {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [location.pathname]);
 
+  const isHome = location.pathname === "/dashboard";
+  const title = TITLES[location.pathname] ?? "Venting";
+  const showBar = BAR_ROUTES.includes(location.pathname) || location.pathname.startsWith("/dashboard/calendar/");
+
+  // Set document title for the private dashboard
+  useEffect(() => {
+    document.title = title === "Venting" ? "Venting" : `${title} — Venting`;
+  }, [title]);
+
   // Decide the initial lock state once storage has hydrated. Adjusting state
   // during render (guarded, runs once) avoids effect cascades.
   if (hydrated && !lockInitDone) {
@@ -127,10 +136,6 @@ export default function Dashboard() {
       />
     );
   }
-
-  const isHome = location.pathname === "/dashboard";
-  const title = TITLES[location.pathname] ?? "Venting";
-  const showBar = BAR_ROUTES.includes(location.pathname) || location.pathname.startsWith("/dashboard/calendar/");
 
   return (
     <div className="relative overflow-x-hidden text-ink">

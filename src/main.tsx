@@ -4,33 +4,50 @@ import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
 import { AppErrorBoundary, installGlobalErrorHandlers } from "@/components/AppErrorBoundary";
 import { OfflineNotice } from "@/components/Friendly";
 import { hydrate } from "@/lib/db";
-import React from "react";
+import React, { Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import "./index.css";
 
-// All screens are imported eagerly: navigation is instant, with no "Loading…"
-// flash between screens. Everything reads from the on-device reactive cache,
-// so screens paint immediately and content simply fills in.
+// Public routes — eagerly imported (small, visible immediately)
 import Landing from "./pages/Landing";
 import LoginEntry from "./pages/LoginEntry";
 import WelcomeCheckin from "./pages/WelcomeCheckin";
-import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
-import HomeScreen from "./pages/app/HomeScreen";
-import RecordScreen from "./pages/app/RecordScreen";
-import NotesScreen from "./pages/app/NotesScreen";
-import NoteEditor from "./pages/app/NoteEditor";
-import CreateScreen from "./pages/app/CreateScreen";
-import VaultScreen from "./pages/app/VaultScreen";
-import ScribbleScreen from "./pages/app/ScribbleScreen";
-import StickerStudio from "./pages/app/StickerStudio";
-import GifStudio from "./pages/app/GifStudio";
-import GamesScreen from "./pages/app/GamesScreen";
-import SettingsScreen from "./pages/app/SettingsScreen";
-import DiaryScreen from "./pages/app/DiaryScreen";
-import CalendarScreen from "./pages/app/CalendarScreen";
-import CalendarDayView from "./pages/app/CalendarDayView";
+
+// Dashboard shell — eagerly imported (thin wrapper)
+import Dashboard from "./pages/Dashboard";
+
+// Dashboard screens — lazy-loaded for smaller initial bundle
+const HomeScreen = React.lazy(() => import("./pages/app/HomeScreen"));
+const RecordScreen = React.lazy(() => import("./pages/app/RecordScreen"));
+const NotesScreen = React.lazy(() => import("./pages/app/NotesScreen"));
+const NoteEditor = React.lazy(() => import("./pages/app/NoteEditor"));
+const CreateScreen = React.lazy(() => import("./pages/app/CreateScreen"));
+const VaultScreen = React.lazy(() => import("./pages/app/VaultScreen"));
+const ScribbleScreen = React.lazy(() => import("./pages/app/ScribbleScreen"));
+const StickerStudio = React.lazy(() => import("./pages/app/StickerStudio"));
+const GifStudio = React.lazy(() => import("./pages/app/GifStudio"));
+const GamesScreen = React.lazy(() => import("./pages/app/GamesScreen"));
+const SettingsScreen = React.lazy(() => import("./pages/app/SettingsScreen"));
+const DiaryScreen = React.lazy(() => import("./pages/app/DiaryScreen"));
+const CalendarScreen = React.lazy(() => import("./pages/app/CalendarScreen"));
+const CalendarDayView = React.lazy(() => import("./pages/app/CalendarDayView"));
+
+/** Soft breathing-heart loader for lazy chunks */
+function ScreenLoader() {
+  return (
+    <div className="flex min-h-[60dvh] flex-col items-center justify-center gap-4 text-center">
+      <div className="text-4xl animate-floaty-slow" aria-hidden>💜</div>
+      <p className="text-sm font-semibold text-ink-soft">warming up…</p>
+    </div>
+  );
+}
+
+/** Wrap lazy components in Suspense */
+function Lazy({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<ScreenLoader />}>{children}</Suspense>;
+}
 
 // Kick off local-storage hydration immediately — everything Venting needs
 // lives on this device, so no async auth gate is required.
@@ -154,22 +171,22 @@ createRoot(rootEl).render(
               </RouteShell>
             }
           >
-            <Route index element={<HomeScreen />} />
-            <Route path="record" element={<RecordScreen />} />
-            <Route path="notes" element={<NotesScreen />} />
-            <Route path="notes/new" element={<NoteEditor />} />
-            <Route path="create" element={<CreateScreen />} />
-            <Route path="scribble" element={<ScribbleScreen />} />
-            <Route path="stickers" element={<StickerStudio />} />
-            <Route path="gif-studio" element={<GifStudio />} />
-            <Route path="vault" element={<VaultScreen />} />
-            <Route path="games" element={<GamesScreen />} />
-            <Route path="calendar" element={<CalendarScreen />} />
-            <Route path="calendar/:dateKey" element={<CalendarDayView />} />
-            <Route path="settings" element={<SettingsScreen />} />
-            <Route path="diary" element={<DiaryScreen />} />
+            <Route index element={<Lazy><HomeScreen /></Lazy>} />
+            <Route path="record" element={<Lazy><RecordScreen /></Lazy>} />
+            <Route path="notes" element={<Lazy><NotesScreen /></Lazy>} />
+            <Route path="notes/new" element={<Lazy><NoteEditor /></Lazy>} />
+            <Route path="create" element={<Lazy><CreateScreen /></Lazy>} />
+            <Route path="scribble" element={<Lazy><ScribbleScreen /></Lazy>} />
+            <Route path="stickers" element={<Lazy><StickerStudio /></Lazy>} />
+            <Route path="gif-studio" element={<Lazy><GifStudio /></Lazy>} />
+            <Route path="vault" element={<Lazy><VaultScreen /></Lazy>} />
+            <Route path="games" element={<Lazy><GamesScreen /></Lazy>} />
+            <Route path="calendar" element={<Lazy><CalendarScreen /></Lazy>} />
+            <Route path="calendar/:dateKey" element={<Lazy><CalendarDayView /></Lazy>} />
+            <Route path="settings" element={<Lazy><SettingsScreen /></Lazy>} />
+            <Route path="diary" element={<Lazy><DiaryScreen /></Lazy>} />
           </Route>
-          <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<NotFound title="Page not found" />} />
         </Routes>
       </BrowserRouter>
       <Toaster />

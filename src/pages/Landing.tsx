@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Logo } from "@/components/Logo";
 import { SplashScreen } from "@/components/SplashScreen";
+import { DocumentHead } from "@/components/DocumentHead";
 
 const STEPS = [
   {
@@ -40,7 +41,20 @@ export default function Landing() {
   const primaryCta = () => navigate("/login");
 
   return (
-    <div className="relative min-h-screen text-ink">
+    <div className="relative min-h-screen text-ink" role="landing">
+      <DocumentHead
+        title="Venting — a tiny safe room in your phone"
+        description="Venting is a private, calming space to express your feelings through voice recordings, notes, doodling, stickers, calming games, and a cozy diary. Everything stays on your device."
+        canonical="/"
+      />
+      {/* ─── Breadcrumb (public) ──────────────────────────────────── */}
+      <nav aria-label="Breadcrumb" className="relative z-20 mx-auto w-full max-w-6xl px-5 pt-4 sm:px-8">
+        <ol className="flex items-center gap-1.5 text-xs font-semibold text-ink-soft">
+          <li>
+            <span aria-current="page" className="text-ink-deep">Home</span>
+          </li>
+        </ol>
+      </nav>
       {/* splash screen */}
       <SplashScreen visible={showSplash} />
 
@@ -65,7 +79,7 @@ export default function Landing() {
 
 
       {/* ─── Centered brand: icon → name → tagline → feeling line ──── */}
-      <section className="relative z-10 mx-auto flex min-h-[70vh] w-full max-w-6xl flex-col items-center justify-center px-5 pt-4 pb-16 sm:px-8">
+      <header role="banner" className="relative z-10 mx-auto flex min-h-[70vh] w-full max-w-6xl flex-col items-center justify-center px-5 pt-4 pb-16 sm:px-8">
         {/* floating hearts & sparkles */}
         <div className="pointer-events-none relative">
           <motion.span
@@ -149,7 +163,7 @@ export default function Landing() {
           <span className="flex items-center gap-1.5">🤍 no judgment, ever</span>
           <span className="flex items-center gap-1.5">✨ one gentle check-in a day</span>
         </motion.div>
-      </section>
+      </header>
 
       {/* ─── Explanation card (opens when "See how it feels" is tapped) ── */}
       <AnimatePresence>
@@ -227,7 +241,8 @@ export default function Landing() {
         )}
       </AnimatePresence>
 
-      {/* ─── Footer ──────────────────────────────────────────────────── */}              <footer className="relative z-10 border-t border-[#C4CBE8]/40">
+      {/* ─── Footer ──────────────────────────────────────────────────── */}
+      <footer role="contentinfo" className="relative z-10 border-t border-[#C4CBE8]/40">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-4 px-5 py-8 sm:flex-row sm:px-8">
           <div className="flex items-center gap-2.5">
             <Logo className="h-8 w-8" />
