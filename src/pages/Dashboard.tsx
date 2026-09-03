@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
 import MusicWidget from "@/components/MusicWidget";
 import BreathingMinute from "@/components/BreathingMinute";
+import GentleReminder from "@/components/GentleReminder";
 import { getKvFromCache } from "@/lib/db";
 import { LockScreen } from "@/components/LockScreen";
 import {
@@ -234,6 +235,9 @@ export default function Dashboard() {
 
         {/* ─── "I need a minute" breathing bubble ──────────────── */}
         <BreathingMinute />
+
+        {/* ─── Gentle daily reminder (one toast per day) ────────── */}
+        <GentleReminder />
 
         {/* ─── Bottom taskbar — Home | Games | Settings ───────────── */}
         {showBar && (

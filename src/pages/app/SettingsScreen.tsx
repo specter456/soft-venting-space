@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { LockScreen } from "@/components/LockScreen";
 import {
@@ -13,6 +13,7 @@ import { safeRemoveItem, safeSessionRemoveItem } from "@/lib/safe-storage";
 import { useAsyncTapGuard, useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
 import { THEMES, useTheme } from "@/lib/themes";
+import { downloadBackup, restoreBackup } from "@/lib/backup";
 
 const AVATARS = ["🐻", "🐰", "🐱", "🦊", "🐼", "🐨", "🐸", "🦋", "🌸", "🌙"];
 
@@ -255,6 +256,11 @@ export default function SettingsScreen() {
         )}
       </Section>
 
+      {/* ─── Keep Your Space Safe ──────────────────────────────── */}
+      <Section title="Keep your space safe" emoji="🛡️">
+        <BackupSection />
+      </Section>
+
       {/* ─── General ──────────────────────────────────────────────── */}
       <Section title="General" emoji="🌿">
         <Row label="Language">
@@ -421,6 +427,95 @@ function ThemePicker() {
           <span className="text-[10px] font-bold text-ink-deep">{t.label}</span>
         </button>
       ))}
+    </div>
+  );
+}
+
+function BackupSection() {
+  const [restoring, setRestoring] = useState(false);
+  const [confirmRestore, setConfirmRestore] = useState(false);
+  const [error, setError] = useState("");
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const handleDownload = useTapGuard(async () => {
+    try {
+      toast("packing your space…", { description: "this may take a moment for large diaries." });
+      await downloadBackup();
+      toast("downloaded ✨", { description: "my-venting-space.zip — keep it safe." });
+    } catch {
+      toast("something went soft", { description: "couldn't create the backup. try again." });
+    }
+  }, 600);
+
+  const handleFilePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError("");
+    setRestoring(true);
+    const result = await restoreBackup(file);
+    setRestoring(false);
+    if (result.ok) {
+      toast("welcome home 💜", { description: "your space has been restored." });
+      // Reload so all caches update
+      window.location.reload();
+    } else {
+      setError(result.error || "that file didn't look like a Venting space.");
+    }
+    // Reset file input
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  return (
+    <div className="space-y-3">
+      <button
+        type="button"
+        onClick={handleDownload}
+        className="clay-btn w-full rounded-2xl px-5 py-3.5 text-sm font-bold text-white"
+      >
+        📦 download my whole space
+      </button>
+      <p className="text-[11px] font-medium text-ink-soft">
+        saves all notes, diary, calendar, stickers, GIFs, and settings into one zip file.
+      </p>
+
+      <div className="h-px bg-lavender-100/70" />
+
+      <button
+        type="button"
+        onClick={() => {
+          if (confirmRestore) {
+            fileRef.current?.click();
+          } else {
+            setConfirmRestore(true);
+            window.setTimeout(() => setConfirmRestore(false), 5000);
+          }
+        }}
+        disabled={restoring}
+        className={cn(
+          "w-full rounded-2xl px-5 py-3.5 text-sm font-bold transition-all",
+          confirmRestore
+            ? "bg-blush-100/80 text-blush-500 shadow-[0_4px_12px_-4px_rgba(201,106,124,0.4)]"
+            : "clay-btn text-white",
+        )}
+      >
+        {restoring ? "restoring…" : confirmRestore ? "tap again to choose a backup" : "📂 restore from a backup"}
+      </button>
+      {confirmRestore && !restoring && (
+        <p className="text-[11px] font-medium text-ink-soft">
+          this will gently replace what's on this device — continue?
+        </p>
+      )}
+      {error && (
+        <p className="text-[11px] font-medium text-blush-500">{error}</p>
+      )}
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".zip"
+        onChange={handleFilePick}
+        className="hidden"
+        aria-label="Choose backup file"
+      />
     </div>
   );
 }
