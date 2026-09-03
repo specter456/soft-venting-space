@@ -173,17 +173,17 @@
     @apply border-border outline-ring/50;
   }
   html {
-    background: #FDF5E6;
+    background: var(--theme-bg-start, #FDF5E6);
   }
   body {
-    @apply text-foreground;
+    color: var(--theme-text, #3A4170);
     min-height: 100dvh;
     overflow-x: hidden;
     background: linear-gradient(
       180deg,
-      #FDF5E6 0%,
-      #EDEBF6 50%,
-      #D9DEF4 100%
+      var(--theme-bg-start, #FDF5E6) 0%,
+      var(--theme-bg-mid, #EDEBF6) 50%,
+      var(--theme-bg-end, #D9DEF4) 100%
     );
     font-family: "Nunito", ui-rounded, "SF Pro Rounded",
       system-ui, -apple-system, "Segoe UI", Roboto,
@@ -235,31 +235,31 @@
 /* ─── Frosted glass surfaces — Old Lace tinted ────────────────────── */
 @layer components {
   .clay-card {
-    background: rgba(253, 245, 230, 0.7);
-    border: 1px solid rgba(253, 245, 230, 0.6);
+    background: var(--theme-card, rgba(253, 245, 230, 0.7));
+    border: 1px solid var(--theme-card-border, rgba(253, 245, 230, 0.6));
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.5),
       0 4px 16px -4px rgba(90, 90, 140, 0.12);
   }
 
   .clay-chip {
-    background: rgba(253, 245, 230, 0.55);
-    border: 1px solid rgba(253, 245, 230, 0.5);
+    background: var(--theme-card, rgba(253, 245, 230, 0.55));
+    border: 1px solid var(--theme-card-border, rgba(253, 245, 230, 0.5));
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.4),
       0 2px 8px -2px rgba(90, 90, 140, 0.08);
   }
 
   .clay-press {
-    background: rgba(253, 245, 230, 0.45);
-    border: 1px solid rgba(253, 245, 230, 0.4);
+    background: var(--theme-card, rgba(253, 245, 230, 0.45));
+    border: 1px solid var(--theme-card-border, rgba(253, 245, 230, 0.4));
     box-shadow:
       inset 0 2px 4px -1px rgba(90, 90, 140, 0.1);
   }
 
-  /* Primary button — Deep Wisteria #5F6DBE */
+  /* Primary button — uses theme accent */
   .clay-btn {
-    background: linear-gradient(180deg, #6F7BC0, #5F6DBE);
+    background: linear-gradient(180deg, var(--theme-accent, #6F7BC0), var(--theme-accent-deep, #5F6DBE));
     border: 1px solid rgba(255, 255, 255, 0.3);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.3),

@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { Delete, LockKeyhole, Sparkles } from "lucide-react";
-import { KV_PASSCODE_HASH, KV_PASSCODE_SALT, setKv } from "@/lib/db";
+import { KV_PASSCODE_HASH, KV_PASSCODE_SALT, setKv, getKvFromCache } from "@/lib/db";
 import { hashPasscode, randomSalt } from "@/lib/passcode";
 import { cn } from "@/lib/utils";
 
@@ -199,6 +199,11 @@ export function LockScreen({
             )}
           </div>
 
+          {mode === "unlock" && heading === "Welcome back" && (
+            <div className="mx-auto mt-4">
+              <LockAvatar />
+            </div>
+          )}
           <h1 className="mt-5 text-center text-xl font-bold tracking-tight text-ink-deep">
             {heading}
           </h1>
@@ -308,5 +313,21 @@ function PadKey({
     >
       {digit}
     </button>
+  );
+}
+
+function LockAvatar() {
+  const avatar = getKvFromCache("profileAvatar") || "💜";
+  if (avatar.startsWith("data:") || avatar.startsWith("http")) {
+    return (
+      <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-[var(--theme-accent-light)]">
+        <img src={avatar} alt="your face" className="h-full w-full object-cover" />
+      </div>
+    );
+  }
+  return (
+    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--theme-accent-light)] text-3xl">
+      <span aria-hidden>{avatar}</span>
+    </div>
   );
 }

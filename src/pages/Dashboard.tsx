@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
 import MusicWidget from "@/components/MusicWidget";
 import BreathingMinute from "@/components/BreathingMinute";
+import { getKvFromCache } from "@/lib/db";
 import { LockScreen } from "@/components/LockScreen";
 import {
   KV_PASSCODE_HASH,
@@ -139,32 +140,30 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="relative overflow-x-hidden text-ink">
-      {/* dreamy background blobs — full viewport, new palette colors at 35% */}
+    <div className="relative overflow-x-hidden text-ink">        {/* dreamy background blobs — full viewport, theme colors */}
       <div
         aria-hidden
-        className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full bg-[#AAB6E3]/30 blur-2xl"
+        className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full blur-2xl"
+        style={{ background: "var(--theme-blob-1, rgba(170,182,227,0.3))" }}
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed top-72 -right-24 h-80 w-80 rounded-full bg-[#F3E7C9]/30 blur-2xl"
+        className="pointer-events-none fixed top-72 -right-24 h-80 w-80 rounded-full blur-2xl"
+        style={{ background: "var(--theme-blob-2, rgba(243,231,201,0.3))" }}
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full bg-[#C4CBE8]/30 blur-2xl"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none fixed top-[40%] left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-[#EDEBF6]/30 blur-2xl"
+        className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full blur-2xl"
+        style={{ background: "var(--theme-blob-3, rgba(196,203,232,0.3))" }}
       />
 
       <div className="relative mx-auto flex w-full max-w-[800px] flex-col">
         {/* ─── Header ─────────────────────────────────────────────── */}
-        <header className="sticky top-0 z-40 bg-[#EDEBF6]/80 px-5 pt-6 pb-3 border-b border-[#C4CBE8]/40">
+        <header className="sticky top-0 z-40 px-5 pt-6 pb-3 border-b border-[var(--theme-accent-light)]" style={{ background: "var(--theme-header-bg, rgba(237,235,246,0.8))" }}>
           <div className="flex items-center justify-between">
             {isHome ? (
               <div className="flex items-center gap-2.5">
-                <Logo className="h-10 w-10" />
+                <HeaderAvatar />
                 <div className="leading-tight">
                   <p className="text-base font-bold tracking-tight text-ink-deep">
                     Venting
@@ -253,10 +252,10 @@ export default function Dashboard() {
                     to={tab.to}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "flex flex-1 flex-col items-center gap-0.5 rounded-full py-2 transition-all",                        active
-                          ? "bg-[#5F6DBE] shadow-[inset_0_1px_0_rgba(255,255,255,0.3)]"
-                          : "hover:bg-[#EDEBF6]/60",
+                      "flex flex-1 flex-col items-center gap-0.5 rounded-full py-2 transition-all",
+                      !active && "hover:bg-[var(--theme-accent-light)]",
                     )}
+                    style={active ? { background: "var(--theme-accent-deep, #5F6DBE)" } : undefined}
                   >
                     <span
                       className={cn(
@@ -282,6 +281,22 @@ export default function Dashboard() {
           </nav>
         )}
       </div>
+    </div>
+  );
+}
+
+function HeaderAvatar() {
+  const avatar = getKvFromCache("profileAvatar") || "💜";
+  if (avatar.startsWith("data:") || avatar.startsWith("http")) {
+    return (
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-[var(--theme-accent-light)]">
+        <img src={avatar} alt="your face" className="h-full w-full object-cover" />
+      </div>
+    );
+  }
+  return (
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--theme-accent-light)] text-xl">
+      <span aria-hidden>{avatar}</span>
     </div>
   );
 }

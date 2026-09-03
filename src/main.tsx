@@ -7,6 +7,7 @@ import { hydrate } from "@/lib/db";
 import React, { Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router";
+import { ThemeProvider } from "@/lib/themes";
 import "./index.css";
 
 // Public routes — eagerly imported (small, visible immediately)
@@ -135,6 +136,7 @@ createRoot(rootEl).render(
       <ToolbarErrorBoundary>
         <VlyToolbar />
       </ToolbarErrorBoundary>
+      <ThemeProvider>
       <BrowserRouter>
         <RouteSyncer />
         <GlobalNotice />
@@ -189,6 +191,7 @@ createRoot(rootEl).render(
           <Route path="*" element={<NotFound title="Page not found" />} />
         </Routes>
       </BrowserRouter>
+      </ThemeProvider>
       <Toaster />
     </AppErrorBoundary>
   </React.StrictMode>,

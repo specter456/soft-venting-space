@@ -12,6 +12,7 @@ import {
 import { safeRemoveItem, safeSessionRemoveItem } from "@/lib/safe-storage";
 import { useAsyncTapGuard, useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
+import { THEMES, useTheme } from "@/lib/themes";
 
 const AVATARS = ["🐻", "🐰", "🐱", "🦊", "🐼", "🐨", "🐸", "🦋", "🌸", "🌙"];
 
@@ -137,26 +138,8 @@ export default function SettingsScreen() {
             </button>
           </div>
         </Row>
-        <Row label="Your avatar">
-          <div className="flex flex-wrap gap-1.5">
-            {AVATARS.map((a) => (
-              <button
-                key={a}
-                type="button"
-                onClick={() => {
-                  setAvatar(a);
-                  void setKv("profileAvatar", a);
-                }}
-                aria-label={`Avatar ${a}`}
-                className={cn(
-                  "clay-chip flex h-9 w-9 items-center justify-center rounded-full text-lg transition-transform hover:scale-110",
-                  avatar === a && "ring-2 ring-lavender-400 ring-offset-2 ring-offset-cream",
-                )}
-              >
-                <span aria-hidden>{a}</span>
-              </button>
-            ))}
-          </div>
+        <Row label="Your face">
+          <AvatarPicker avatar={avatar} onSelect={(a) => { setAvatar(a); void setKv("profileAvatar", a); }} />
         </Row>
       </Section>
 
@@ -233,6 +216,9 @@ export default function SettingsScreen() {
 
       {/* ─── Appearance ───────────────────────────────────────────── */}
       <Section title="Appearance" emoji="🎨">
+        <Row label="Theme">
+          <ThemePicker />
+        </Row>
         <Row label="Gentle sounds">
           <Toggle on={sounds} onChange={toggleSounds} label="Gentle sounds" />
         </Row>
@@ -351,5 +337,90 @@ function Toggle({
         )}
       />
     </button>
+  );
+}
+
+function AvatarPicker({ avatar, onSelect }: { avatar: string; onSelect: (a: string) => void }) {
+  const vaultItems = useTable<import("@/lib/db").VaultItem>("vaultItems");
+  const [showStickers, setShowStickers] = useState(false);
+  const stickerItems = vaultItems.filter((v) => v.kind === "sticker");
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1.5">
+        {AVATARS.map((a) => (
+          <button
+            key={a}
+            type="button"
+            onClick={() => onSelect(a)}
+            aria-label={`Avatar ${a}`}
+            className={cn(
+              "clay-chip flex h-9 w-9 items-center justify-center rounded-full text-lg transition-transform hover:scale-110",
+              avatar === a && "ring-2 ring-lavender-400 ring-offset-2 ring-offset-cream",
+            )}
+          >
+            <span aria-hidden>{a}</span>
+          </button>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={() => setShowStickers(!showStickers)}
+        className="text-[11px] font-bold text-lavender-600 underline-offset-4 hover:underline"
+      >
+        {showStickers ? "hide stickers" : "choose your face ✨"}
+      </button>
+      {showStickers && (
+        <div className="flex flex-wrap gap-1.5">
+          {stickerItems.length === 0 && (
+            <p className="text-[10px] text-ink-soft">create stickers in the sticker studio first</p>
+          )}
+          {stickerItems.map((s) => (
+            <button
+              key={s._id}
+              type="button"
+              onClick={() => onSelect(s.art)}
+              aria-label="Use sticker as avatar"
+              className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-transform hover:scale-110 overflow-hidden",
+                avatar === s.art
+                  ? "border-[var(--theme-accent)]"
+                  : "border-transparent",
+              )}
+            >
+              <img src={s.art} alt="sticker" className="h-full w-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ThemePicker() {
+  const { themeId, setTheme } = useTheme();
+  return (
+    <div className="flex flex-wrap gap-2">
+      {THEMES.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          onClick={() => setTheme(t.id)}
+          className={cn(
+            "flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition-all",
+            themeId === t.id
+              ? "ring-2 ring-[var(--theme-accent)] ring-offset-2 ring-offset-[var(--theme-bg-start)]"
+              : "hover:bg-[var(--theme-accent-light)]",
+          )}
+        >
+          <span
+            className="h-8 w-8 rounded-full border border-white/50 shadow-sm"
+            style={{ background: t.swatch }}
+            aria-hidden
+          />
+          <span className="text-[10px] font-bold text-ink-deep">{t.label}</span>
+        </button>
+      ))}
+    </div>
   );
 }

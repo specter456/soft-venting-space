@@ -7,7 +7,9 @@ import { type MoodId, moodById, todayDateKey } from "@/lib/moods";
 import { useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
 import FutureNoteSection from "@/components/FutureNoteSection";
-import OnThisDay from "@/components/OnThisDay"
+import OnThisDay from "@/components/OnThisDay";
+import MonthlyWeather from "@/components/MonthlyWeather";
+import { getKvFromCache } from "@/lib/db"
 
 /** Exactly four quick moods — one tap selects only that one. */
 const QUICK_MOODS: MoodId[] = ["happy", "sad", "angry", "nervous"];
@@ -107,16 +109,21 @@ export default function HomeScreen() {
     <div className="space-y-6">
       {/* ─── Greeting ─────────────────────────────────────────────── */}
       <section>
-        <p className="font-script text-3xl font-bold tracking-tight text-ink-deep">
-          {greet.emoji} {greet.text}, friend
-        </p>
-        <p className="mt-1 text-sm font-medium text-ink-soft">
-          {new Date().toLocaleDateString(undefined, {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-          })}
-        </p>
+        <div className="flex items-center gap-3">
+          <UserAvatar />
+          <div>
+            <p className="font-script text-3xl font-bold tracking-tight text-ink-deep">
+              {greet.emoji} {greet.text}, friend
+            </p>
+            <p className="mt-1 text-sm font-medium text-ink-soft">
+              {new Date().toLocaleDateString(undefined, {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+              })}
+            </p>
+          </div>
+        </div>
       </section>
 
       {/* ─── Mood typing box + 4 quick moods ──────────────────────── */}
@@ -198,6 +205,9 @@ export default function HomeScreen() {
         </div>
       </section>
 
+      {/* ─── Monthly Weather ────────────────────────────────────── */}
+      <MonthlyWeather />
+
       {/* ─── On This Day — memories from the same date ──────────── */}
       <OnThisDay />
 
@@ -250,6 +260,23 @@ function SparkleDecor() {
       <span className="absolute top-4 left-6 text-sm text-lavender-300/70">✦</span>
       <span className="absolute top-10 right-8 text-xs text-blush-300/70">✦</span>
       <span className="absolute bottom-6 left-10 text-xs text-mint-300/70">✧</span>
+    </div>
+  );
+}
+
+function UserAvatar() {
+  const avatar = getKvFromCache("profileAvatar") || "💜";
+  // If it's an emoji, show it big. If it's a data URL (sticker), show as image.
+  if (avatar.startsWith("data:") || avatar.startsWith("http")) {
+    return (
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-[var(--theme-accent-light)]">
+        <img src={avatar} alt="your face" className="h-full w-full object-cover" />
+      </div>
+    );
+  }
+  return (
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--theme-accent-light)] text-2xl">
+      <span aria-hidden>{avatar}</span>
     </div>
   );
 }
