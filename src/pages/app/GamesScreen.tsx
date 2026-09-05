@@ -170,15 +170,109 @@ function playCustomSound(sound: GameSound) {
         osc.start(ctx.currentTime);
         osc.stop(ctx.currentTime + 0.5);
         break;
-    }
-  } catch {
-    /* audio unavailable */
-  }
+    }  } catch { /* audio unavailable */ }
+}
+
+/* ─── Bright shared game sounds ─────────────────────────────────── */
+
+const PENTA = [262, 294, 330, 392, 440];
+let _sharedCtx: AudioContext | null = null;
+function sCtx(): AudioContext { if (!_sharedCtx) _sharedCtx = new AudioContext(); return _sharedCtx; }
+
+/** Quick bright pop/click */
+function sfxPop(pitch = 1) {
+  try { const c = sCtx(); const o = c.createOscillator(); const g = c.createGain();
+    o.type = "sine"; o.frequency.value = 600 * pitch;
+    g.gain.setValueAtTime(0.3, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.12);
+    o.connect(g); g.connect(c.destination); o.start(c.currentTime); o.stop(c.currentTime + 0.12);
+  } catch { /* */ }
+}
+
+/** Bright chime note */
+function sfxChime(freq?: number) {
+  try { const c = sCtx(); const o = c.createOscillator(); const g = c.createGain();
+    o.type = "sine"; o.frequency.value = freq ?? PENTA[Math.floor(Math.random() * PENTA.length)];
+    g.gain.setValueAtTime(0.22, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.5);
+    o.connect(g); g.connect(c.destination); o.start(c.currentTime); o.stop(c.currentTime + 0.5);
+  } catch { /* */ }
+}
+
+/** Squeaky boing — pitch rises with each call */
+let _boingCount = 0;
+function sfxBoing() {
+  _boingCount++;
+  const pitch = 1 + (_boingCount % 8) * 0.12;
+  try { const c = sCtx(); const o = c.createOscillator(); const g = c.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(300 * pitch, c.currentTime);
+    o.frequency.exponentialRampToValueAtTime(800 * pitch, c.currentTime + 0.08);
+    o.frequency.exponentialRampToValueAtTime(400 * pitch, c.currentTime + 0.18);
+    g.gain.setValueAtTime(0.28, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.25);
+    o.connect(g); g.connect(c.destination); o.start(c.currentTime); o.stop(c.currentTime + 0.25);
+  } catch { /* */ }
+}
+
+/** Cute sparkle / giggle blip */
+function sfxSparkle() {
+  try { const c = sCtx();
+    [0, 0.06, 0.12].forEach((delay, i) => {
+      const o = c.createOscillator(); const g = c.createGain();
+      o.type = "sine"; o.frequency.value = [800, 1200, 1600][i];
+      g.gain.setValueAtTime(0.15, c.currentTime + delay);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + delay + 0.15);
+      o.connect(g); g.connect(c.destination); o.start(c.currentTime + delay); o.stop(c.currentTime + delay + 0.15);
+    });
+  } catch { /* */ }
+}
+
+/** Soft thock */
+function sfxThock() {
+  try { const c = sCtx(); const o = c.createOscillator(); const g = c.createGain();
+    o.type = "triangle"; o.frequency.setValueAtTime(500, c.currentTime);
+    o.frequency.exponentialRampToValueAtTime(150, c.currentTime + 0.1);
+    g.gain.setValueAtTime(0.35, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.15);
+    o.connect(g); g.connect(c.destination); o.start(c.currentTime); o.stop(c.currentTime + 0.15);
+  } catch { /* */ }
+}
+
+/** Soft flip / page turn */
+function sfxFlip() {
+  try { const c = sCtx(); const o = c.createOscillator(); const g = c.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(900, c.currentTime);
+    o.frequency.exponentialRampToValueAtTime(400, c.currentTime + 0.1);
+    g.gain.setValueAtTime(0.15, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.12);
+    o.connect(g); g.connect(c.destination); o.start(c.currentTime); o.stop(c.currentTime + 0.12);
+  } catch { /* */ }
+}
+
+/** Splash / drip */
+function sfxSplash() {
+  try { const c = sCtx(); const bufferSize = c.sampleRate * 0.3;
+    const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (c.sampleRate * 0.08));
+    const src = c.createBufferSource(); src.buffer = buffer;
+    const filter = c.createBiquadFilter(); filter.type = "lowpass"; filter.frequency.value = 2000;
+    const g = c.createGain(); g.gain.value = 0.18;
+    src.connect(filter); filter.connect(g); g.connect(c.destination); src.start(c.currentTime);
+  } catch { /* */ }
+}
+
+/** Soft melodic arpeggio (for game completion / special moments) */
+function sfxArpeggio() {
+  try { const c = sCtx();
+    [262, 330, 392, 523].forEach((freq, i) => {
+      const o = c.createOscillator(); const g = c.createGain();
+      o.type = "sine"; o.frequency.value = freq;
+      const t = c.currentTime + i * 0.15;
+      g.gain.setValueAtTime(0.18, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+      o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + 0.4);
+    });
+  } catch { /* */ }
 }
 
 /* ─── Game registry ───────────────────────────────────────────────── */
 
-type BuiltInGameId = "pop" | "tiles" | "moon" | "honeycomb" | "nimbus" | "garden" | "coloring" | "bloom" | "pond" | "clouds";
+type BuiltInGameId = "pop" | "tiles" | "moon" | "honeycomb" | "nimbus" | "garden" | "coloring" | "bloom" | "pond" | "clouds" | "jelly" | "plinko" | "band" | "fireworks";
 
 const BUILT_IN_GAMES: {
   id: BuiltInGameId;
@@ -197,6 +291,10 @@ const BUILT_IN_GAMES: {
   { id: "bloom", emoji: "🌱", name: "Bloom Garden", line: "plant a seed, water it, watch it bloom", tile: "tile-mint" },
   { id: "pond", emoji: "🎣", name: "Pond Pals", line: "cast a line into the calm pond, meet little friends", tile: "tile-sky" },
   { id: "clouds", emoji: "☁️", name: "Cloud Stack", line: "stack soft clouds into a cozy tower", tile: "tile-mint" },
+  { id: "jelly", emoji: "🍮", name: "Jelly Bounce", line: "boing the jelly to the clouds", tile: "tile-blush" },
+  { id: "plinko", emoji: "🎐", name: "Chime Plinko", line: "drop a marble, hear the sky sing", tile: "tile-sky" },
+  { id: "band", emoji: "🐾", name: "Animal Band", line: "tap the friends, make a song", tile: "tile-mint" },
+  { id: "fireworks", emoji: "🎆", name: "Firework Sky", line: "tap the night, bloom soft light", tile: "tile-lavender" },
 ];
 
 /* ─── Main component ──────────────────────────────────────────────── */
@@ -385,6 +483,10 @@ export default function GamesScreen() {
           {screen.game === "bloom" && <BloomGarden />}
           {screen.game === "pond" && <PondPals />}
           {screen.game === "clouds" && <CloudStack />}
+          {screen.game === "jelly" && <JellyBounce />}
+          {screen.game === "plinko" && <ChimePlinko />}
+          {screen.game === "band" && <AnimalBand />}
+          {screen.game === "fireworks" && <FireworkSky />}
         </div>
       )}
 
@@ -1050,8 +1152,7 @@ function GameIntro({ emoji, title, sub }: { emoji: string; title: string; sub: s
 
 function BubblePop() {
   const [worries, setWorries] = useState(() => WORRY_BUBBLES.map((w, i) => ({ id: i, text: w, popped: false })));
-  const popped = worries.filter((w) => w.popped).length;
-  const reset = useTapGuard(() => { setWorries((prev) => prev.map((w) => ({ ...w, popped: false }))); }, 400);
+  const popped = worries.filter((w) => w.popped).length;    const reset = useTapGuard(() => { sfxArpeggio(); setWorries((prev) => prev.map((w) => ({ ...w, popped: false }))); }, 400);
 
   return (
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
@@ -1236,6 +1337,7 @@ function HoneycombPop() {
   const poppedCount = cells.filter((c) => c.popped).length;
 
   const popCell = (id: number) => {
+    sfxThock();
     setCells((prev) => prev.map((c) => (c.id === id ? { ...c, popped: true } : c)));
     const adjacent = new Set<number>(); if (id > 0) adjacent.add(id - 1); if (id < HEX_COUNT - 1) adjacent.add(id + 1);
     setNeighbors(adjacent); setTimeout(() => setNeighbors(new Set()), 300);
@@ -1628,6 +1730,7 @@ function MemoryGarden() {
     const card = cards.find((c) => c.id === id);
     if (!card || card.flipped || card.matched || selected.includes(id)) return;
     const next = [...selected, id]; setSelected(next);
+    sfxFlip();
     setCards((prev) => prev.map((c) => (c.id === id ? { ...c, flipped: true } : c)));
     if (next.length === 2) {
       lockRef.current = true; const [first, second] = next;
@@ -1907,6 +2010,7 @@ function PondPals() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const cast = () => {
+    sfxSplash();
     setState("cast");
     const delay = 1000 + Math.random() * 2000;
     timerRef.current = setTimeout(() => setState("nibble"), delay);
@@ -2075,3 +2179,229 @@ function CloudStack() {
   );
 }
 
+
+/* ─── 11. Jelly Bounce ──────────────────────────────────────────── */
+
+function JellyBounce() {
+  const [bounces, setBounces] = useState(0);
+  const [squash, setSquash] = useState(1);
+  const [sparkles, setSparkles] = useState<{ id: number; x: number; y: number }[]>([]);
+  const nextId = useRef(0);
+
+  const bounce = useTapGuard(() => {
+    sfxBoing();
+    setBounces((b) => b + 1);
+    setSquash(0.6);
+    setTimeout(() => setSquash(1.3), 120);
+    setTimeout(() => setSquash(1), 300);
+    const id = nextId.current++;
+    setSparkles((prev) => [...prev.slice(-6), { id, x: 40 + Math.random() * 20, y: 20 + Math.random() * 20 }]);
+    setTimeout(() => setSparkles((prev) => prev.filter((s) => s.id !== id)), 700);
+    sfxSparkle();
+  }, 150);
+
+  const messages = ["boing boing!", "squish and fly!", "the jelly is happy!", "keep bouncing!", "soft and wobbly!", "jelly goes up!", "cute little bounce!", "wobble wobble!"];
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
+      <span className="pointer-events-none absolute top-6 left-8 text-sm text-blush-200 animate-twinkle" aria-hidden>✦</span>
+      <span className="pointer-events-none absolute bottom-10 right-14 text-xs text-lavender-200 animate-twinkle" style={{ animationDelay: "1s" }} aria-hidden>✧</span>
+      <GameIntro emoji="🍮" title="Jelly Bounce" sub="tap the jelly — boing boing boing!" />
+      <div className="relative mt-6 flex h-56 items-center justify-center" onClick={bounce}>
+        <div className="absolute bottom-8 left-1/2 h-3 w-40 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#E8B4C8] via-[#F3B8C9] to-[#E8B4C8] shadow-[0_4px_12px_rgba(200,140,180,0.4)]" />
+        <motion.div animate={{ scaleY: squash, scaleX: 2 - squash }} transition={{ type: "spring", stiffness: 400, damping: 12 }}
+          className="relative cursor-pointer select-none text-7xl" style={{ transformOrigin: "bottom center" }}>🍮</motion.div>
+        {sparkles.map((s) => (
+          <motion.span key={s.id} initial={{ scale: 0, opacity: 1 }} animate={{ scale: 1.5, opacity: 0 }}
+            transition={{ duration: 0.6 }} className="absolute text-xl pointer-events-none"
+            style={{ left: `${s.x}%`, top: `${s.y}%` }}>✨</motion.span>
+        ))}
+      </div>
+      <p className="text-center text-sm font-bold text-ink-deep">🍮 {bounces} boings</p>
+      <p className="mt-1 text-center text-xs font-medium text-ink-soft">{messages[bounces % messages.length]}</p>
+    </motion.div>
+  );
+}
+
+/* ─── 12. Chime Plinko ──────────────────────────────────────────── */
+
+interface PlinkoMarble { id: number; x: number; y: number; lane: number; }
+const PLINKO_COLS = 7;
+const PEG_FREQS = [523, 587, 659, 784, 880, 988, 1047];
+
+function ChimePlinko() {
+  const [marbles, setMarbles] = useState<PlinkoMarble[]>([]);
+  const [drops, setDrops] = useState(0);
+  const nextId = useRef(0);
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      setMarbles((prev) => {
+        const updated = prev.map((m) => ({ ...m, y: m.y + 2 }));
+        const landed = updated.filter((m) => m.y >= 100);
+        if (landed.length > 0) landed.forEach((m) => sfxChime(PEG_FREQS[m.lane % PLINKO_COLS]));
+        return updated.filter((m) => m.y < 100);
+      });
+    }, 50);
+    return () => clearInterval(t);
+  }, []);
+
+  const dropMarble = useTapGuard((e: React.MouseEvent) => {
+    if (marbles.length >= 3) return;
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const xPct = Math.max(10, Math.min(90, ((e.clientX - rect.left) / rect.width) * 100));
+    const lane = Math.floor((xPct / 100) * PLINKO_COLS);
+    setMarbles((prev) => [...prev, { id: nextId.current++, x: xPct, y: 5, lane }]);
+    setDrops((d) => d + 1);
+    sfxPop(1.1);
+  }, 300);
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
+      <span className="pointer-events-none absolute top-6 right-10 text-sm text-sky-200 animate-twinkle" aria-hidden>✦</span>
+      <GameIntro emoji="🎐" title="Chime Plinko" sub="tap the board to drop a marble — each one makes a little melody" />
+      <div className="relative mt-6 h-72 overflow-hidden rounded-2xl bg-gradient-to-b from-[#D8E8F8] to-[#E8F0F8] cursor-pointer" onClick={dropMarble}>
+        {Array.from({ length: 5 }).map((_, row) =>
+          Array.from({ length: PLINKO_COLS }).map((_, col) => (
+            <span key={`${row}-${col}`} className="absolute h-3 w-3 rounded-full bg-[#B8C8E8]/80 shadow-[inset_0_1px_2px_rgba(255,255,255,0.7)]"
+              style={{ left: `${8 + col * 13}%`, top: `${15 + row * 16}%` }} aria-hidden />
+          ))
+        )}
+        {marbles.map((m) => (
+          <motion.span key={m.id} initial={{ y: 0 }} animate={{ y: `${m.y}%` }}
+            className="absolute h-5 w-5 rounded-full bg-gradient-to-br from-[#A8CFEF] to-[#7CB8E0] shadow-[0_2px_6px_rgba(100,160,200,0.5)]"
+            style={{ left: `${m.x}%`, top: 0, transform: "translateX(-50%)" }} />
+        ))}
+        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#C4D8F0]/60 to-transparent" />
+      </div>
+      <p className="mt-4 text-center text-sm font-bold text-ink-deep">🎵 {drops} chimes heard</p>
+      <p className="mt-1 text-center text-xs font-medium text-ink-soft">tap anywhere along the top to drop — up to 3 at once</p>
+    </motion.div>
+  );
+}
+
+/* ─── 13. Animal Band ───────────────────────────────────────────── */
+
+const BAND_ANIMALS = [
+  { emoji: "🐱", name: "Cat", freq: 330 },
+  { emoji: "🐦", name: "Bird", freq: 523 },
+  { emoji: "🐸", name: "Frog", freq: 220 },
+  { emoji: "🐻", name: "Bear", freq: 165 },
+  { emoji: "🐭", name: "Mouse", freq: 784 },
+  { emoji: "🦆", name: "Duck", freq: 294 },
+];
+
+function AnimalBand() {
+  const [dancing, setDancing] = useState<number | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const danceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const playAnimal = (idx: number) => {
+    const a = BAND_ANIMALS[idx];
+    sfxChime(a.freq);
+    setDancing(idx);
+    clearTimeout(danceTimer.current);
+    danceTimer.current = setTimeout(() => setDancing(null), 600);
+  };
+
+  const playTogether = useTapGuard(() => {
+    if (playing) return;
+    setPlaying(true);
+    const melody = [0, 3, 1, 4, 2, 5, 0, 2];
+    melody.forEach((animalIdx, i) => {
+      setTimeout(() => playAnimal(animalIdx), i * 300);
+    });
+    setTimeout(() => setPlaying(false), melody.length * 300 + 600);
+  }, 200);
+
+  useEffect(() => () => clearTimeout(danceTimer.current), []);
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
+      <span className="pointer-events-none absolute top-6 left-8 text-sm text-mint-200 animate-twinkle" aria-hidden>✦</span>
+      <GameIntro emoji="🐾" title="Animal Band" sub="tap each friend to hear their voice — or let them play together" />
+      <div className="mt-6 flex flex-wrap justify-center gap-3">
+        {BAND_ANIMALS.map((a, i) => (
+          <motion.button key={i} type="button" onClick={() => playAnimal(i)}
+            animate={dancing === i ? { rotate: [0, -8, 8, -4, 4, 0], y: [0, -6, 0] } : { y: [0, -3, 0] }}
+            transition={dancing === i ? { duration: 0.5 } : { duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            className="flex h-20 w-20 flex-col items-center justify-center rounded-2xl bg-white/60 shadow-[0_4px_12px_rgba(180,200,220,0.3)] transition-transform hover:scale-105 active:scale-95">
+            <span className="text-3xl">{a.emoji}</span>
+            <span className="mt-0.5 text-[9px] font-bold text-ink-soft">{a.name}</span>
+          </motion.button>
+        ))}
+      </div>
+      <div className="mt-5 flex justify-center">
+        <button type="button" onClick={playTogether} disabled={playing}
+          className="clay-btn rounded-full px-6 py-2.5 text-sm font-bold text-white disabled:opacity-60">
+          {playing ? "🎶 playing…" : "🎶 play together"}
+        </button>
+      </div>
+      <p className="mt-3 text-center text-xs font-medium text-ink-soft">tap each animal · or let them all play a gentle song</p>
+    </motion.div>
+  );
+}
+
+/* ─── 14. Firework Sky ──────────────────────────────────────────── */
+
+interface Firework { id: number; x: number; y: number; color: string; size: number; }
+const FW_COLORS = ["#F3B8C9", "#BCA9EE", "#A8CFEF", "#BFE5DC", "#F0AFC6", "#B7ADEF", "#F2BE93"];
+
+function FireworkSky() {
+  const [fireworks, setFireworks] = useState<Firework[]>([]);
+  const [stars] = useState<{ id: number; x: number; y: number; delay: number }[]>(() =>
+    Array.from({ length: 20 }, (_, i) => ({ id: i, x: Math.random() * 100, y: Math.random() * 70, delay: Math.random() * 4 }))
+  );
+  const nextId = useRef(0);
+  const holdRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const sizeRef = useRef(1);
+
+  const launch = () => {
+    sizeRef.current = 1;
+    holdRef.current = setTimeout(() => { sizeRef.current = 2; }, 300);
+  };
+
+  const release = (e: React.PointerEvent) => {
+    clearTimeout(holdRef.current);
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const color = FW_COLORS[Math.floor(Math.random() * FW_COLORS.length)];
+    const size = sizeRef.current;
+    const id = nextId.current++;
+    setFireworks((prev) => [...prev.slice(-15), { id, x, y, color, size }]);
+    sfxChime(440 + Math.random() * 400);
+    sfxPop(1.2);
+    setTimeout(() => setFireworks((prev) => prev.filter((f) => f.id !== id)), 1500);
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
+      <GameIntro emoji="🎆" title="Firework Sky" sub="tap the night — bloom soft light · hold longer for bigger blooms" />
+      <div className="relative mt-6 h-72 overflow-hidden rounded-2xl bg-gradient-to-b from-[#1a1a3e] via-[#2a2a5a] to-[#3a3a7a] cursor-pointer select-none"
+        onPointerDown={launch} onPointerUp={release}>
+        {stars.map((s) => (
+          <span key={s.id} className="absolute text-xs text-white/60 animate-twinkle"
+            style={{ left: `${s.x}%`, top: `${s.y}%`, animationDelay: `${s.delay}s` }} aria-hidden>✦</span>
+        ))}
+        <motion.div animate={{ x: ["-10%", "110%"], y: ["20%", "10%"] }}
+          transition={{ duration: 3, repeat: Infinity, repeatDelay: 8, ease: "linear" }}
+          className="absolute h-0.5 w-8 -rotate-12 bg-gradient-to-r from-transparent via-white/60 to-white/90" />
+        {fireworks.map((fw) => (
+          <motion.div key={fw.id} initial={{ scale: 0, opacity: 1 }} animate={{ scale: fw.size * 2, opacity: 0 }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
+            className="absolute pointer-events-none" style={{ left: `${fw.x}%`, top: `${fw.y}%`, transform: "translate(-50%, -50%)" }}>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <span key={i} className="absolute text-sm" style={{
+                left: `${Math.cos((i / 8) * Math.PI * 2) * 20}px`,
+                top: `${Math.sin((i / 8) * Math.PI * 2) * 20}px`,
+              }} aria-hidden>{["✦", "✧", "○", "·"][i % 4]}</span>
+            ))}
+            <span className="absolute -translate-x-1/2 -translate-y-1/2 text-lg" style={{ color: fw.color }}>✦</span>
+          </motion.div>
+        ))}
+      </div>
+      <p className="mt-3 text-center text-xs font-medium text-ink-soft">tap anywhere · hold for a bigger bloom · no limits, no rush</p>
+    </motion.div>
+  );
+}
