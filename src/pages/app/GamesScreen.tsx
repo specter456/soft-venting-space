@@ -179,21 +179,29 @@ const PENTA = [262, 294, 330, 392, 440];
 let _sharedCtx: AudioContext | null = null;
 function sCtx(): AudioContext { if (!_sharedCtx) _sharedCtx = new AudioContext(); return _sharedCtx; }
 
-/** Quick bright pop/click */
+/** Quick bright pop/click — punchy pitch sweep for satisfying feedback */
 function sfxPop(pitch = 1) {
-  try { const c = sCtx(); const o = c.createOscillator(); const g = c.createGain();
-    o.type = "sine"; o.frequency.value = 600 * pitch;
-    g.gain.setValueAtTime(0.3, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.12);
-    o.connect(g); g.connect(c.destination); o.start(c.currentTime); o.stop(c.currentTime + 0.12);
+  try { const c = sCtx(); const t = c.currentTime;
+    const o = c.createOscillator(); const o2 = c.createOscillator(); const g = c.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(900 * pitch, t); o.frequency.exponentialRampToValueAtTime(400 * pitch, t + 0.08);
+    o2.type = "triangle"; o2.frequency.setValueAtTime(1200 * pitch, t); o2.frequency.exponentialRampToValueAtTime(600 * pitch, t + 0.06);
+    g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+    o.connect(g); o2.connect(g); g.connect(c.destination);
+    o.start(t); o.stop(t + 0.15); o2.start(t); o2.stop(t + 0.12);
   } catch { /* */ }
 }
 
-/** Bright chime note */
+/** Bright chime note — layered sine + triangle for warmth */
 function sfxChime(freq?: number) {
-  try { const c = sCtx(); const o = c.createOscillator(); const g = c.createGain();
-    o.type = "sine"; o.frequency.value = freq ?? PENTA[Math.floor(Math.random() * PENTA.length)];
-    g.gain.setValueAtTime(0.22, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.5);
-    o.connect(g); g.connect(c.destination); o.start(c.currentTime); o.stop(c.currentTime + 0.5);
+  try { const c = sCtx(); const t = c.currentTime;
+    const f = freq ?? PENTA[Math.floor(Math.random() * PENTA.length)];
+    const o = c.createOscillator(); const o2 = c.createOscillator(); const g = c.createGain();
+    o.type = "sine"; o.frequency.value = f;
+    o2.type = "triangle"; o2.frequency.value = f * 2.01; // slight detuned harmonic
+    const g2 = c.createGain(); g2.gain.value = 0.12;
+    g.gain.setValueAtTime(0.25, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+    o.connect(g); o2.connect(g2); g2.connect(g); g.connect(c.destination);
+    o.start(t); o.stop(t + 0.6); o2.start(t); o2.stop(t + 0.5);
   } catch { /* */ }
 }
 
@@ -211,26 +219,68 @@ function sfxBoing() {
   } catch { /* */ }
 }
 
-/** Cute sparkle / giggle blip */
+/** Cute sparkle / giggle blip — rising arpeggio with shimmer */
 function sfxSparkle() {
-  try { const c = sCtx();
-    [0, 0.06, 0.12].forEach((delay, i) => {
+  try { const c = sCtx(); const t = c.currentTime;
+    [0, 0.05, 0.1, 0.14].forEach((delay, i) => {
       const o = c.createOscillator(); const g = c.createGain();
-      o.type = "sine"; o.frequency.value = [800, 1200, 1600][i];
-      g.gain.setValueAtTime(0.15, c.currentTime + delay);
-      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + delay + 0.15);
-      o.connect(g); g.connect(c.destination); o.start(c.currentTime + delay); o.stop(c.currentTime + delay + 0.15);
+      o.type = "sine"; o.frequency.value = [800, 1200, 1600, 2000][i];
+      g.gain.setValueAtTime(0.18, t + delay);
+      g.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.18);
+      o.connect(g); g.connect(c.destination); o.start(t + delay); o.stop(t + delay + 0.18);
     });
   } catch { /* */ }
 }
 
-/** Soft thock */
+/** Soft thock — honey-cell pop with satisfying pitch bend */
 function sfxThock() {
-  try { const c = sCtx(); const o = c.createOscillator(); const g = c.createGain();
-    o.type = "triangle"; o.frequency.setValueAtTime(500, c.currentTime);
-    o.frequency.exponentialRampToValueAtTime(150, c.currentTime + 0.1);
-    g.gain.setValueAtTime(0.35, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.15);
-    o.connect(g); g.connect(c.destination); o.start(c.currentTime); o.stop(c.currentTime + 0.15);
+  try { const c = sCtx(); const t = c.currentTime;
+    const o = c.createOscillator(); const g = c.createGain();
+    o.type = "triangle"; o.frequency.setValueAtTime(600, t);
+    o.frequency.exponentialRampToValueAtTime(120, t + 0.12);
+    g.gain.setValueAtTime(0.4, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + 0.18);
+    // Add a tiny click layer for "wet" feel
+    const o2 = c.createOscillator(); const g2 = c.createGain();
+    o2.type = "sine"; o2.frequency.setValueAtTime(1800, t); o2.frequency.exponentialRampToValueAtTime(400, t + 0.04);
+    g2.gain.setValueAtTime(0.12, t); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+    o2.connect(g2); g2.connect(c.destination); o2.start(t); o2.stop(t + 0.06);
+  } catch { /* */ }
+}
+
+/** Soft fill / drip — for coloring regions */
+function sfxFill() {
+  try { const c = sCtx(); const t = c.currentTime;
+    const o = c.createOscillator(); const g = c.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(800, t);
+    o.frequency.exponentialRampToValueAtTime(1200, t + 0.06);
+    o.frequency.exponentialRampToValueAtTime(600, t + 0.18);
+    g.gain.setValueAtTime(0.2, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + 0.25);
+  } catch { /* */ }
+}
+
+/** Soft water pour — for Bloom Garden */
+function sfxWater() {
+  try { const c = sCtx(); const t = c.currentTime;
+    for (let i = 0; i < 4; i++) {
+      const o = c.createOscillator(); const g = c.createGain();
+      o.type = "sine"; o.frequency.value = 400 + Math.random() * 200;
+      const st = t + i * 0.08;
+      g.gain.setValueAtTime(0.12, st); g.gain.exponentialRampToValueAtTime(0.001, st + 0.2);
+      o.connect(g); g.connect(c.destination); o.start(st); o.stop(st + 0.2);
+    }
+  } catch { /* */ }
+}
+
+/** Soft plop — for cloud stack landing */
+function sfxPlop() {
+  try { const c = sCtx(); const t = c.currentTime;
+    const o = c.createOscillator(); const g = c.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(500, t);
+    o.frequency.exponentialRampToValueAtTime(200, t + 0.15);
+    g.gain.setValueAtTime(0.3, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + 0.2);
   } catch { /* */ }
 }
 
@@ -259,13 +309,17 @@ function sfxSplash() {
 
 /** Soft melodic arpeggio (for game completion / special moments) */
 function sfxArpeggio() {
-  try { const c = sCtx();
-    [262, 330, 392, 523].forEach((freq, i) => {
-      const o = c.createOscillator(); const g = c.createGain();
+  try { const c = sCtx(); const t = c.currentTime;
+    [262, 330, 392, 523, 659].forEach((freq, i) => {
+      const o = c.createOscillator(); const o2 = c.createOscillator();
+      const g = c.createGain(); const g2 = c.createGain();
       o.type = "sine"; o.frequency.value = freq;
-      const t = c.currentTime + i * 0.15;
-      g.gain.setValueAtTime(0.18, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
-      o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + 0.4);
+      o2.type = "triangle"; o2.frequency.value = freq * 2;
+      g2.gain.value = 0.06;
+      const st = t + i * 0.12;
+      g.gain.setValueAtTime(0.2, st); g.gain.exponentialRampToValueAtTime(0.001, st + 0.5);
+      o.connect(g); o2.connect(g2); g2.connect(g); g.connect(c.destination);
+      o.start(st); o.stop(st + 0.5); o2.start(st); o2.stop(st + 0.4);
     });
   } catch { /* */ }
 }
@@ -1166,7 +1220,7 @@ function BubblePop() {
           <AnimatePresence key={w.id}>
             {!w.popped ? (
               <motion.button type="button" exit={{ scale: 0, opacity: 0, rotate: 12 }} transition={{ duration: 0.3 }}
-                onClick={() => setWorries((prev) => prev.map((x) => (x.id === w.id ? { ...x, popped: true } : x)))}
+                onClick={() => { sfxPop(0.8); setWorries((prev) => prev.map((x) => (x.id === w.id ? { ...x, popped: true } : x))); }}
                 whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.94 }}
                 className="clay-chip flex h-24 items-center justify-center rounded-full p-4 text-center text-xs leading-snug font-bold text-ink">{w.text}</motion.button>
             ) : (
@@ -1191,10 +1245,16 @@ let _tileAudioCtx: AudioContext | null = null;
 function tileAudioCtx(): AudioContext { if (!_tileAudioCtx) _tileAudioCtx = new AudioContext(); return _tileAudioCtx; }
 function playTileNote(freq: number) {
   try {
-    const ctx = tileAudioCtx(); const osc = ctx.createOscillator(); const gain = ctx.createGain();
-    osc.type = "sine"; osc.frequency.value = freq;
-    gain.gain.setValueAtTime(0.25, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-    osc.connect(gain); gain.connect(ctx.destination); osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.5);
+    const ctx = tileAudioCtx(); const t = ctx.currentTime;
+    // Bright piano-like tone: sine fundamental + soft triangle harmonic
+    const o1 = ctx.createOscillator(); const o2 = ctx.createOscillator();
+    const g = ctx.createGain(); const g2 = ctx.createGain();
+    o1.type = "sine"; o1.frequency.value = freq;
+    o2.type = "triangle"; o2.frequency.value = freq * 2;
+    g2.gain.value = 0.08;
+    g.gain.setValueAtTime(0.28, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+    o1.connect(g); o2.connect(g2); g2.connect(g); g.connect(ctx.destination);
+    o1.start(t); o1.stop(t + 0.55); o2.start(t); o2.stop(t + 0.45);
   } catch { /* audio unavailable */ }
 }
 const TILE_COLORS = ["bg-[#E8B4C8]/80", "bg-[#B4BCE8]/80", "bg-[#B4E0D0]/80", "bg-[#E8D4B4]/80"];
@@ -1274,7 +1334,7 @@ function MoonlightGlide() {
       setItems((prev) => {
         const updated = prev.map((it) => ({ ...it, y: it.y + 2.5 }));
         const caughtItems = updated.filter((it) => it.lane === lane && it.y >= 70 && it.y <= 90);
-        if (caughtItems.length > 0) { setCaught((c) => c + caughtItems.length); return updated.filter((it) => !caughtItems.some((c) => c.id === it.id) && it.y < 110); }
+        if (caughtItems.length > 0) { sfxSparkle(); setCaught((c) => c + caughtItems.length); return updated.filter((it) => !caughtItems.some((c) => c.id === it.id) && it.y < 110); }
         return updated.filter((it) => it.y < 110);
       });
     }, 80);
@@ -1736,7 +1796,7 @@ function MemoryGarden() {
       lockRef.current = true; const [first, second] = next;
       const a = cards.find((c) => c.id === first)!; const b = cards.find((c) => c.id === second)!;
       if (a.sticker.label === b.sticker.label) {
-        setTimeout(() => { setCards((prev) => prev.map((c) => (c.id === first || c.id === second ? { ...c, matched: true, flipped: true } : c))); setMatched((m) => m + 1); setSelected([]); lockRef.current = false; }, 500);
+        setTimeout(() => { setCards((prev) => prev.map((c) => (c.id === first || c.id === second ? { ...c, matched: true, flipped: true } : c))); sfxSparkle(); setMatched((m) => m + 1); setSelected([]); lockRef.current = false; }, 500);
       } else {
         setTimeout(() => { setCards((prev) => prev.map((c) => (c.id === first || c.id === second ? { ...c, flipped: false } : c))); setSelected([]); lockRef.current = false; }, 800);
       }
@@ -1836,6 +1896,7 @@ function SoftColoring() {
   const fillRegion = (regionIdx: number) => {
     const key = `${pic.id}-${regionIdx}`;
     if (fills[key] === selectedColor) return;
+    sfxFill();
     setHistory((h) => [...h, { ...fills }]);
     setFills((f) => ({ ...f, [key]: selectedColor }));
   };
@@ -1924,6 +1985,7 @@ function BloomGarden() {
   };
 
   const water = (slotIdx: number) => {
+    sfxWater();
     setBed((b) => b.map((p, i) => {
       if (i !== slotIdx || !p.seed) return p;
       const next = { ...p, watered: p.watered + 1 };
@@ -2115,6 +2177,7 @@ function CloudStack() {
   }, [dir]);
 
   const drop = () => {
+    sfxPlop();
     const x = cloudX;
     setStack((s) => {
       const next = [...s, x];
