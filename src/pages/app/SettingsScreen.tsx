@@ -14,6 +14,7 @@ import { useAsyncTapGuard, useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
 import { THEMES, useTheme } from "@/lib/themes";
 import { downloadBackup, restoreBackup } from "@/lib/backup";
+import SoftMilestones from "@/components/SoftMilestones";
 
 const AVATARS = ["🐻", "🐰", "🐱", "🦊", "🐼", "🐨", "🐸", "🦋", "🌸", "🌙"];
 
@@ -254,6 +255,13 @@ export default function SettingsScreen() {
             </p>
           </div>
         )}
+      </Section>
+
+      {/* ─── Soft Milestones ──────────────────────────────────── */}
+      <Section title="soft milestones" emoji="🌱">
+        <div className="pt-2">
+          <SoftMilestones />
+        </div>
       </Section>
 
       {/* ─── Keep Your Space Safe ──────────────────────────────── */}

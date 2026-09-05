@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
 import MusicWidget from "@/components/MusicWidget";
 import BreathingMinute from "@/components/BreathingMinute";
+import SeasonalParticles from "@/components/SeasonalParticles";
 import GentleReminder from "@/components/GentleReminder";
 import { getKvFromCache } from "@/lib/db";
 import { LockScreen } from "@/components/LockScreen";
@@ -159,6 +160,7 @@ export default function Dashboard() {
         style={{ background: "var(--theme-blob-3, rgba(196,203,232,0.3))" }}
       />
 
+      <SeasonalParticles />
       <div className="relative mx-auto flex w-full max-w-[800px] flex-col">
         {/* ─── Header ─────────────────────────────────────────────── */}
         <header className="sticky top-0 z-40 px-5 pt-6 pb-3 border-b border-[var(--theme-accent-light)]" style={{ background: "var(--theme-header-bg, rgba(237,235,246,0.8))" }}>

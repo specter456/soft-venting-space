@@ -80,7 +80,7 @@ export default function GoodnightWindDown() {
   }, 400);
 
   const skipGratitude = useTapGuard(() => setStep(1), 400);
-  const finish = useTapGuard(() => { setOpen(false); setStep(0); setGratitude(""); }, 400);
+  const finish = useTapGuard(() => { safeSetItem("venting-wind-down-used", "true"); setOpen(false); setStep(0); setGratitude(""); }, 400);
 
 
   return (

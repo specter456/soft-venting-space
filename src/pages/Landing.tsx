@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Logo } from "@/components/Logo";
+import SeasonalParticles from "@/components/SeasonalParticles";
 import { SplashScreen } from "@/components/SplashScreen";
 import { DocumentHead } from "@/components/DocumentHead";
 
@@ -42,6 +43,7 @@ export default function Landing() {
 
   return (
     <div className="relative min-h-screen text-ink" role="landing">
+      <SeasonalParticles />
       <DocumentHead
         title="Venting — a tiny safe room in your phone"
         description="Venting is a private, calming space to express your feelings through voice recordings, notes, doodling, stickers, calming games, and a cozy diary. Everything stays on your device."

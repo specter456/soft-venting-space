@@ -145,6 +145,7 @@ export default function TinyTales() {
   }, 400);
 
   const anotherTale = useTapGuard(() => {
+    safeSetItem("venting-milestone-storyteller", "true");
     setActiveStory(null);
     setPageIdx(0);
   }, 300);

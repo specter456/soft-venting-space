@@ -6,6 +6,7 @@ import { removeItem, saveCheckin, useTable, type MoodCheckin } from "@/lib/db";
 import { type MoodId, moodById, todayDateKey } from "@/lib/moods";
 import { useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
+import { useSeasonEmoji } from "@/components/SeasonalParticles";
 import FutureNoteSection from "@/components/FutureNoteSection";
 import OnThisDay from "@/components/OnThisDay";
 import MonthlyWeather from "@/components/MonthlyWeather";
@@ -94,6 +95,7 @@ export default function HomeScreen() {
 
   const [feelingText, setFeelingText] = useState("");
   const greet = greeting();
+  const seasonEmoji = useSeasonEmoji();
   const todayMood = today ? moodById(today.mood) : undefined;
 
   // one tap records one mood — held/double presses are ignored
@@ -118,7 +120,7 @@ export default function HomeScreen() {
           <UserAvatar />
           <div>
             <p className="font-script text-3xl font-bold tracking-tight text-ink-deep">
-              {greet.emoji} {greet.text}, friend
+              {greet.emoji} {greet.text}, friend {seasonEmoji}
             </p>
             <p className="mt-1 text-sm font-medium text-ink-soft">
               {new Date().toLocaleDateString(undefined, {
