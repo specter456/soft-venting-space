@@ -35,6 +35,7 @@ const TITLES: Record<string, string> = {
   "/dashboard/calendar": "Calendar",
   "/dashboard/settings": "Settings",
   "/dashboard/diary": "Diary",
+  "/dashboard/polaroid-wall": "Polaroid Wall",
 };
 
 /** Four tabs — Home, Games, Calendar, Settings. */

@@ -19,6 +19,7 @@ const KV_AMBIENT_TRACK = "venting-music-ambient-track";
 const KV_AMBIENT_UPLOADS = "venting-music-ambient-uploads";
 const KV_GAME_UPLOADS = "venting-music-game-uploads";
 const KV_MUSIC_OFF = "venting-music-off";
+const KV_ACTIVE_SCENE = "venting-active-scene";
 
 export type BuiltinTrackId = "rain" | "hum" | "piano" | "wind";
 
@@ -46,6 +47,16 @@ export interface UploadedTrack {
   dataUrl: string;
 }
 
+export type SceneId = "rain-window" | "fireplace" | "ocean" | "cozy-cafe" | "night-crickets" | null;
+
+export const SCENES: { id: NonNullable<SceneId>; label: string; emoji: string }[] = [
+  { id: "rain-window", label: "rain on a window", emoji: "🌧️" },
+  { id: "fireplace", label: "fireplace", emoji: "🔥" },
+  { id: "ocean", label: "ocean", emoji: "🌊" },
+  { id: "cozy-cafe", label: "cozy café", emoji: "☕" },
+  { id: "night-crickets", label: "night crickets", emoji: "🦗" },
+];
+
 export interface MusicState {
   /** Is any sound audible right now? */
   playing: boolean;
@@ -58,6 +69,8 @@ export interface MusicState {
   muted: boolean;
   ambientUploads: UploadedTrack[];
   gameUploads: UploadedTrack[];
+  /** Active scene (mutually exclusive with music). */
+  activeScene: SceneId;
 }
 
 /* ─── Storage helpers ────────────────────────────────────────────── */
@@ -158,6 +171,92 @@ function startHum(ctx: AudioContext, out: AudioNode): Cleanup {
   });
   return () => { try { oscs.forEach(o => o.stop()); lfos.forEach(o => o.stop()); oscs.forEach(o => o.disconnect()); gains.forEach(g => g.disconnect()); } catch { /* */ } };
 }
+
+/* ─── Scene synthesis ─────────────────────────────────────────────── */
+
+function makeNoiseBuf(ctx: AudioContext, dur = 2): AudioBuffer {
+  const len = Math.floor(ctx.sampleRate * dur);
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  return buf;
+}
+
+function startRainWindow(ctx: AudioContext, out: AudioNode): Cleanup {
+  const src = ctx.createBufferSource(); src.buffer = makeNoiseBuf(ctx); src.loop = true;
+  const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 3000; bp.Q.value = 0.3;
+  const g = gainAt(ctx, 0.10);
+  src.connect(bp); bp.connect(g); g.connect(out); src.start();
+  // occasional soft drip
+  const drip = ctx.createOscillator(); drip.type = "sine"; drip.frequency.value = 1800;
+  const dripG = gainAt(ctx, 0.04);
+  drip.connect(dripG); dripG.connect(out); drip.start();
+  const lfo1 = lfo(ctx, 0.05, 600, bp.frequency);
+  const lfo2 = lfo(ctx, 0.08, 0.03, g.gain);
+  return () => { try { src.stop(); drip.stop(); lfo1.stop(); lfo2.stop(); src.disconnect(); bp.disconnect(); g.disconnect(); drip.disconnect(); dripG.disconnect(); } catch { /* */ } };
+}
+
+function startFireplace(ctx: AudioContext, out: AudioNode): Cleanup {
+  const src = ctx.createBufferSource(); src.buffer = makeNoiseBuf(ctx); src.loop = true;
+  const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 600; lp.Q.value = 0.5;
+  const g = gainAt(ctx, 0.08);
+  src.connect(lp); lp.connect(g); g.connect(out); src.start();
+  // crackle: high-freq noise bursts
+  const crackle = ctx.createBufferSource(); crackle.buffer = makeNoiseBuf(ctx, 0.1); crackle.loop = true;
+  const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 4000;
+  const cG = gainAt(ctx, 0.025);
+  crackle.connect(hp); hp.connect(cG); cG.connect(out); crackle.start();
+  const lfo1 = lfo(ctx, 0.04, 200, lp.frequency);
+  return () => { try { src.stop(); crackle.stop(); lfo1.stop(); src.disconnect(); lp.disconnect(); g.disconnect(); crackle.disconnect(); hp.disconnect(); cG.disconnect(); } catch { /* */ } };
+}
+
+function startOcean(ctx: AudioContext, out: AudioNode): Cleanup {
+  const src = ctx.createBufferSource(); src.buffer = makeNoiseBuf(ctx); src.loop = true;
+  const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 500;
+  const g = gainAt(ctx, 0.12);
+  src.connect(lp); lp.connect(g); g.connect(out); src.start();
+  // slow swell
+  const lfo1 = lfo(ctx, 0.06, 300, lp.frequency);
+  const lfo2 = lfo(ctx, 0.04, 0.06, g.gain);
+  return () => { try { src.stop(); lfo1.stop(); lfo2.stop(); src.disconnect(); lp.disconnect(); g.disconnect(); } catch { /* */ } };
+}
+
+function startCafe(ctx: AudioContext, out: AudioNode): Cleanup {
+  // soft chatter noise
+  const src = ctx.createBufferSource(); src.buffer = makeNoiseBuf(ctx); src.loop = true;
+  const bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 1200; bp.Q.value = 0.4;
+  const g = gainAt(ctx, 0.04);
+  src.connect(bp); bp.connect(g); g.connect(out); src.start();
+  // occasional clink
+  const clink = ctx.createOscillator(); clink.type = "sine"; clink.frequency.value = 3500;
+  const clG = gainAt(ctx, 0.02);
+  clink.connect(clG); clG.connect(out); clink.start();
+  const lfo1 = lfo(ctx, 0.03, 400, bp.frequency);
+  return () => { try { src.stop(); clink.stop(); lfo1.stop(); src.disconnect(); bp.disconnect(); g.disconnect(); clink.disconnect(); clG.disconnect(); } catch { /* */ } };
+}
+
+function startCrickets(ctx: AudioContext, out: AudioNode): Cleanup {
+  // cricket chirps via modulated sine
+  const osc = ctx.createOscillator(); osc.type = "sine"; osc.frequency.value = 4800;
+  const g = gainAt(ctx, 0.03);
+  const mod = ctx.createOscillator(); mod.frequency.value = 6;
+  const modG = gainAt(ctx, 0.03);
+  mod.connect(modG); modG.connect(g.gain);
+  osc.connect(g); g.connect(out); osc.start(); mod.start();
+  // distant pad
+  const pad = ctx.createOscillator(); pad.type = "sine"; pad.frequency.value = 180;
+  const pG = gainAt(ctx, 0.03);
+  pad.connect(pG); pG.connect(out); pad.start();
+  return () => { try { osc.stop(); mod.stop(); pad.stop(); osc.disconnect(); g.disconnect(); mod.disconnect(); modG.disconnect(); pad.disconnect(); pG.disconnect(); } catch { /* */ } };
+}
+
+const SCENE_SYNTHS: Record<NonNullable<SceneId>, (ctx: AudioContext, out: AudioNode) => Cleanup> = {
+  "rain-window": startRainWindow,
+  fireplace: startFireplace,
+  ocean: startOcean,
+  "cozy-cafe": startCafe,
+  "night-crickets": startCrickets,
+};
 
 function startPiano(ctx: AudioContext, out: AudioNode): Cleanup {
   const scale = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33];
@@ -297,6 +396,21 @@ class AudioLayer {
     } catch { /* */ }
   }
 
+  /** Play a scene synthesizer function. */
+  playScene(sceneId: NonNullable<SceneId>, vol: number, fadeMs = 1200): void {
+    this.hardStop();
+    const ctx = this.ctx;
+    const master = this.master;
+    if (!ctx || !master) return;
+    try {
+      const cleanup = SCENE_SYNTHS[sceneId](ctx, master);
+      this.cleanups = [cleanup];
+      master.gain.cancelScheduledValues(ctx.currentTime);
+      master.gain.setValueAtTime(0.0001, ctx.currentTime);
+      master.gain.linearRampToValueAtTime(vol, ctx.currentTime + fadeMs / 1000);
+    } catch { this.hardStop(); }
+  }
+
   /** Fade out over ms, then hard-stop. Returns a promise-like timeout. */
   fadeStop(vol: number, ms = 1000): Promise<void> {
     return new Promise(resolve => {
@@ -326,9 +440,11 @@ class AudioLayer {
 class MusicEngine {
   private ambient = new AudioLayer();
   private game = new AudioLayer();
+  private scene = new AudioLayer();
 
   private ambientTrack: MusicTrack | null = null; // what the user chose as ambient
   private gameTrack: MusicTrack | null = null;     // currently playing game track
+  private _activeScene: SceneId = (safeGetItem(KV_ACTIVE_SCENE) as SceneId) || null;
   private _volume = readVolume();
   private _muted = safeGetItem(KV_MUSIC_OFF) === "1";
   private _playing = false;
@@ -344,7 +460,7 @@ class MusicEngine {
     this.ambient.prime(this._effectiveVol());
     this.game.prime(this._effectiveVol());
     // Auto-start ambient if not muted and nothing is playing
-    if (!this._muted && !this._playing) this.startAmbient();
+    if (!this._muted && !this._playing && !this._activeScene) this.startAmbient();
     window.removeEventListener("click", this.gestureListener);
     window.removeEventListener("touchstart", this.gestureListener);
   };
@@ -361,13 +477,14 @@ class MusicEngine {
   subscribe = (l: () => void) => { this.listeners.add(l); return () => { this.listeners.delete(l); }; };
 
   getState = (): MusicState => ({
-    playing: this._playing,
+    playing: this._playing || this._activeScene !== null,
     track: this._layer === "game" ? this.gameTrack : this.ambientTrack,
     layer: this._layer,
     volume: this._volume,
     muted: this._muted,
     ambientUploads: readUploads(KV_AMBIENT_UPLOADS),
     gameUploads: readUploads(KV_GAME_UPLOADS),
+    activeScene: this._activeScene,
   });
 
   private emit(): void { for (const l of this.listeners) l(); }
@@ -378,7 +495,7 @@ class MusicEngine {
 
   /** Start the ambient track (called on first gesture or manually). */
   startAmbient(): void {
-    if (this._muted || this._layer === "game") return; // don't start ambient while game is playing
+    if (this._muted || this._layer === "game" || this._activeScene) return; // don't start ambient while game or scene is playing
     const track = this.ambientTrack ?? { kind: "builtin", id: readAmbientTrackId() ?? "piano" as BuiltinTrackId };
     this.ambientTrack = track;
     this.ambient.prime(this._effectiveVol());
@@ -464,6 +581,8 @@ class MusicEngine {
 
   /** Play a track (stops any currently playing track). Single-track rule. */
   play(track: MusicTrack): void {
+    // Stop any active scene — one-brain rule
+    if (this._activeScene) this.stopScene();
     if (this._layer === "game") {
       // If we're inside a game, this changes the game track
       this.game.hardStop();
@@ -483,6 +602,7 @@ class MusicEngine {
   /** Toggle play/pause for whatever is currently active. */
   toggle(): void {
     if (this._muted) return;
+    if (this._activeScene) { this.stopScene(); return; }
     if (!this._playing) {
       this.startAmbient();
     } else if (this._layer === "ambient") {
@@ -513,6 +633,7 @@ class MusicEngine {
     const eff = this._effectiveVol();
     this.ambient.setGain(eff);
     this.game.setGain(eff);
+    this.scene.setGain(eff);
     this.emit();
   }
 
@@ -523,10 +644,16 @@ class MusicEngine {
     if (m) {
       this.ambient.hardStop();
       this.game.hardStop();
+      this.scene.hardStop();
       this._playing = false;
       this._layer = null;
     } else {
-      this.startAmbient();
+      if (this._activeScene) {
+        this.scene.prime(this._effectiveVol());
+        this.scene.playScene(this._activeScene, this._effectiveVol());
+      } else {
+        this.startAmbient();
+      }
     }
     this.emit();
   }
@@ -542,12 +669,55 @@ class MusicEngine {
     }
     this._playing = false;
     this._layer = null;
+    this.stopScene();
     this.emit();
+  }
+
+  /* ─── Scene layer (soundscapes) ──────────────────────────────── */
+
+  /** Start a scene — stops any music/game first. One-brain rule. */
+  startScene(sceneId: NonNullable<SceneId>): void {
+    // Stop music if playing
+    if (this._layer === "ambient") {
+      this.ambient.hardStop();
+      this._layer = null;
+      this._playing = false;
+    }
+    if (this._layer === "game") {
+      this.game.hardStop();
+      this.gameTrack = null;
+      this._layer = null;
+      this._playing = false;
+    }
+    this.scene.hardStop();
+    this._activeScene = sceneId;
+    safeSetItem(KV_ACTIVE_SCENE, sceneId);
+    this.scene.prime(this._effectiveVol());
+    this.scene.playScene(sceneId, this._effectiveVol());
+    this.emit();
+  }
+
+  /** Stop the current scene. */
+  stopScene(): void {
+    if (!this._activeScene) return;
+    this.scene.hardStop();
+    this._activeScene = null;
+    safeSetItem(KV_ACTIVE_SCENE, "");
+    this.emit();
+  }
+
+  /** Toggle a scene: if same scene, stop it; if different, switch. */
+  toggleScene(sceneId: NonNullable<SceneId>): void {
+    if (this._activeScene === sceneId) {
+      this.stopScene();
+    } else {
+      this.startScene(sceneId);
+    }
   }
 
   /** Resume whatever was last playing. */
   resume(): void {
-    if (this._muted || this._playing) return;
+    if (this._muted || this._playing || this._activeScene) return;
     if (this._layer === "game" && this.gameTrack) {
       this.game.prime(this._effectiveVol());
       if (this.gameTrack.kind === "builtin") this.game.playBuiltin(this.gameTrack.id, this._effectiveVol());

@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { BUILTIN_TRACKS, music, useMusicState, type MusicTrack } from "@/lib/music";
+import { BUILTIN_TRACKS, SCENES, music, useMusicState, type MusicTrack } from "@/lib/music";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 
@@ -8,9 +8,12 @@ import { cn } from "@/lib/utils";
  * Shows ambient tracks on app screens, game tracks when in a game.
  * Only one CD visible at any time.
  */
+type MenuTab = "music" | "scenes";
+
 export default function MusicWidget() {
   const state = useMusicState();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [tab, setTab] = useState<MenuTab>("music");
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const isGame = state.layer === "game";
@@ -62,6 +65,18 @@ export default function MusicWidget() {
               <p className="text-sm font-bold tracking-tight text-ink-deep">
                 {isGame ? "🎮 game music" : "🎵 soothing sounds"}
               </p>
+              {!isGame && (
+                <div className="mt-2 flex gap-1">
+                  <button type="button" onClick={() => setTab("music")}
+                    className={cn("flex-1 rounded-full py-1.5 text-[11px] font-bold transition-all", tab === "music" ? "bg-lavender-500 text-white shadow-md" : "text-ink-soft hover:text-ink-deep")}>
+                    🎵 music
+                  </button>
+                  <button type="button" onClick={() => setTab("scenes")}
+                    className={cn("flex-1 rounded-full py-1.5 text-[11px] font-bold transition-all", tab === "scenes" ? "bg-lavender-500 text-white shadow-md" : "text-ink-soft hover:text-ink-deep")}>
+                    🌿 scenes
+                  </button>
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => setMenuOpen(false)}
@@ -75,7 +90,53 @@ export default function MusicWidget() {
               plays only on this device · never uploaded
             </p>
 
+            {/* Scenes tab */}
+            {tab === "scenes" && !isGame && (
+              <div className="mt-3 space-y-1.5">
+                <p className="text-[11px] font-bold text-ink-soft uppercase tracking-wide">soundscapes</p>
+                {SCENES.map(s => {
+                  const active = state.activeScene === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => music.toggleScene(s.id)}
+                      className={cn(
+                        "flex w-full items-center gap-2.5 rounded-2xl px-3 py-2 text-left transition-colors",
+                        active ? "bg-lavender-200/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]" : "hover:bg-lavender-100/60",
+                      )}
+                    >
+                      <span className="text-lg" aria-hidden>{s.emoji}</span>
+                      <span className="min-w-0">
+                        <span className={cn("block truncate text-xs font-bold", active ? "text-ink-deep" : "text-ink")}>
+                          {s.label}
+                          {active && " · playing"}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => music.stopScene()}
+                  className={cn(
+                    "flex w-full items-center gap-2.5 rounded-2xl px-3 py-2 text-left transition-colors",
+                    !state.activeScene ? "bg-lavender-200/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]" : "hover:bg-lavender-100/60",
+                  )}
+                >
+                  <span className="text-lg" aria-hidden>🔇</span>
+                  <span className="min-w-0">
+                    <span className={cn("block truncate text-xs font-bold", !state.activeScene ? "text-ink-deep" : "text-ink")}>
+                      no scene
+                      {!state.activeScene && " · active"}
+                    </span>
+                  </span>
+                </button>
+              </div>
+            )}
+
             {/* Built-in tracks */}
+            {tab === "music" && (
             <div className="mt-3 space-y-1.5">
               {BUILTIN_TRACKS.map(t => {
                 const active = state.track?.kind === "builtin" && state.track.id === t.id;
@@ -101,6 +162,7 @@ export default function MusicWidget() {
                 );
               })}
             </div>
+            )}
 
             {/* My tracks section */}
             <div className="mt-3 border-t border-lavender-200/50 pt-3">

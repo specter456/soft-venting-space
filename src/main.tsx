@@ -32,6 +32,7 @@ const GifStudio = React.lazy(() => import("./pages/app/GifStudio"));
 const GamesScreen = React.lazy(() => import("./pages/app/GamesScreen"));
 const SettingsScreen = React.lazy(() => import("./pages/app/SettingsScreen"));
 const DiaryScreen = React.lazy(() => import("./pages/app/DiaryScreen"));
+const PolaroidWallScreen = React.lazy(() => import("@/components/PolaroidWall").then(m => ({ default: m.PolaroidWallScreen })));
 const CalendarScreen = React.lazy(() => import("./pages/app/CalendarScreen"));
 const CalendarDayView = React.lazy(() => import("./pages/app/CalendarDayView"));
 
@@ -187,6 +188,7 @@ createRoot(rootEl).render(
             <Route path="calendar/:dateKey" element={<Lazy><CalendarDayView /></Lazy>} />
             <Route path="settings" element={<Lazy><SettingsScreen /></Lazy>} />
             <Route path="diary" element={<Lazy><DiaryScreen /></Lazy>} />
+            <Route path="polaroid-wall" element={<Lazy><PolaroidWallScreen /></Lazy>} />
           </Route>
           <Route path="*" element={<NotFound title="Page not found" />} />
         </Routes>

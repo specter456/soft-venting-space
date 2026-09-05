@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router";
 import { WORRY_BUBBLES } from "@/lib/art";
 import { music, type BuiltinTrackId } from "@/lib/music";
 import { useTapGuard } from "@/lib/useTapGuard";
@@ -361,8 +362,24 @@ type ScreenState =
   | { kind: "custom-play-saved"; config: CustomGameConfig };
 
 export default function GamesScreen() {
-  const [screen, setScreen] = useState<ScreenState>({ kind: "grid" });
+  const [searchParams, setSearchParams] = useSearchParams();
+  const gameParam = searchParams.get("game") as BuiltInGameId | null;
+  const [screen, setScreen] = useState<ScreenState>(() => {
+    if (gameParam && BUILT_IN_GAMES.some((g) => g.id === gameParam)) {
+      return { kind: "play", game: gameParam };
+    }
+    return { kind: "grid" };
+  });
   const [customGames, setCustomGames] = useState<CustomGameConfig[]>(loadCustomGames);
+
+  // Sync query param changes (e.g. from mood suggestion links)
+  useEffect(() => {
+    const gp = searchParams.get("game") as BuiltInGameId | null;
+    if (gp && BUILT_IN_GAMES.some((g) => g.id === gp)) {
+      setScreen({ kind: "play", game: gp });
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     return () => { music.stopGameTrack(); };

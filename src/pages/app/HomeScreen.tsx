@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 
 import { MoodBubble } from "@/components/MoodBubble";
 import { removeItem, saveCheckin, useTable, type MoodCheckin } from "@/lib/db";
@@ -12,6 +12,7 @@ import MonthlyWeather from "@/components/MonthlyWeather";
 import GratitudeJar from "@/components/GratitudeJar";
 import GoodnightWindDown from "@/components/GoodnightWindDown";
 import TinyTales from "@/components/TinyTales";
+import PolaroidWallSection from "@/components/PolaroidWall";
 import { getKvFromCache } from "@/lib/db"
 
 /** Exactly four quick moods — one tap selects only that one. */
@@ -86,6 +87,7 @@ function greeting(): { text: string; emoji: string } {
 }
 
 export default function HomeScreen() {
+  const navigate = useNavigate();
   const checkins = useTable<MoodCheckin>("moodCheckins");
   const dateKey = todayDateKey();
   const today = checkins.find((c) => c.dateKey === dateKey);
@@ -145,6 +147,7 @@ export default function HomeScreen() {
               <p className="mx-auto mt-1.5 max-w-[17rem] text-sm leading-relaxed text-ink">
                 {todayMood.affirmation}
               </p>
+              <MoodSuggestion moodId={today.mood} />
               {today.note && (
                 <p className="mx-auto mt-4 max-w-[18rem] rounded-2xl bg-cream-deep/60 px-4 py-3 text-sm leading-relaxed text-ink italic">
                   “{today.note}”
@@ -226,6 +229,9 @@ export default function HomeScreen() {
       {/* ─── Goodnight Wind-Down ──────────────────────────────── */}
       <GoodnightWindDown />
 
+      {/* ─── Polaroid Wall ──────────────────────────────────────── */}
+      <PolaroidWallSection />
+
       {/* ─── Feature grid — exactly two per row ───────────────────── */}
       <section>
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
@@ -272,6 +278,41 @@ function SparkleDecor() {
       <span className="absolute top-4 left-6 text-sm text-lavender-300/70">✦</span>
       <span className="absolute top-10 right-8 text-xs text-blush-300/70">✦</span>
       <span className="absolute bottom-6 left-10 text-xs text-mint-300/70">✧</span>
+    </div>
+  );
+}
+
+/* ─── Mood → Game suggestion ────────────────────────────────────── */
+
+const MOOD_GAME_MAP: Record<string, { name: string; emoji: string; path: string }> = {
+  happy: { name: "Soft Tiles", emoji: "🎹", path: "/dashboard/games?game=tiles" },
+  sad: { name: "Pond Pals", emoji: "🎣", path: "/dashboard/games?game=pond" },
+  angry: { name: "Honeycomb Pop", emoji: "🍯", path: "/dashboard/games?game=honeycomb" },
+  nervous: { name: "Chime Plinko", emoji: "🎐", path: "/dashboard/games?game=plinko" },
+  tired: { name: "Moonlight Glide", emoji: "🌙", path: "/dashboard/games?game=moon" },
+  overwhelmed: { name: "Firework Sky", emoji: "🎆", path: "/dashboard/games?game=fireworks" },
+  calm: { name: "Bloom Garden", emoji: "🌱", path: "/dashboard/games?game=bloom" },
+  irritated: { name: "Jelly Bounce", emoji: "🍮", path: "/dashboard/games?game=jelly" },
+};
+
+function MoodSuggestion({ moodId }: { moodId: string }) {
+  const navigate = useNavigate();
+  const suggestion = MOOD_GAME_MAP[moodId];
+  if (!suggestion) return null;
+
+  return (
+    <div className="mx-auto mt-3 max-w-[18rem]">
+      <div className="flex items-center justify-center gap-2 rounded-2xl bg-lavender-100/50 px-3 py-2">
+        <span className="text-xs text-ink-soft">for {moodById(moodId)?.label.toLowerCase() ?? moodId} days:</span>
+        <span className="text-xs font-bold text-ink-deep">{suggestion.emoji} {suggestion.name}</span>
+        <button
+          type="button"
+          onClick={() => navigate(suggestion.path)}
+          className="ml-1 rounded-full bg-lavender-500/20 px-2 py-0.5 text-[10px] font-bold text-lavender-600 transition-colors hover:bg-lavender-500/30"
+        >
+          try it →
+        </button>
+      </div>
     </div>
   );
 }
