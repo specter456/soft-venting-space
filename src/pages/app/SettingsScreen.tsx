@@ -133,7 +133,7 @@ export default function SettingsScreen() {
             <button
               type="button"
               onClick={saveName}
-              className="clay-btn rounded-full px-4 py-2 text-xs font-bold text-ink-deep"
+              className="clay-btn px-4 py-2 text-xs font-bold text-ink-deep"
             >
               Save
             </button>
@@ -151,7 +151,7 @@ export default function SettingsScreen() {
             <button
               type="button"
               onClick={() => setPasscodeStep(hasPasscode ? "verify" : "set")}
-              className="clay-btn rounded-full px-4 py-2 text-xs font-bold text-ink-deep"
+              className="clay-btn px-4 py-2 text-xs font-bold text-ink-deep"
             >
               {hasPasscode ? "Change passcode" : "Set passcode"}
             </button>
@@ -297,7 +297,7 @@ export default function SettingsScreen() {
 
 function Section({ title, emoji, children }: { title: string; emoji: string; children: React.ReactNode }) {
   return (
-    <section className="clay-card rounded-[2rem] px-5 py-5">
+    <section className="clay-card px-5 py-5">
       <p className="flex items-center gap-2 text-sm font-bold tracking-tight text-ink-deep">
         <span aria-hidden>{emoji}</span> {title}
       </p>

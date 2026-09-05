@@ -131,7 +131,7 @@ export default function HomeScreen() {
 
       {/* ─── Mood typing box + 4 quick moods ──────────────────────── */}
       <section>
-        <div className="clay-card relative overflow-hidden rounded-[2rem] px-5 py-6">
+        <div className="clay-card relative overflow-hidden px-5 py-6">
           <SparkleDecor />
 
           {todayMood && today ? (
@@ -233,7 +233,7 @@ export default function HomeScreen() {
             <div key={f.to + f.title}>
               <Link
                 to={f.to}
-                className="clay-card group flex h-full flex-col items-center gap-2 rounded-[1.8rem] px-4 py-5 text-center transition-transform hover:-translate-y-0.5"
+                className="clay-card group flex h-full flex-col items-center gap-2 px-4 py-5 text-center transition-transform hover:-translate-y-0.5"
               >
                 <span
                   className={cn(

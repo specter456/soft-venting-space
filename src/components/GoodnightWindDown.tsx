@@ -88,7 +88,7 @@ export default function GoodnightWindDown() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="clay-card relative overflow-hidden rounded-[2rem] px-5 py-5 text-left transition-transform hover:-translate-y-0.5"
+        className="clay-card relative overflow-hidden px-5 py-5 text-left transition-transform hover:-translate-y-0.5"
       >
         <div className="flex items-center gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#E4E8F8] text-xl">🌙</span>

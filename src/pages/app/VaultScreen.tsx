@@ -68,7 +68,7 @@ export default function VaultScreen() {
   if (!stored) {
     return (
       <div className="flex min-h-[60dvh] items-center justify-center">
-        <div className="clay-card w-full max-w-xs rounded-[2rem] px-6 py-10 text-center">
+        <div className="clay-card w-full max-w-xs px-6 py-10 text-center">
           <span className="text-4xl">🗝️</span>
           <p className="mt-3 text-lg font-bold tracking-tight text-ink-deep">
             The vault needs a passcode first
@@ -116,7 +116,7 @@ export default function VaultScreen() {
           <LockKeyhole className="size-4 text-lavender-600" />
           {doubleLock ? "double-locked" : "vault lock off — turn it on in Settings"}
         </p>
-        <span className="clay-chip flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold text-ink-soft">
+        <span className="clay-chip flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold text-ink-soft">
           🔐 passcode protected
         </span>
       </div>
@@ -142,7 +142,7 @@ export default function VaultScreen() {
 
       {/* ─── Gallery ──────────────────────────────────────────────── */}
       {shown.length === 0 ? (
-        <div className="clay-card rounded-[2rem] px-6 py-12 text-center">
+        <div className="clay-card px-6 py-12 text-center">
           <span className="text-4xl">🫙</span>
           <p className="mt-3 text-lg font-bold tracking-tight text-ink-deep">
             This shelf is empty
@@ -154,7 +154,7 @@ export default function VaultScreen() {
           <button
             type="button"
             onClick={() => navigate("/dashboard/create")}
-            className="clay-btn mt-6 rounded-full px-6 py-3 text-sm font-bold text-cream-soft"
+            className="clay-btn mt-6 px-6 py-3 text-sm font-bold text-cream-soft"
           >
             Keep your first photo
           </button>
@@ -173,7 +173,7 @@ export default function VaultScreen() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.35, delay: Math.min(i * 0.04, 0.3) }}
                 onClick={() => setOpenId(item._id)}
-                className="clay-chip group relative flex aspect-[4/5] flex-col items-center justify-center gap-1.5 overflow-hidden rounded-[1.5rem] p-3"
+                className="clay-chip group relative flex aspect-[4/5] flex-col items-center justify-center gap-1.5 overflow-hidden p-3"
               >
                 <div
                   className={cn(
@@ -225,7 +225,7 @@ export default function VaultScreen() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ type: "spring", stiffness: 260, damping: 22 }}
             onClick={(e) => e.stopPropagation()}
-            className="clay-card w-full max-w-xs rounded-[2rem] p-5 text-center"
+            className="clay-card w-full max-w-xs p-5 text-center"
           >
             <div
               className={cn(
@@ -255,7 +255,7 @@ export default function VaultScreen() {
               <button
                 type="button"
                 onClick={() => setOpenId(null)}
-                className="clay-btn-soft flex-1 rounded-full px-4 py-2.5 text-sm font-bold text-ink-deep"
+                className="clay-btn-soft flex-1 px-4 py-2.5 text-sm font-bold text-ink-deep"
               >
                 Close
               </button>

@@ -82,7 +82,7 @@ export default function StickerStudio() {
   return (
     <div className="space-y-5">
       {/* ─── Preview ──────────────────────────────────────────────── */}
-      <div className="clay-card flex items-center justify-center rounded-[2rem] px-5 py-8">
+      <div className="clay-card flex items-center justify-center px-5 py-8">
         <StickerPreview
           color={color.hex}
           eyes={eyes.render}

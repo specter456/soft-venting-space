@@ -57,7 +57,7 @@ export default function MusicWidget() {
       {menuOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} aria-hidden />
-          <div className="clay-card absolute top-16 right-0 z-50 w-72 rounded-[1.8rem] p-4 max-h-[70vh] overflow-y-auto">
+          <div className="clay-card absolute top-16 right-0 z-50 w-72 p-4 max-h-[70vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <p className="text-sm font-bold tracking-tight text-ink-deep">
                 {isGame ? "🎮 game music" : "🎵 soothing sounds"}
@@ -173,7 +173,7 @@ export default function MusicWidget() {
                 type="button"
                 onClick={() => music.toggle()}
                 aria-label={state.playing ? "Pause the music" : state.track ? "Resume the music" : "Play soothing music"}
-                className="clay-btn-soft flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full text-xs font-bold text-ink-deep"
+                className="clay-btn-soft flex h-9 flex-1 items-center justify-center gap-1.5 text-xs font-bold text-ink-deep"
               >
                 {state.playing ? "❚❚ pause" : "▶ play"}
               </button>

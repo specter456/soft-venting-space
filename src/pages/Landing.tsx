@@ -138,7 +138,7 @@ export default function Landing() {
           <button
             type="button"
             onClick={primaryCta}
-            className="clay-btn flex items-center gap-2 rounded-full px-6 py-3.5 text-base font-bold text-white"
+            className="clay-btn flex items-center gap-2 px-6 py-3.5 text-base font-bold text-white"
           >
             Open Venting
             <ArrowRight className="size-4" />
@@ -146,7 +146,7 @@ export default function Landing() {
           <button
             type="button"
             onClick={() => setShowExplanation(true)}
-            className="clay-btn-soft flex items-center gap-2 rounded-full px-6 py-3.5 text-base font-bold text-ink-deep"
+            className="clay-btn-soft flex items-center gap-2 px-6 py-3.5 text-base font-bold text-ink-deep"
           >
             See how it feels
           </button>
@@ -224,7 +224,7 @@ export default function Landing() {
                   setShowExplanation(false);
                   primaryCta();
                 }}
-                className="clay-btn relative mt-8 inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-bold text-white"
+                className="clay-btn relative mt-8 inline-flex items-center gap-2 px-7 py-3 text-sm font-bold text-white"
               >
                 Try it now
                 <ArrowRight className="size-4" />

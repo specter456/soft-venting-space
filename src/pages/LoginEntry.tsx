@@ -222,7 +222,7 @@ export default function LoginEntry() {
         initial={{ opacity: 0, y: 22, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ type: "spring", stiffness: 210, damping: 20 }}
-        className="clay-card relative w-full max-w-sm overflow-hidden rounded-[2.25rem] px-6 py-9 text-center"
+        className="clay-card relative w-full max-w-sm overflow-hidden px-6 py-9 text-center"
       >
         <div aria-hidden className="pointer-events-none absolute -top-14 -right-14 h-36 w-36 rounded-full bg-lavender-100/70 blur-2xl" />
         <div aria-hidden className="pointer-events-none absolute -bottom-14 -left-14 h-36 w-36 rounded-full bg-blush-100/60 blur-2xl" />
@@ -405,7 +405,7 @@ export default function LoginEntry() {
               </p>
               <div className="mx-auto mt-6 h-px w-24 bg-lavender-200" aria-hidden />
               <button type="button" onClick={() => setStep("checkin")}
-                className="clay-btn mt-7 inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-bold text-white">
+                className="clay-btn mt-7 inline-flex items-center gap-2 px-7 py-3 text-sm font-bold text-white">
                 Continue
               </button>
               <p className="mt-4 text-center text-[11px] font-semibold text-ink-soft">

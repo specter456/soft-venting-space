@@ -452,7 +452,7 @@ export default function GamesScreen() {
                     return (
                       <motion.button key={g.id} type="button" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
                         onClick={() => openBuiltIn(g.id)}
-                        className={cn("clay-card group flex flex-col items-center gap-2 rounded-[1.8rem] px-4 py-5 sm:py-6 text-center transition-transform hover:-translate-y-0.5 h-full",
+                        className={cn("clay-card group flex flex-col items-center gap-2 px-4 py-5 sm:py-6 text-center transition-transform hover:-translate-y-0.5 h-full",
                           last && "col-span-2 justify-self-center w-[calc(50%-0.375rem)]")}>
                         <span className={cn("flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl text-2xl sm:text-3xl transition-transform group-hover:scale-110", g.tile)}>
                           <span aria-hidden className="drop-shadow-sm">{g.emoji}</span>
@@ -469,7 +469,7 @@ export default function GamesScreen() {
                     const mainEmoji = cg.myDoodle ? "✏️" : getThingEmojis(cg.things)[0] ?? "✨";
                     return (
                       <motion.div key={cg.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-                        className={cn("clay-card group flex flex-col items-center gap-2 rounded-[1.8rem] px-4 py-5 sm:py-6 text-center transition-transform hover:-translate-y-0.5 h-full relative",
+                        className={cn("clay-card group flex flex-col items-center gap-2 px-4 py-5 sm:py-6 text-center transition-transform hover:-translate-y-0.5 h-full relative",
                           last && "col-span-2 justify-self-center w-[calc(50%-0.375rem)]")}>
                         <span className="absolute top-2 left-2 text-xs">✨</span>
                         <button type="button" onClick={(e) => { e.stopPropagation(); openCustom(cg); }}
@@ -699,7 +699,7 @@ function GameBuilder({
 
       {/* Big playable live preview */}
       {previewConfig && (
-        <div className="clay-card overflow-hidden rounded-[2.25rem] p-3">
+        <div className="clay-card overflow-hidden p-3">
           <p className="mb-2 text-xs font-bold text-ink-soft">tap inside to play ✨</p>
           <div className="relative h-64 sm:h-80 overflow-hidden rounded-2xl">
             <TinyGameEngine config={previewConfig} minimal />
@@ -708,7 +708,7 @@ function GameBuilder({
       )}
 
       {/* Builder options */}
-      <div className="clay-card rounded-[2.25rem] px-5 py-6 space-y-5">
+      <div className="clay-card px-5 py-6 space-y-5">
         {/* Name */}
         <div>
           <label className="text-xs font-bold text-ink-deep">Name (optional)</label>
@@ -1209,7 +1209,7 @@ function BubblePop() {
   const popped = worries.filter((w) => w.popped).length;    const reset = useTapGuard(() => { sfxArpeggio(); setWorries((prev) => prev.map((w) => ({ ...w, popped: false }))); }, 400);
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden px-5 py-7">
       <span className="pointer-events-none absolute top-6 left-8 text-sm text-blush-200 animate-twinkle" aria-hidden>✦</span>
       <span className="pointer-events-none absolute top-12 right-10 text-xs text-lavender-200 animate-twinkle" style={{ animationDelay: "0.8s" }} aria-hidden>✧</span>
       <span className="pointer-events-none absolute bottom-16 left-12 text-xs text-mint-200 animate-twinkle" style={{ animationDelay: "1.5s" }} aria-hidden>✦</span>
@@ -1232,7 +1232,7 @@ function BubblePop() {
       </div>
       <div className="mt-6 flex items-center justify-between">
         <p className="text-sm font-bold text-mint-500">{popped}/{worries.length} worries floated away</p>
-        <button type="button" onClick={reset} className="clay-btn-soft rounded-full px-4 py-2 text-xs font-bold text-ink-deep">Fill them again</button>
+        <button type="button" onClick={reset} className="clay-btn-soft px-4 py-2 text-xs font-bold text-ink-deep">Fill them again</button>
       </div>
     </motion.div>
   );
@@ -1279,7 +1279,7 @@ function SoftTiles() {
   const tapTile = (col: number) => { playTileNote(TILE_NOTES[col]); setPlayed((p) => p + 1); };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden px-5 py-7">
       <span className="pointer-events-none absolute top-6 left-8 text-sm text-blush-200 animate-twinkle" aria-hidden>✦</span>
       <span className="pointer-events-none absolute bottom-10 right-14 text-xs text-lavender-200 animate-twinkle" style={{ animationDelay: "1.2s" }} aria-hidden>✧</span>
       <GameIntro emoji="🎹" title="Soft Tiles" sub="tap tiles before they fade — every tap sounds like a soft piano note" />
@@ -1342,7 +1342,7 @@ function MoonlightGlide() {
   }, [lane]);
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden px-5 py-7">
       <GameIntro emoji="🌙" title="Moonlight Glide" sub="tap left or right to drift lanes — catch stars as they fall softly" />
 
       {/* Music CD button */}
@@ -1406,7 +1406,7 @@ function HoneycombPop() {
   const allPopped = poppedCount === HEX_COUNT;
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden px-5 py-7">
       <span className="pointer-events-none absolute top-6 right-10 text-sm text-peach-200 animate-twinkle" aria-hidden>✦</span>
       <span className="pointer-events-none absolute bottom-10 left-12 text-xs text-mint-200 animate-twinkle" style={{ animationDelay: "1s" }} aria-hidden>✧</span>
       <GameIntro emoji="🍯" title="Honeycomb Pop" sub="tap the honey cells — each one pops with a soft thock" />
@@ -1420,7 +1420,7 @@ function HoneycombPop() {
       </div>
       <div className="mt-6 flex items-center justify-between">
         <p className="text-sm font-bold text-[#C4960A]">{poppedCount}/{HEX_COUNT} cells popped</p>
-        {allPopped ? <button type="button" onClick={refill} className="clay-btn rounded-full px-4 py-2 text-xs font-bold text-white">pour a new comb 🍯</button> : <span className="text-xs font-medium text-ink-soft">tap each cell</span>}
+        {allPopped ? <button type="button" onClick={refill} className="clay-btn px-4 py-2 text-xs font-bold text-white">pour a new comb 🍯</button> : <span className="text-xs font-medium text-ink-soft">tap each cell</span>}
       </div>
       {allPopped && <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-3 text-center text-sm font-bold text-[#C4960A]">all that honey tension is gone ✨</motion.p>}
     </motion.div>
@@ -1677,7 +1677,7 @@ function NimbusFriend() {
       : { duration: 2.5, repeat: Infinity, ease: "easeInOut" as const };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden px-5 py-7">
       <span className="pointer-events-none absolute top-6 left-8 text-sm text-mint-200 animate-twinkle" aria-hidden>✦</span>
       <span className="pointer-events-none absolute bottom-10 right-10 text-xs text-lavender-200 animate-twinkle" style={{ animationDelay: "1.5s" }} aria-hidden>✧</span>
       <GameIntro emoji="☁️" title="Nimbus Friend" sub="poke, stroke, tickle, feed, and talk to your cloud friend" />
@@ -1806,7 +1806,7 @@ function MemoryGarden() {
   const allMatched = matched === GARDEN_STICKERS.length;
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden px-5 py-7">
       <span className="pointer-events-none absolute top-6 left-8 text-sm text-mint-200 animate-twinkle" aria-hidden>✦</span>
       <span className="pointer-events-none absolute bottom-10 right-14 text-xs text-blush-200 animate-twinkle" style={{ animationDelay: "1s" }} aria-hidden>✧</span>
       <GameIntro emoji="🌱" title="Memory Garden" sub="flip two cards — when they match, they plant into your garden" />
@@ -1827,7 +1827,7 @@ function MemoryGarden() {
       </div>
       <div className="mt-4 flex items-center justify-between">
         <p className="text-sm font-bold text-mint-500">{matched}/{GARDEN_STICKERS.length} planted</p>
-        {allMatched ? <button type="button" onClick={replant} className="clay-btn rounded-full px-4 py-2 text-xs font-bold text-white">plant again 🌱</button> : <span className="text-xs font-medium text-ink-soft">no rush — take your time</span>}
+        {allMatched ? <button type="button" onClick={replant} className="clay-btn px-4 py-2 text-xs font-bold text-white">plant again 🌱</button> : <span className="text-xs font-medium text-ink-soft">no rush — take your time</span>}
       </div>
       {allMatched && <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-3 text-center text-sm font-bold text-mint-500">your feeling garden is in bloom 🌸</motion.p>}
     </motion.div>
@@ -1946,7 +1946,7 @@ function SoftColoring() {
         <button type="button" onClick={clearAll}
           className="clay-chip rounded-full px-3 py-1.5 text-xs font-bold text-ink-deep">clear</button>
         <button type="button" onClick={savePic}
-          className="clay-btn rounded-full px-3 py-1.5 text-xs font-bold text-white">save to vault</button>
+          className="clay-btn px-3 py-1.5 text-xs font-bold text-white">save to vault</button>
         <button type="button" onClick={() => { setPicIdx((p) => (p + 1) % COLORING_PICTURES.length); setFills({}); setHistory([]); }}
           className="clay-chip rounded-full px-3 py-1.5 text-xs font-bold text-ink-deep">new picture</button>
       </div>
@@ -2103,7 +2103,7 @@ function PondPals() {
         )}
         {state === "idle" && (
           <button type="button" onClick={cast}
-            className="clay-btn rounded-full px-6 py-3 text-sm font-bold text-white">🎣 cast</button>
+            className="clay-btn px-6 py-3 text-sm font-bold text-white">🎣 cast</button>
         )}
         {state === "cast" && (
           <span className="text-2xl">🪝</span>
@@ -2111,7 +2111,7 @@ function PondPals() {
         {state === "nibble" && (
           <motion.button type="button" onClick={reel} initial={{ scale: 1 }} animate={{ scale: [1, 1.1, 1] }}
             transition={{ duration: 0.5, repeat: Infinity }}
-            className="clay-btn rounded-full px-6 py-3 text-sm font-bold text-white">
+            className="clay-btn px-6 py-3 text-sm font-bold text-white">
             something's nibbling… tap!
           </motion.button>
         )}
@@ -2126,7 +2126,7 @@ function PondPals() {
       </div>
       {state === "caught" && (
         <button type="button" onClick={reset}
-          className="clay-btn w-full rounded-full py-2.5 text-sm font-bold text-white">cast again 🎣</button>
+          className="clay-btn w-full py-2.5 text-sm font-bold text-white">cast again 🎣</button>
       )}
       {shelf.length > 0 && (
         <div className="clay-card rounded-2xl p-3 space-y-2">
@@ -2233,7 +2233,7 @@ function CloudStack() {
           onClick={drop}
           whileTap={{ scale: 0.9 }} />
         <button type="button" onClick={drop}
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 clay-btn rounded-full px-5 py-2 text-xs font-bold text-white">
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 clay-btn px-5 py-2 text-xs font-bold text-white">
           drop ☁️
         </button>
       </div>
@@ -2266,7 +2266,7 @@ function JellyBounce() {
   const messages = ["boing boing!", "squish and fly!", "the jelly is happy!", "keep bouncing!", "soft and wobbly!", "jelly goes up!", "cute little bounce!", "wobble wobble!"];
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden px-5 py-7">
       <span className="pointer-events-none absolute top-6 left-8 text-sm text-blush-200 animate-twinkle" aria-hidden>✦</span>
       <span className="pointer-events-none absolute bottom-10 right-14 text-xs text-lavender-200 animate-twinkle" style={{ animationDelay: "1s" }} aria-hidden>✧</span>
       <GameIntro emoji="🍮" title="Jelly Bounce" sub="tap the jelly — boing boing boing!" />
@@ -2320,7 +2320,7 @@ function ChimePlinko() {
   }, 300);
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden px-5 py-7">
       <span className="pointer-events-none absolute top-6 right-10 text-sm text-sky-200 animate-twinkle" aria-hidden>✦</span>
       <GameIntro emoji="🎐" title="Chime Plinko" sub="tap the board to drop a marble — each one makes a little melody" />
       <div className="relative mt-6 h-72 overflow-hidden rounded-2xl bg-gradient-to-b from-[#D8E8F8] to-[#E8F0F8] cursor-pointer" onClick={dropMarble}>
@@ -2380,7 +2380,7 @@ function AnimalBand() {
   useEffect(() => () => clearTimeout(danceTimer.current), []);
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden px-5 py-7">
       <span className="pointer-events-none absolute top-6 left-8 text-sm text-mint-200 animate-twinkle" aria-hidden>✦</span>
       <GameIntro emoji="🐾" title="Animal Band" sub="tap each friend to hear their voice — or let them play together" />
       <div className="mt-6 flex flex-wrap justify-center gap-3">
@@ -2396,7 +2396,7 @@ function AnimalBand() {
       </div>
       <div className="mt-5 flex justify-center">
         <button type="button" onClick={playTogether} disabled={playing}
-          className="clay-btn rounded-full px-6 py-2.5 text-sm font-bold text-white disabled:opacity-60">
+          className="clay-btn px-6 py-2.5 text-sm font-bold text-white disabled:opacity-60">
           {playing ? "🎶 playing…" : "🎶 play together"}
         </button>
       </div>
@@ -2439,7 +2439,7 @@ function FireworkSky() {
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden rounded-[2.25rem] px-5 py-7">
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden px-5 py-7">
       <GameIntro emoji="🎆" title="Firework Sky" sub="tap the night — bloom soft light · hold longer for bigger blooms" />
       <div className="relative mt-6 h-72 overflow-hidden rounded-2xl bg-gradient-to-b from-[#1a1a3e] via-[#2a2a5a] to-[#3a3a7a] cursor-pointer select-none"
         onPointerDown={launch} onPointerUp={release}>

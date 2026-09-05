@@ -119,7 +119,7 @@ export default function FutureNoteSection() {
         <button
           type="button"
           onClick={() => setWriting(true)}
-          className="clay-card w-full overflow-hidden rounded-[1.8rem] px-5 py-4 text-left transition-transform hover:-translate-y-0.5"
+          className="clay-card w-full overflow-hidden px-5 py-4 text-left transition-transform hover:-translate-y-0.5"
         >
           <div className="flex items-center gap-3">
             <span className="text-2xl" aria-hidden>✉️</span>
@@ -141,7 +141,7 @@ export default function FutureNoteSection() {
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="clay-card rounded-[1.8rem] px-5 py-5">
+            <div className="clay-card px-5 py-5">
               <p className="font-script text-lg font-bold text-ink-deep mb-3">a note for future you ✉️</p>
 
               <textarea
@@ -207,7 +207,7 @@ export default function FutureNoteSection() {
                   type="button"
                   onClick={sealNote}
                   disabled={!text.trim() || !selectedDate}
-                  className="clay-btn rounded-full px-5 py-2.5 text-sm font-bold text-white disabled:opacity-40"
+                  className="clay-btn px-5 py-2.5 text-sm font-bold text-white disabled:opacity-40"
                 >
                   seal it with a hug
                 </button>
@@ -237,7 +237,7 @@ export default function FutureNoteSection() {
           type="button"
           onClick={() => openEnvelope(note)}
           whileTap={{ scale: 0.97 }}
-          className="clay-card w-full overflow-hidden rounded-[1.8rem] px-5 py-4 text-left transition-transform hover:-translate-y-0.5"
+          className="clay-card w-full overflow-hidden px-5 py-4 text-left transition-transform hover:-translate-y-0.5"
         >
           <div className="flex items-center gap-3">
             <span className="text-2xl" aria-hidden>📬</span>
@@ -285,7 +285,7 @@ export default function FutureNoteSection() {
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ type: "spring", stiffness: 200, damping: 18 }}
               onClick={(e) => e.stopPropagation()}
-              className="clay-card relative w-full max-w-sm overflow-hidden rounded-[2.25rem] px-6 py-8 text-center"
+              className="clay-card relative w-full max-w-sm overflow-hidden px-6 py-8 text-center"
             >
               <div aria-hidden className="pointer-events-none absolute -top-14 -right-14 h-36 w-36 rounded-full bg-[#AAB6E3]/30 blur-2xl" />
               <div aria-hidden className="pointer-events-none absolute -bottom-14 -left-14 h-36 w-36 rounded-full bg-[#F3E7C9]/30 blur-2xl" />
@@ -320,7 +320,7 @@ export default function FutureNoteSection() {
                   onClick={() => {
                     setOpeningNote(null);
                   }}
-                  className="clay-btn rounded-full px-5 py-2.5 text-sm font-bold text-white"
+                  className="clay-btn px-5 py-2.5 text-sm font-bold text-white"
                 >
                   write one back
                 </button>

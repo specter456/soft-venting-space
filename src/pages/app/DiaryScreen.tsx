@@ -834,7 +834,7 @@ export default function DiaryScreen() {
   /* ─── Read with page-turn ───────────────────────────────────── */
   if (total === 0) {
     return (
-      <div className="clay-card rounded-[2rem] px-6 py-14 text-center">
+      <div className="clay-card px-6 py-14 text-center">
         <span className="text-4xl">📖</span>
         <p className="mt-3 text-lg font-bold tracking-tight text-ink-deep">
           The diary is empty… for now
@@ -846,7 +846,7 @@ export default function DiaryScreen() {
         <button
           type="button"
           onClick={() => setView("compose")}
-          className="clay-btn mt-6 rounded-full px-6 py-3 text-sm font-bold text-cream-soft"
+          className="clay-btn mt-6 px-6 py-3 text-sm font-bold text-cream-soft"
         >
           Write the first page
         </button>
@@ -868,7 +868,7 @@ export default function DiaryScreen() {
         <button
           type="button"
           onClick={() => setView("compose")}
-          className="clay-btn rounded-full px-4 py-2 text-xs font-bold text-cream-soft"
+          className="clay-btn px-4 py-2 text-xs font-bold text-cream-soft"
         >
           + New page
         </button>
@@ -884,7 +884,7 @@ export default function DiaryScreen() {
             exit={{ rotateY: 80, opacity: 0, x: 40 }}
             transition={{ duration: 0.55, ease: "easeInOut" }}
             style={{ transformStyle: "preserve-3d" }}
-            className="clay-card relative min-h-[26rem] overflow-visible rounded-[1.6rem] p-6"
+            className="clay-card relative min-h-[26rem] overflow-visible p-6"
           >
             {/* Background photo (softened) */}
             {bgPhoto && (

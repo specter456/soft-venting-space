@@ -245,7 +245,7 @@ export default function Dashboard() {
             aria-label="Main"
             className="fixed right-0 bottom-4 left-0 z-40 flex justify-center px-5"
           >
-            <div className="flex w-full max-w-[720px] items-center gap-1 rounded-full p-1.5 bg-[#FDF5E6]/85 border border-[#C4CBE8]/40 shadow-lg shadow-[#8C9AD6]/15">
+            <div className="flex w-full max-w-[720px] items-center gap-1 p-1.5 bg-[#FDF5E6]/85 border border-[#C4CBE8]/40 shadow-lg shadow-[#8C9AD6]/15" style={{borderRadius:"55% 45% 58% 42% / 50% 55% 45% 55%", animation:"cloud-morph 8s ease-in-out infinite alternate"}}>
               {TABS.map((tab) => {
                 const active = tab.to === "/dashboard/calendar"
                   ? location.pathname.startsWith("/dashboard/calendar")
@@ -259,7 +259,7 @@ export default function Dashboard() {
                       "flex flex-1 flex-col items-center gap-0.5 rounded-full py-2 transition-all",
                       !active && "hover:bg-[var(--theme-accent-light)]",
                     )}
-                    style={active ? { background: "var(--theme-accent-deep, #5F6DBE)" } : undefined}
+                    style={{...(active ? { background: "var(--theme-accent-deep, #5F6DBE)", borderRadius: "50% 50% 55% 45% / 55% 45% 50% 50%" } : { borderRadius: "50% 50% 55% 45% / 55% 45% 50% 50%" })}}
                   >
                     <span
                       className={cn(

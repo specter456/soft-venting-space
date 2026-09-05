@@ -96,7 +96,7 @@ function LockedInside() {
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: "spring", stiffness: 220, damping: 16, delay: 0.15 }}
-          className="clay-card flex h-20 w-20 items-center justify-center rounded-full"
+          className="clay-card flex h-20 w-20 items-center justify-center"
         >
           <LockKeyhole className="h-9 w-9 text-lavender-500" />
         </motion.div>
@@ -146,7 +146,7 @@ function AppInside() {
       </p>
 
       {/* check-in card */}
-      <div className="clay-card mt-4 rounded-[1.6rem] px-4 py-4">
+      <div className="clay-card mt-4 px-4 py-4">
         <p className="text-center text-[14px] font-bold tracking-tight text-ink-deep">
           How are you feeling today?
         </p>
@@ -173,7 +173,7 @@ function AppInside() {
         {ROOMS.map((room) => (
           <div
             key={room.title}
-            className="clay-card flex items-center gap-2.5 rounded-[1.4rem] px-3 py-2.5"
+            className="clay-card flex items-center gap-2.5 px-3 py-2.5"
           >
             <div
               className={cn(

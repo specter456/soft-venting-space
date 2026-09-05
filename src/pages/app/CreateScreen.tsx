@@ -197,7 +197,7 @@ export default function CreateScreen() {
           transition={{ duration: 0.4 }}
           type="button"
           onClick={() => setView("photos")}
-          className="clay-card group flex flex-col items-center justify-center gap-2 rounded-[1.8rem] px-4 py-5 text-center transition-transform hover:-translate-y-1"
+          className="clay-card group flex flex-col items-center justify-center gap-2 px-4 py-5 text-center transition-transform hover:-translate-y-1"
         >            <span className="clay-chip flex h-12 w-12 items-center justify-center rounded-full text-2xl transition-transform group-hover:scale-110">
             <Images className="size-5 text-lavender-500" />
           </span>            <span className="text-sm font-bold tracking-tight text-ink-deep">Photos</span>
@@ -216,7 +216,7 @@ export default function CreateScreen() {
           >
             <Link
               to={tool.to}
-              className="clay-card group flex flex-col items-center justify-center gap-2 rounded-[1.8rem] px-4 py-5 text-center transition-transform hover:-translate-y-1"
+              className="clay-card group flex flex-col items-center justify-center gap-2 px-4 py-5 text-center transition-transform hover:-translate-y-1"
             >
               <span
                 className={cn(
@@ -241,7 +241,7 @@ export default function CreateScreen() {
           transition={{ duration: 0.4, delay: 0.3 }}
         >
           <Link
-            to="/dashboard/vault"              className="clay-card group flex flex-col items-center justify-center gap-2 rounded-[1.8rem] px-4 py-5 text-center transition-transform hover:-translate-y-1"
+            to="/dashboard/vault"              className="clay-card group flex flex-col items-center justify-center gap-2 px-4 py-5 text-center transition-transform hover:-translate-y-1"
           >
             <div className="relative">
               <span className="clay-chip flex h-12 w-12 items-center justify-center rounded-full bg-lavender-100 text-xl">
@@ -265,7 +265,7 @@ export default function CreateScreen() {
         </motion.div>
       </div>
 
-      <div className="clay-card flex items-center gap-3 rounded-[2rem] px-5 py-4">
+      <div className="clay-card flex items-center gap-3 px-5 py-4">
         <span className="clay-chip flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lavender-500">
           <Palette className="size-4" />
         </span>

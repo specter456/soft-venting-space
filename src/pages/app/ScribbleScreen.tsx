@@ -159,7 +159,7 @@ export default function ScribbleScreen() {
   return (
     <div className="space-y-4">
       {/* ─── Canvas ───────────────────────────────────────────────── */}
-      <div className="clay-card relative overflow-hidden rounded-[2rem] p-2.5">
+      <div className="clay-card relative overflow-hidden p-2.5">
         <div className={cn("relative overflow-hidden rounded-[1.6rem]", bgClass)}>
           <canvas
             ref={canvasRef}

@@ -148,7 +148,7 @@ export default function CalendarDayView() {
       </div>
 
       {/* ─── New entry form ────────────────────────────────────── */}
-      <section className="clay-card rounded-[2rem] px-5 py-5 space-y-4">
+      <section className="clay-card px-5 py-5 space-y-4">
         {/* 1. Heading */}
         <input
           type="text"

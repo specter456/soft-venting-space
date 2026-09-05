@@ -237,17 +237,25 @@
   .clay-card {
     background: var(--theme-card, rgba(253, 245, 230, 0.7));
     border: 1px solid var(--theme-card-border, rgba(253, 245, 230, 0.6));
+    border-radius: 55% 45% 60% 40% / 50% 55% 45% 60%;
+    animation: cloud-morph 7s ease-in-out infinite alternate;
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.5),
-      0 4px 16px -4px rgba(90, 90, 140, 0.12);
+      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.15),
+      0 4px 16px -4px rgba(90, 90, 140, 0.12),
+      0 0 20px -6px rgba(140, 154, 214, 0.12);
   }
 
   .clay-chip {
     background: var(--theme-card, rgba(253, 245, 230, 0.55));
     border: 1px solid var(--theme-card-border, rgba(253, 245, 230, 0.5));
+    border-radius: 50% 50% 55% 45% / 55% 45% 50% 50%;
+    animation: cloud-morph 8s ease-in-out infinite alternate;
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.4),
-      0 2px 8px -2px rgba(90, 90, 140, 0.08);
+      inset 0 1px 0 rgba(255, 255, 255, 0.5),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+      0 2px 8px -2px rgba(90, 90, 140, 0.08),
+      0 0 12px -4px rgba(140, 154, 214, 0.1);
   }
 
   .clay-press {
@@ -261,9 +269,13 @@
   .clay-btn {
     background: linear-gradient(180deg, var(--theme-accent, #6F7BC0), var(--theme-accent-deep, #5F6DBE));
     border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 55% 45% 50% 50% / 50% 55% 45% 55%;
+    animation: cloud-morph 6s ease-in-out infinite alternate;
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.3),
-      0 4px 12px -4px rgba(95, 109, 190, 0.35);
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+      0 4px 12px -4px rgba(95, 109, 190, 0.35),
+      0 0 16px -4px rgba(95, 109, 190, 0.2);
     transition:
       transform 0.15s ease,
       box-shadow 0.15s ease,
@@ -283,9 +295,13 @@
   .clay-btn-soft {
     background: linear-gradient(180deg, #D9C080, #C9A96A);
     border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 45% 55% 55% 45% / 55% 45% 50% 50%;
+    animation: cloud-morph 7s ease-in-out infinite alternate;
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.35),
-      0 4px 12px -4px rgba(200, 169, 106, 0.3);
+      inset 0 1px 0 rgba(255, 255, 255, 0.4),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+      0 4px 12px -4px rgba(200, 169, 106, 0.3),
+      0 0 14px -4px rgba(200, 169, 106, 0.15);
     transition:
       transform 0.15s ease,
       box-shadow 0.15s ease,
@@ -301,9 +317,13 @@
   .clay-btn-blush {
     background: linear-gradient(180deg, #D4A0B0, #C48B9E);
     border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 60% 40% 45% 55% / 45% 55% 50% 50%;
+    animation: cloud-morph 7.5s ease-in-out infinite alternate;
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.3),
-      0 4px 12px -4px rgba(196, 139, 158, 0.3);
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+      0 4px 12px -4px rgba(196, 139, 158, 0.3),
+      0 0 14px -4px rgba(196, 139, 158, 0.15);
     transition:
       transform 0.15s ease,
       box-shadow 0.15s ease,
@@ -323,8 +343,13 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 9999px;
+    border-radius: 55% 45% 60% 40% / 50% 55% 45% 60%;
     border: 1px solid rgba(255, 255, 255, 0.7);
+    animation: cloud-morph 6s ease-in-out infinite alternate;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.5),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.15),
+      0 0 12px -3px rgba(140, 154, 214, 0.15);
     transition:
       transform 0.18s ease,
       box-shadow 0.18s ease,
@@ -407,6 +432,8 @@
       inset 0 -6px 12px -6px rgba(100, 110, 180, 0.45),
       0 10px 16px -8px rgba(120, 130, 200, 0.5);
   }
+    border-radius: 55% 45% 58% 42% / 52% 55% 45% 58%;
+    animation: cloud-morph 6.3s ease-in-out infinite alternate;
   .tile-blush {
     background: linear-gradient(180deg, #D4A0B8, #B79BD9);
     box-shadow:
@@ -414,6 +441,8 @@
       inset 0 -6px 12px -6px rgba(140, 100, 170, 0.45),
       0 10px 16px -8px rgba(160, 120, 190, 0.5);
   }
+    border-radius: 48% 52% 55% 45% / 55% 48% 52% 48%;
+    animation: cloud-morph 6.6s ease-in-out infinite alternate;
   .tile-mist {
     background: linear-gradient(180deg, #9AB0D0, #7F9BD9);
     box-shadow:
@@ -421,6 +450,8 @@
       inset 0 -6px 12px -6px rgba(90, 110, 160, 0.45),
       0 10px 16px -8px rgba(110, 130, 180, 0.5);
   }
+    border-radius: 52% 48% 45% 55% / 48% 52% 55% 45%;
+    animation: cloud-morph 6.9s ease-in-out infinite alternate;
   .tile-mint {
     background: linear-gradient(180deg, #A0C4B8, #8FA8C9);
     box-shadow:
@@ -428,6 +459,8 @@
       inset 0 -6px 12px -6px rgba(100, 130, 150, 0.45),
       0 10px 16px -8px rgba(120, 150, 170, 0.5);
   }
+    border-radius: 58% 42% 52% 48% / 55% 45% 48% 55%;
+    animation: cloud-morph 7.2s ease-in-out infinite alternate;
   .tile-peach {
     background: linear-gradient(180deg, #E5C898, #C9A96A);
     box-shadow:
@@ -435,6 +468,8 @@
       inset 0 -6px 12px -6px rgba(160, 130, 70, 0.45),
       0 10px 16px -8px rgba(180, 150, 90, 0.5);
   }
+    border-radius: 45% 55% 50% 50% / 50% 55% 45% 55%;
+    animation: cloud-morph 7.5s ease-in-out infinite alternate;
 }
 
 /* ─── Script font utility — Caveat for special words only ─────────── */
@@ -580,6 +615,21 @@
 @keyframes cd-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes cloud-morph {
+  0%, 100% {
+    border-radius: 55% 45% 60% 40% / 50% 55% 45% 60%;
+  }
+  25% {
+    border-radius: 50% 50% 55% 45% / 55% 45% 55% 50%;
+  }
+  50% {
+    border-radius: 45% 55% 50% 50% / 60% 50% 40% 55%;
+  }
+  75% {
+    border-radius: 60% 40% 45% 55% / 45% 60% 50% 50%;
   }
 }
 

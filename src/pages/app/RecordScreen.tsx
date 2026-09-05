@@ -192,7 +192,7 @@ export default function RecordScreen() {
       {/* ─── Recorder ─────────────────────────────────────────────── */}
       <motion.div
         layout
-        className="clay-card relative overflow-hidden rounded-[2.25rem] px-6 py-8"
+        className="clay-card relative overflow-hidden px-6 py-8"
       >
         <div
           aria-hidden
@@ -496,7 +496,7 @@ function ModePicker({ onPick }: { onPick: (m: Mode) => void }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
           onClick={() => pick("voice")}
-          className="clay-card group flex flex-col items-center gap-2 rounded-[1.8rem] px-4 py-6 text-center transition-transform hover:-translate-y-0.5"
+          className="clay-card group flex flex-col items-center gap-2 px-4 py-6 text-center transition-transform hover:-translate-y-0.5"
         >
           <span className="tile-mist flex h-14 w-14 items-center justify-center rounded-2xl text-3xl transition-transform group-hover:scale-110">
             <span aria-hidden className="drop-shadow-sm">🎤</span>
@@ -515,7 +515,7 @@ function ModePicker({ onPick }: { onPick: (m: Mode) => void }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.06 }}
           onClick={() => pick("video")}
-          className="clay-card group flex flex-col items-center gap-2 rounded-[1.8rem] px-4 py-6 text-center transition-transform hover:-translate-y-0.5"
+          className="clay-card group flex flex-col items-center gap-2 px-4 py-6 text-center transition-transform hover:-translate-y-0.5"
         >
           <span className="tile-blush flex h-14 w-14 items-center justify-center rounded-2xl text-3xl transition-transform group-hover:scale-110">
             <span aria-hidden className="drop-shadow-sm">🎥</span>

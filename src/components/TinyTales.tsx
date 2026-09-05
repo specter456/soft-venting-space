@@ -154,7 +154,7 @@ export default function TinyTales() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="clay-card relative overflow-hidden rounded-[2rem] px-5 py-5 text-left transition-transform hover:-translate-y-0.5"
+        className="clay-card relative overflow-hidden px-5 py-5 text-left transition-transform hover:-translate-y-0.5"
       >
         <div className="flex items-center gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#E4E8F8] text-xl">📖</span>
@@ -179,7 +179,7 @@ export default function TinyTales() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="clay-card relative w-full max-w-sm overflow-hidden rounded-[2rem] px-6 py-7"
+              className="clay-card relative w-full max-w-sm overflow-hidden px-6 py-7"
             >
               {!story ? (
                 /* Story list */

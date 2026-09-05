@@ -850,7 +850,7 @@ export default function GifStudio() {
           transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
           className="absolute top-1/3 -right-4 text-sm pointer-events-none z-10">🌸</motion.span>
 
-        <div className="clay-card relative overflow-hidden rounded-[2rem] p-2.5" style={{ boxShadow: "0 8px 32px -8px rgba(90,70,120,0.18), inset 0 1px 0 rgba(255,255,255,0.6)" }}>
+        <div className="clay-card relative overflow-hidden p-2.5" style={{ boxShadow: "0 8px 32px -8px rgba(90,70,120,0.18), inset 0 1px 0 rgba(255,255,255,0.6)" }}>
           <div className="relative aspect-square overflow-hidden rounded-[1.6rem]" style={{ boxShadow: "inset 0 2px 12px rgba(90,70,120,0.1)" }}>
             {bg === "avatar" ? (
               <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-mint-100 via-cream-soft to-lavender-50">
@@ -1004,7 +1004,7 @@ export default function GifStudio() {
             <h2 className="text-sm font-bold tracking-tight text-ink-deep">GIF preview · {frames.length} frame{frames.length > 1 ? "s" : ""}</h2>
             <div className="flex gap-1.5">
               <button type="button" onClick={() => setPlaying((p) => !p)}
-                className="clay-btn flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold text-cream-soft">
+                className="clay-btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-cream-soft">
                 {playing ? <Pause className="size-3" /> : <Play className="size-3" />}
                 {playing ? "Pause" : "Play"}</button>
               <button type="button" onClick={() => setMagicTouch((m) => !m)}
@@ -1020,7 +1020,7 @@ export default function GifStudio() {
                 {s.emoji} {s.label}</button>
             ))}
           </div>
-          <div className="clay-card rounded-[2rem] p-2.5">
+          <div className="clay-card p-2.5">
             <div className="relative aspect-square overflow-hidden rounded-[1.6rem]" style={{ boxShadow: "inset 0 2px 8px rgba(90,70,120,0.12)" }}>
               {magicTouch && <div className="absolute inset-0 z-10 pointer-events-none" style={{ background: "radial-gradient(circle, rgba(200,180,240,0.25) 0%, transparent 70%)" }} />}
               <motion.div key={playIdx} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="h-full w-full">

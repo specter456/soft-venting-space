@@ -22,7 +22,7 @@ export function FriendlyCrashFallback({
 }) {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-cream-soft via-cream to-lavender-50 p-6 text-ink">
-      <div className="clay-card w-full max-w-sm rounded-[2rem] px-6 py-8 text-center">
+      <div className="clay-card w-full max-w-sm px-6 py-8 text-center">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-lavender-100 text-3xl">
           💜
         </div>
@@ -32,7 +32,7 @@ export function FriendlyCrashFallback({
           <button
             type="button"
             onClick={onRetry}
-            className="clay-btn rounded-full px-5 py-3 text-sm font-bold text-ink-deep"
+            className="clay-btn px-5 py-3 text-sm font-bold text-ink-deep"
           >
             try again
           </button>
@@ -118,7 +118,7 @@ export function ConnectionFallback({
   onContinue: () => void;
 }) {
   return (
-    <div className="clay-card w-full rounded-[2rem] px-5 py-6 text-center">
+    <div className="clay-card w-full px-5 py-6 text-center">
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blush-100 text-2xl">
         📡
       </div>
@@ -133,7 +133,7 @@ export function ConnectionFallback({
         <button
           type="button"
           onClick={onRetry}
-          className="clay-btn rounded-full px-5 py-2.5 text-sm font-bold text-ink-deep"
+          className="clay-btn px-5 py-2.5 text-sm font-bold text-ink-deep"
         >
           Try again
         </button>

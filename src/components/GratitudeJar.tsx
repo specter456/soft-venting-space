@@ -76,7 +76,7 @@ export default function GratitudeJar() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="clay-card relative overflow-hidden rounded-[2rem] px-5 py-5 text-left transition-transform hover:-translate-y-0.5"
+        className="clay-card relative overflow-hidden px-5 py-5 text-left transition-transform hover:-translate-y-0.5"
       >
         <div className="flex items-center gap-4">
           {/* Tiny jar visual */}
@@ -112,7 +112,7 @@ export default function GratitudeJar() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="clay-card relative w-full max-w-sm overflow-hidden rounded-[2rem] px-6 py-7"
+              className="clay-card relative w-full max-w-sm overflow-hidden px-6 py-7"
             >
               <p className="text-center text-lg font-bold tracking-tight text-ink-deep">gratitude jar 🫙</p>
               <p className="mt-1 text-center text-xs font-medium text-ink-soft">

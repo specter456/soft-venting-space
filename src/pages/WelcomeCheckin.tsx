@@ -66,7 +66,7 @@ export default function WelcomeCheckin() {
         initial={{ opacity: 0, y: 22, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ type: "spring", stiffness: 210, damping: 20 }}
-        className="clay-card relative w-full max-w-sm overflow-hidden rounded-[2.25rem] px-6 py-9 text-center"
+        className="clay-card relative w-full max-w-sm overflow-hidden px-6 py-9 text-center"
       >
         <div
           aria-hidden
@@ -110,7 +110,7 @@ export default function WelcomeCheckin() {
               <button
                 type="button"
                 onClick={guardedNext}
-                className="clay-btn mt-7 inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-bold text-white"
+                className="clay-btn mt-7 inline-flex items-center gap-2 px-7 py-3 text-sm font-bold text-white"
               >
                 Continue
               </button>

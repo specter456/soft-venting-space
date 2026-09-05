@@ -21,7 +21,7 @@ export default function NotesScreen() {
         </div>
         <Link
           to="/dashboard/notes/new"
-          className="clay-btn flex h-11 w-11 items-center justify-center rounded-full text-cream-soft transition-transform hover:scale-105 active:scale-95"
+          className="clay-btn flex h-11 w-11 items-center justify-center text-cream-soft transition-transform hover:scale-105 active:scale-95"
           aria-label="Write a new note"
         >
           <Plus className="size-5" />
@@ -29,7 +29,7 @@ export default function NotesScreen() {
       </div>
 
       {notes.length === 0 ? (
-        <div className="clay-card rounded-[2rem] px-6 py-12 text-center">
+        <div className="clay-card px-6 py-12 text-center">
           <span className="text-4xl">🌙</span>
           <p className="mt-3 text-lg font-bold tracking-tight text-ink-deep">
             Your journal is waiting
@@ -40,7 +40,7 @@ export default function NotesScreen() {
           </p>
           <Link
             to="/dashboard/notes/new"
-            className="clay-btn mt-6 inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-cream-soft"
+            className="clay-btn mt-6 inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-cream-soft"
           >
             <Plus className="size-4" /> Write a note
           </Link>
@@ -54,7 +54,7 @@ export default function NotesScreen() {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: Math.min(i * 0.05, 0.3) }}
-              className="clay-card relative rounded-[2rem] px-5 py-5"
+              className="clay-card relative px-5 py-5"
             >
               <div className="flex items-center justify-between gap-2">
                 <p className="text-[11px] font-semibold text-ink-soft">

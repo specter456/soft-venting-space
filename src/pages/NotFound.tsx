@@ -33,7 +33,7 @@ export default function NotFound({ title }: NotFoundProps) {
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="clay-card relative z-10 flex w-full max-w-sm flex-col items-center overflow-hidden rounded-[2.25rem] px-6 py-12 text-center"
+        className="clay-card relative z-10 flex w-full max-w-sm flex-col items-center overflow-hidden px-6 py-12 text-center"
       >
         {/* soft blobs inside card */}
         <div
@@ -58,7 +58,7 @@ export default function NotFound({ title }: NotFoundProps) {
         <button
           type="button"
           onClick={() => navigate("/")}
-          className="clay-btn relative mt-8 inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-bold text-white"
+          className="clay-btn relative mt-8 inline-flex items-center gap-2 px-7 py-3 text-sm font-bold text-white"
         >
           back to the safe room
         </button>
