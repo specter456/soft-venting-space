@@ -9,6 +9,9 @@ import { cn } from "@/lib/utils";
 import FutureNoteSection from "@/components/FutureNoteSection";
 import OnThisDay from "@/components/OnThisDay";
 import MonthlyWeather from "@/components/MonthlyWeather";
+import GratitudeJar from "@/components/GratitudeJar";
+import GoodnightWindDown from "@/components/GoodnightWindDown";
+import TinyTales from "@/components/TinyTales";
 import { getKvFromCache } from "@/lib/db"
 
 /** Exactly four quick moods — one tap selects only that one. */
@@ -213,6 +216,15 @@ export default function HomeScreen() {
 
       {/* ─── A Note for Future You ──────────────────────────────── */}
       <FutureNoteSection />
+
+      {/* ─── Gratitude Jar ──────────────────────────────────────── */}
+      <GratitudeJar />
+
+      {/* ─── Tiny Tales ──────────────────────────────────────── */}
+      <TinyTales />
+
+      {/* ─── Goodnight Wind-Down ──────────────────────────────── */}
+      <GoodnightWindDown />
 
       {/* ─── Feature grid — exactly two per row ───────────────────── */}
       <section>
