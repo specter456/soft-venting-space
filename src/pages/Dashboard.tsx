@@ -75,9 +75,12 @@ export default function Dashboard() {
   const passcodeSalt = kv.find((k) => k.key === KV_PASSCODE_SALT)?.value;
 
   const [lock, setLock] = useState<"setup" | "unlock" | "unlocked">("unlocked");
-  // Use a ref (not state) to gate the one-time lock init — refs survive
-  // React StrictMode's double-effect-fire without being reset between fires.
+  // Use a ref to track whether the lock-init effect has already acted.
+  // Refs survive StrictMode double-fire and prevent the logic from running
+  // more than once, even when deps change (e.g. hasPasscode flips from
+  // false→true after kv loads).
   const lockInitRef = useRef(false);
+  const lockHadPasscodeRef = useRef(false);
   const navigate = useNavigate();
   const goHome = useCallback(() => navigate("/dashboard"), [navigate]);
   const { showGuard, handleSave, handleLeave, handleBack } = useUnsavedGuard(goHome);
@@ -97,17 +100,37 @@ export default function Dashboard() {
   }, [title]);
 
   // Decide the initial lock state once storage has hydrated.
-  // Uses a ref (not state) to guard so React StrictMode's double-effect-fire
-  // doesn't re-run the logic after the sessionStorage flag was consumed.
+  // The ref guard ensures we only set lock state ONCE across all renders.
+  // We must wait until hydrated AND the kv table has actually loaded
+  // (hasPasscode may start as false then flip to true once data arrives).
   useEffect(() => {
     if (!hydrated || lockInitRef.current) return;
-    lockInitRef.current = true;
     // If the user JUST completed onboarding in this session, skip the lock
     // (they already typed their passcode moments ago).
     if (sessionStorage.getItem("venting-just-onboarded") === "1") {
       sessionStorage.removeItem("venting-just-onboarded");
+      lockInitRef.current = true;
       // stays "unlocked"
-    } else if (hasPasscode) {
+      return;
+    }
+    // If we haven't loaded kv data yet, wait for it before deciding.
+    // hasPasscode flips from false→true once the kv table populates.
+    if (hasPasscode && !lockHadPasscodeRef.current) {
+      lockHadPasscodeRef.current = true;
+    }
+    if (!lockHadPasscodeRef.current && !hasPasscode) {
+      // kv data hasn't shown a passcode yet — don't decide yet.
+      // Also don't set lockInitRef so we can re-check on next render.
+      if (safeSessionGetItem(LOCK_DISMISSED_KEY) === "1") {
+        // User already dismissed setup — go straight in.
+        lockInitRef.current = true;
+      }
+      return;
+    }
+    // Now we know: either hasPasscode is true (and we saw it),
+    // or kv loaded and there's no passcode.
+    lockInitRef.current = true;
+    if (hasPasscode) {
       setLock("unlock");
     } else if (safeSessionGetItem(LOCK_DISMISSED_KEY) !== "1") {
       setLock("setup");
@@ -139,9 +162,20 @@ export default function Dashboard() {
 
   if (lock === "unlock") {
     if (!passcodeHash || !passcodeSalt) {
-      // passcode was removed mid-session — treat as unlocked
-      // Use useEffect instead of render-time setState to avoid cascading renders
-      return null;
+      // Passcode data not yet available — either it vanished mid-session
+      // or kv hasn't finished loading. The secondary useEffect above will
+      // set lock="unlocked" if the data truly vanished. For now, show a
+      // gentle loading state instead of a blank screen.
+      return (
+        <div className="flex min-h-dvh items-center justify-center text-ink" style={{background: "linear-gradient(180deg, var(--theme-bg-start, #9CCFF0) 0%, var(--theme-bg-mid, #C6E6FA) 50%, var(--theme-bg-end, #EAF7FF) 100%)"}}>
+          <div className="text-center">
+            <Logo className="mx-auto h-12 w-12 animate-floaty-slow" />
+            <p className="mt-3 text-sm font-semibold text-ink-soft">
+              opening your space…
+            </p>
+          </div>
+        </div>
+      );
     }
     return (
       <LockScreen

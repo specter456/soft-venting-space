@@ -95,6 +95,9 @@ export default function LoginEntry() {
           const hash = await hashPasscode(code, storedSalt);
           if (hash === storedHash) {
             setDigits("");
+            // Signal to Dashboard that the user just authenticated —
+            // it must skip its own lock screen and go straight to Home.
+            sessionStorage.setItem("venting-just-onboarded", "1");
             navigate("/dashboard");
           } else {
             setError("that code didn't match. your space stays sealed.");
