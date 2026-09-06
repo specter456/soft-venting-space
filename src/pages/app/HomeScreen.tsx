@@ -2,7 +2,7 @@ import { useState, Component, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router";
 
 import { MoodBubble } from "@/components/MoodBubble";
-import { removeItem, saveCheckin, useTable, type MoodCheckin } from "@/lib/db";
+import { removeItem, saveCheckin, useTable, getKvFromCache, type MoodCheckin } from "@/lib/db";
 import { type MoodId, moodById, todayDateKey } from "@/lib/moods";
 import { useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
@@ -14,17 +14,36 @@ import GratitudeJar from "@/components/GratitudeJar";
 import GoodnightWindDown from "@/components/GoodnightWindDown";
 import TinyTales from "@/components/TinyTales";
 import PolaroidWallSection from "@/components/PolaroidWall";
-import { getKvFromCache } from "@/lib/db"
 
-/** Local error boundary so one broken card never blanks the whole home. */
-class HomeErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+/** Per-section error boundary: if one card crashes, the rest of Home still shows. */
+class SectionBoundary extends Component<{ name: string; children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
   static getDerivedStateFromError() { return { hasError: true }; }
-  componentDidCatch(err: Error) { console.warn("[home] caught render error:", err?.message); }
+  componentDidCatch(err: Error) {
+    console.error(`[home] ${this.props.name} crashed:`, err?.message, err);
+  }
   render() {
-    if (this.state.hasError) return null; // silently hide broken card
+    if (this.state.hasError) {
+      return (
+        <div className="clay-card px-5 py-6 text-center">
+          <p className="text-sm font-semibold text-ink-soft">something soft went wrong here 💜</p>
+          <button
+            type="button"
+            onClick={() => this.setState({ hasError: false })}
+            className="mt-2 text-xs font-bold text-lavender-600 underline-offset-4 hover:underline"
+          >
+            try again
+          </button>
+        </div>
+      );
+    }
     return this.props.children;
   }
+}
+
+/** Wrap each home section so one crash never blanks the whole screen. */
+function SoftSection({ name, children }: { name: string; children: ReactNode }) {
+  return <SectionBoundary name={name}>{children}</SectionBoundary>;
 }
 
 /** Exactly four quick moods — one tap selects only that one. */
@@ -151,7 +170,7 @@ function HomeScreenInner() {
       </section>
 
       {/* ─── Mood typing box + 4 quick moods ──────────────────────── */}
-      <section>
+      <SoftSection name="MoodCard">
         <div className="clay-card relative overflow-hidden px-5 py-6">
           <SparkleDecor />
 
@@ -228,31 +247,31 @@ function HomeScreenInner() {
             </div>
           )}
         </div>
-      </section>
+      </SoftSection>
 
       {/* ─── Monthly Weather ────────────────────────────────────── */}
-      <MonthlyWeather />
+      <SoftSection name="MonthlyWeather"><MonthlyWeather /></SoftSection>
 
       {/* ─── On This Day — memories from the same date ──────────── */}
-      <OnThisDay />
+      <SoftSection name="OnThisDay"><OnThisDay /></SoftSection>
 
       {/* ─── A Note for Future You ──────────────────────────────── */}
-      <FutureNoteSection />
+      <SoftSection name="FutureNote"><FutureNoteSection /></SoftSection>
 
       {/* ─── Gratitude Jar ──────────────────────────────────────── */}
-      <GratitudeJar />
+      <SoftSection name="GratitudeJar"><GratitudeJar /></SoftSection>
 
       {/* ─── Tiny Tales ──────────────────────────────────────── */}
-      <TinyTales />
+      <SoftSection name="TinyTales"><TinyTales /></SoftSection>
 
       {/* ─── Goodnight Wind-Down ──────────────────────────────── */}
-      <GoodnightWindDown />
+      <SoftSection name="WindDown"><GoodnightWindDown /></SoftSection>
 
       {/* ─── Polaroid Wall ──────────────────────────────────────── */}
-      <PolaroidWallSection />
+      <SoftSection name="PolaroidWall"><PolaroidWallSection /></SoftSection>
 
       {/* ─── Feature grid — exactly two per row ───────────────────── */}
-      <section>
+      <SoftSection name="FeatureGrid">
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
           {FEATURES.map((f) => (
             <div key={f.to + f.title}>
@@ -280,7 +299,7 @@ function HomeScreenInner() {
             </div>
           ))}
         </div>
-      </section>
+      </SoftSection>
 
       {/* ─── Tiny privacy footer ──────────────────────────────────── */}
       <p className="pt-1 text-center text-[11px] font-semibold text-ink-soft">
@@ -336,13 +355,8 @@ function MoodSuggestion({ moodId }: { moodId: string }) {
   );
 }
 
-/** Wrap the inner screen in a local boundary so one broken card never blanks home. */
 export default function HomeScreen() {
-  return (
-    <HomeErrorBoundary>
-      <HomeScreenInner />
-    </HomeErrorBoundary>
-  );
+  return <HomeScreenInner />;
 }
 
 function UserAvatar() {
