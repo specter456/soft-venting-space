@@ -114,6 +114,13 @@ export default function Dashboard() {
     }
   }, [hydrated, hasPasscode]);
 
+  // If we're in unlock mode but the passcode data vanished mid-session, skip to unlocked.
+  useEffect(() => {
+    if (lock === "unlock" && (!passcodeHash || !passcodeSalt)) {
+      setLock("unlocked");
+    }
+  }, [lock, passcodeHash, passcodeSalt]);
+
   if (lock === "setup") {
     return (
       <LockScreen
@@ -133,7 +140,7 @@ export default function Dashboard() {
   if (lock === "unlock") {
     if (!passcodeHash || !passcodeSalt) {
       // passcode was removed mid-session — treat as unlocked
-      setLock("unlocked");
+      // Use useEffect instead of render-time setState to avoid cascading renders
       return null;
     }
     return (
@@ -172,7 +179,7 @@ export default function Dashboard() {
       <div className="sky-cloud sky-cloud-4" aria-hidden />
 
       <SeasonalParticles />
-      <div className="relative mx-auto flex w-full max-w-[800px] flex-col">
+      <div className="relative mx-auto flex w-full max-w-[600px] flex-col">
         {/* ─── Header ─────────────────────────────────────────────── */}
         <header className="sticky top-0 z-40 px-5 pt-6 pb-3 border-b border-white/40" style={{ background: "var(--theme-header-bg, rgba(200,225,250,0.8))" }}>
           <div className="flex items-center justify-between">
@@ -245,11 +252,11 @@ export default function Dashboard() {
 
         {showGuard && <UnsavedDialog onSave={handleSave} onLeave={handleLeave} />}
 
-        {/* ─── "I need a minute" breathing bubble — ONLY after unlock ──── */}
-        <BreathingMinute />
-
         {/* ─── Gentle daily reminder (one toast per day) ────────── */}
         <GentleReminder />
+
+        {/* ─── "I need a minute" breathing bubble — ONLY after unlock ──── */}
+        <BreathingMinute />
 
         {/* ─── Bottom taskbar — Home | Games | Calendar | Settings ───── */}
         {showBar && (
@@ -308,17 +315,25 @@ export default function Dashboard() {
 }
 
 function HeaderAvatar() {
-  const avatar = getKvFromCache("profileAvatar") || "💜";
-  if (avatar.startsWith("data:") || avatar.startsWith("http")) {
+  try {
+    const avatar = getKvFromCache("profileAvatar") || "💜";
+    if (avatar.startsWith("data:") || avatar.startsWith("http")) {
+      return (
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-[var(--theme-accent-light)]">
+          <img src={avatar} alt="your face" className="h-full w-full object-cover" />
+        </div>
+      );
+    }
     return (
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-[var(--theme-accent-light)]">
-        <img src={avatar} alt="your face" className="h-full w-full object-cover" />
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--theme-accent-light)] text-xl">
+        <span aria-hidden>{avatar}</span>
+      </div>
+    );
+  } catch {
+    return (
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--theme-accent-light)] text-xl">
+        <span aria-hidden>💜</span>
       </div>
     );
   }
-  return (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--theme-accent-light)] text-xl">
-      <span aria-hidden>{avatar}</span>
-    </div>
-  );
 }

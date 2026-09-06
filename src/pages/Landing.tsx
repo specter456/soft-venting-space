@@ -87,7 +87,7 @@ export default function Landing() {
 
 
       {/* ─── Centered brand: icon → name → tagline → feeling line ──── */}
-      <header role="banner" className="relative z-10 mx-auto flex min-h-[70vh] w-full max-w-6xl flex-col items-center justify-center px-5 pt-4 pb-16 sm:px-8">
+      <header role="banner" className="relative z-10 mx-auto flex min-h-[80dvh] w-full max-w-xl flex-col items-center justify-center px-5 pt-4 pb-16 sm:px-8">
         {/* floating hearts & sparkles */}
         <div className="pointer-events-none relative">
           <motion.span
@@ -123,14 +123,14 @@ export default function Landing() {
             transition={{ duration: 0.7, ease: "easeOut" }}
             className="flex flex-col items-center text-center"
           >
-            <Logo className="h-24 w-24 animate-floaty-slow drop-shadow-[0_10px_20px_rgba(120,100,160,0.25)] sm:h-28 sm:w-28" />
-            <h1 className="font-script mt-6 text-5xl font-bold tracking-tight text-ink-deep sm:text-6xl">
+            <Logo className="h-20 w-20 animate-floaty-slow drop-shadow-[0_10px_20px_rgba(120,100,160,0.25)]" />
+            <h1 className="font-script mt-5 text-4xl font-bold tracking-tight text-ink-deep">
               Venting
             </h1>
-            <p className="font-script mt-3 text-xl font-semibold text-ink-soft sm:text-2xl">
+            <p className="font-script mt-2 text-lg font-semibold text-ink-soft">
               a tiny safe room in your phone
             </p>
-            <p className="font-script mt-2 text-lg font-semibold text-ink sm:text-xl md:text-2xl">
+            <p className="font-script mt-1.5 text-base font-semibold text-ink">
               your feelings have a home here
             </p>
           </motion.div>

@@ -116,7 +116,8 @@ export function LockScreen({
         const hash = await hashPasscode(code, storedSalt);
         if (hash === storedHash) {
           setDigits("");
-          onUnlock?.();
+          // Small delay to prevent race conditions with state updates
+          setTimeout(() => onUnlock?.(), 50);
         } else {
           fail();
         }
@@ -174,7 +175,7 @@ export function LockScreen({
           initial={{ opacity: 0, y: 20, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.45, ease: "easeOut" }}
-          className="clay-card relative w-full max-w-xs px-6 pt-9 pb-7 sm:max-w-sm"
+          className="clay-card relative w-full max-w-sm px-6 pt-9 pb-7"
         >
           {/* floating sparkles */}
           <Sparkles className="animate-twinkle absolute top-7 left-8 size-4 text-lavender-400" />

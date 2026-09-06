@@ -237,7 +237,8 @@
   .clay-card {
     background: var(--theme-card, rgba(255, 255, 255, 0.65));
     border: 1px solid var(--theme-card-border, rgba(200, 220, 245, 0.6));
-    border-radius: 28px;
+    border-radius: 24px;
+    animation: card-wobble 7s ease-in-out infinite alternate;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.6),
       inset 0 -1px 0 rgba(255, 255, 255, 0.15),
@@ -267,7 +268,8 @@
   .clay-btn {
     background: linear-gradient(180deg, var(--theme-accent, #6F7BC0), var(--theme-accent-deep, #5F6DBE));
     border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 26px 30px 28px 30px;
+    border-radius: 20px 24px 22px 26px;
+    animation: btn-wobble 8s ease-in-out infinite alternate;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.35),
       inset 0 -1px 0 rgba(255, 255, 255, 0.1),
@@ -292,7 +294,8 @@
   .clay-btn-soft {
     background: linear-gradient(180deg, #D9C080, #C9A96A);
     border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 26px 30px 28px 30px;
+    border-radius: 20px 24px 22px 26px;
+    animation: btn-wobble 8s ease-in-out infinite alternate;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.4),
       inset 0 -1px 0 rgba(255, 255, 255, 0.1),
@@ -313,7 +316,8 @@
   .clay-btn-blush {
     background: linear-gradient(180deg, #D4A0B0, #C48B9E);
     border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 26px 30px 28px 30px;
+    border-radius: 20px 24px 22px 26px;
+    animation: btn-wobble 8s ease-in-out infinite alternate;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.35),
       inset 0 -1px 0 rgba(255, 255, 255, 0.1),
@@ -421,44 +425,44 @@
   /* ─── Clearly visible feature tiles — Wisteria & Lace family ──── */
   .tile-lavender {
     background: linear-gradient(180deg, #B8C0E8, #9AA5D6);
+    border-radius: 24px;
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.8),
       inset 0 -6px 12px -6px rgba(100, 110, 180, 0.45),
       0 10px 16px -8px rgba(120, 130, 200, 0.5);
   }
-    border-radius: 28px;
   .tile-blush {
     background: linear-gradient(180deg, #D4A0B8, #B79BD9);
+    border-radius: 24px;
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.8),
       inset 0 -6px 12px -6px rgba(140, 100, 170, 0.45),
       0 10px 16px -8px rgba(160, 120, 190, 0.5);
   }
-    border-radius: 28px;
   .tile-mist {
     background: linear-gradient(180deg, #9AB0D0, #7F9BD9);
+    border-radius: 24px;
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.8),
       inset 0 -6px 12px -6px rgba(90, 110, 160, 0.45),
       0 10px 16px -8px rgba(110, 130, 180, 0.5);
   }
-    border-radius: 28px;
   .tile-mint {
     background: linear-gradient(180deg, #A0C4B8, #8FA8C9);
+    border-radius: 24px;
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.8),
       inset 0 -6px 12px -6px rgba(100, 130, 150, 0.45),
       0 10px 16px -8px rgba(120, 150, 170, 0.5);
   }
-    border-radius: 28px;
   .tile-peach {
     background: linear-gradient(180deg, #E5C898, #C9A96A);
+    border-radius: 24px;
     box-shadow:
       inset 0 2px 3px rgba(255, 255, 255, 0.8),
       inset 0 -6px 12px -6px rgba(160, 130, 70, 0.45),
       0 10px 16px -8px rgba(180, 150, 90, 0.5);
   }
-    border-radius: 28px;
 }
 
 /* ─── Script font utility — Caveat for special words only ─────────── */
@@ -607,18 +611,21 @@
   }
 }
 
-@keyframes cloud-morph {
+@keyframes card-wobble {
   0%, 100% {
-    border-radius: 55% 45% 60% 40% / 50% 55% 45% 60%;
-  }
-  25% {
-    border-radius: 50% 50% 55% 45% / 55% 45% 55% 50%;
+    border-radius: 24px;
   }
   50% {
-    border-radius: 45% 55% 50% 50% / 60% 50% 40% 55%;
+    border-radius: 21px 27px 24px 27px;
   }
-  75% {
-    border-radius: 60% 40% 45% 55% / 45% 60% 50% 50%;
+}
+
+@keyframes btn-wobble {
+  0%, 100% {
+    border-radius: 20px 24px 22px 26px;
+  }
+  50% {
+    border-radius: 22px 22px 24px 24px;
   }
 }
 
