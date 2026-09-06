@@ -14,6 +14,7 @@ import GratitudeJar from "@/components/GratitudeJar";
 import GoodnightWindDown from "@/components/GoodnightWindDown";
 import TinyTales from "@/components/TinyTales";
 import PolaroidWallSection from "@/components/PolaroidWall";
+import { PlantHomeCard } from "@/components/MyLittlePlant";
 
 /** Per-section error boundary: if one card crashes, the rest of Home still shows. */
 class SectionBoundary extends Component<{ name: string; children: ReactNode }, { hasError: boolean }> {
@@ -260,6 +261,9 @@ function HomeScreenInner() {
 
       {/* ─── Gratitude Jar ──────────────────────────────────────── */}
       <SoftSection name="GratitudeJar"><GratitudeJar /></SoftSection>
+
+      {/* ─── My Little Plant (Bloom Garden) ───────────────────── */}
+      <SoftSection name="MyLittlePlant"><PlantHomeCard /></SoftSection>
 
       {/* ─── Tiny Tales ──────────────────────────────────────── */}
       <SoftSection name="TinyTales"><TinyTales /></SoftSection>

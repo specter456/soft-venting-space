@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
+import MyLittlePlant from "@/components/MyLittlePlant";
 import { WORRY_BUBBLES } from "@/lib/art";
 import { music, type BuiltinTrackId } from "@/lib/music";
 import { useTapGuard } from "@/lib/useTapGuard";
@@ -261,8 +262,8 @@ function sfxFill() {
   } catch { /* */ }
 }
 
-/** Soft water pour — for Bloom Garden */
-function sfxWater() {
+/** Soft water pour — used by Bloom Garden (exported for the plant component). */
+export function sfxWater() {
   try { const c = sCtx(); const t = c.currentTime;
     for (let i = 0; i < 4; i++) {
       const o = c.createOscillator(); const g = c.createGain();
@@ -308,8 +309,8 @@ function sfxSplash() {
   } catch { /* */ }
 }
 
-/** Soft melodic arpeggio (for game completion / special moments) */
-function sfxArpeggio() {
+/** Soft melodic arpeggio (game completion / special moments; exported). */
+export function sfxArpeggio() {
   try { const c = sCtx(); const t = c.currentTime;
     [262, 330, 392, 523, 659].forEach((freq, i) => {
       const o = c.createOscillator(); const o2 = c.createOscillator();
@@ -343,7 +344,7 @@ const BUILT_IN_GAMES: {
   { id: "nimbus", emoji: "☁️", name: "Nimbus Friend", line: "a little cloud friend who loves your company", tile: "tile-mint" },
   { id: "garden", emoji: "🌱", name: "Memory Garden", line: "match the feelings, grow a little garden", tile: "tile-lavender" },
   { id: "coloring", emoji: "🎨", name: "Soft Coloring", line: "fill the lines with your favorite calm", tile: "tile-lavender" },
-  { id: "bloom", emoji: "🌱", name: "Bloom Garden", line: "plant a seed, water it, watch it bloom", tile: "tile-mint" },
+  { id: "bloom", emoji: "🌱", name: "Bloom Garden", line: "water it daily — watch it bloom over real days.", tile: "tile-mint" },
   { id: "pond", emoji: "🎣", name: "Pond Pals", line: "cast a line into the calm pond, meet little friends", tile: "tile-sky" },
   { id: "clouds", emoji: "☁️", name: "Cloud Stack", line: "stack soft clouds into a cozy tower", tile: "tile-mint" },
   { id: "jelly", emoji: "🍮", name: "Jelly Bounce", line: "boing the jelly to the clouds", tile: "tile-blush" },
@@ -551,7 +552,7 @@ export default function GamesScreen() {
           {screen.game === "nimbus" && <NimbusFriend />}
           {screen.game === "garden" && <MemoryGarden />}
           {screen.game === "coloring" && <SoftColoring />}
-          {screen.game === "bloom" && <BloomGarden />}
+          {screen.game === "bloom" && <MyLittlePlant />}
           {screen.game === "pond" && <PondPals />}
           {screen.game === "clouds" && <CloudStack />}
           {screen.game === "jelly" && <JellyBounce />}
@@ -1971,99 +1972,7 @@ function SoftColoring() {
   );
 }
 
-/* ─── Bloom Garden ─────────────────────────────────────────────── */
-
-const SEEDS = [
-  { id: "rose", emoji: "🌹", name: "Rose" },
-  { id: "tulip", emoji: "🌷", name: "Tulip" },
-  { id: "sunflower", emoji: "🌻", name: "Sunflower" },
-  { id: "daisy", emoji: "🌼", name: "Daisy" },
-  { id: "lavender", emoji: "💐", name: "Lavender" },
-  { id: "cherry", emoji: "🌸", name: "Cherry Blossom" },
-];
-
-type PlantStage = "empty" | "seed" | "sprout" | "bud" | "bloom";
-
-interface Plant {
-  stage: PlantStage;
-  seed: typeof SEEDS[0] | null;
-  watered: number;
-}
-
-function BloomGarden() {
-  const [bed, setBed] = useState<Plant[]>(() =>
-    Array.from({ length: 6 }, () => ({ stage: "empty" as PlantStage, seed: null, watered: 0 }))
-  );
-  const [pickSlot, setPickSlot] = useState<number | null>(null);
-
-  const plantSeed = (slotIdx: number, seed: typeof SEEDS[0]) => {
-    setBed((b) => b.map((p, i) => i === slotIdx ? { ...p, stage: "seed", seed, watered: 0 } : p));
-    setPickSlot(null);
-  };
-
-  const water = (slotIdx: number) => {
-    sfxWater();
-    setBed((b) => b.map((p, i) => {
-      if (i !== slotIdx || !p.seed) return p;
-      const next = { ...p, watered: p.watered + 1 };
-      if (p.stage === "seed" && next.watered >= 2) next.stage = "sprout";
-      else if (p.stage === "sprout" && next.watered >= 4) next.stage = "bud";
-      else if (p.stage === "bud" && next.watered >= 6) next.stage = "bloom";
-      return next;
-    }));
-  };
-
-  const bloomCount = bed.filter((p) => p.stage === "bloom").length;
-
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-      <GameIntro emoji="🌱" title="Bloom Garden" sub="plant a seed, water it, watch it bloom" />
-      <div className="grid grid-cols-3 gap-3">
-        {bed.map((plant, i) => (
-          <button key={i} type="button"
-            onClick={() => plant.stage === "empty" ? setPickSlot(i) : water(i)}
-            onPointerDown={(e) => { if (plant.stage !== "empty") { e.preventDefault(); water(i); } }}
-            className="relative flex h-28 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-mint-300/60 bg-mint-50/40 transition-all hover:scale-105 active:scale-95">
-            {plant.stage === "empty" && <span className="text-2xl text-mint-300">+</span>}
-            {plant.stage === "seed" && <span className="text-2xl">🫘</span>}
-            {plant.stage === "sprout" && <span className="text-2xl">🌱</span>}
-            {plant.stage === "bud" && <span className="text-2xl">🪴</span>}
-            {plant.stage === "bloom" && (
-              <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-3xl">{plant.seed?.emoji}</motion.span>
-            )}
-            {plant.seed && <span className="mt-1 text-[10px] font-bold text-mint-600">{plant.seed.name}</span>}
-            {plant.stage !== "empty" && plant.stage !== "bloom" && (
-              <span className="absolute bottom-1 text-[9px] text-mint-400">hold to water 💧</span>
-            )}
-          </button>
-        ))}
-      </div>
-      {bloomCount >= 3 && (
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center text-sm font-bold text-mint-500">
-          🦋 butterflies are visiting your garden!
-        </motion.p>
-      )}
-      <p className="text-center text-xs font-bold text-ink-soft">{bloomCount}/6 bloomed</p>
-
-      {pickSlot !== null && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-          className="clay-card rounded-2xl p-4 space-y-3">
-          <p className="text-xs font-bold text-ink-soft">choose a seed</p>
-          <div className="flex flex-wrap gap-2">
-            {SEEDS.map((s) => (
-              <button key={s.id} type="button" onClick={() => plantSeed(pickSlot, s)}
-                className="clay-chip flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold text-ink-deep hover:scale-105 active:scale-95">
-                <span>{s.emoji}</span> {s.name}
-              </button>
-            ))}
-          </div>
-          <button type="button" onClick={() => setPickSlot(null)}
-            className="w-full text-[11px] font-bold text-ink-soft hover:text-ink-deep">cancel</button>
-        </motion.div>
-      )}
-    </motion.div>
-  );
-}
+/* Bloom Garden now lives in @/components/MyLittlePlant (one daily-growing plant). */
 
 /* ─── Pond Pals ─────────────────────────────────────────────── */
 
