@@ -1,5 +1,5 @@
 import { Lock } from "lucide-react";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router";
 import { useUnsavedGuard } from "@/lib/useUnsavedGuard";
 import { UnsavedDialog } from "@/components/UnsavedDialog";
@@ -75,7 +75,9 @@ export default function Dashboard() {
   const passcodeSalt = kv.find((k) => k.key === KV_PASSCODE_SALT)?.value;
 
   const [lock, setLock] = useState<"setup" | "unlock" | "unlocked">("unlocked");
-  const [lockInitDone, setLockInitDone] = useState(false);
+  // Use a ref (not state) to gate the one-time lock init — refs survive
+  // React StrictMode's double-effect-fire without being reset between fires.
+  const lockInitRef = useRef(false);
   const navigate = useNavigate();
   const goHome = useCallback(() => navigate("/dashboard"), [navigate]);
   const { showGuard, handleSave, handleLeave, handleBack } = useUnsavedGuard(goHome);
@@ -95,11 +97,11 @@ export default function Dashboard() {
   }, [title]);
 
   // Decide the initial lock state once storage has hydrated.
-  // Moved to useEffect so StrictMode double-render doesn't race with
-  // sessionStorage flag consumption (prevents double-welcome after onboarding).
+  // Uses a ref (not state) to guard so React StrictMode's double-effect-fire
+  // doesn't re-run the logic after the sessionStorage flag was consumed.
   useEffect(() => {
-    if (!hydrated || lockInitDone) return;
-    setLockInitDone(true);
+    if (!hydrated || lockInitRef.current) return;
+    lockInitRef.current = true;
     // If the user JUST completed onboarding in this session, skip the lock
     // (they already typed their passcode moments ago).
     if (sessionStorage.getItem("venting-just-onboarded") === "1") {
@@ -110,7 +112,7 @@ export default function Dashboard() {
     } else if (safeSessionGetItem(LOCK_DISMISSED_KEY) !== "1") {
       setLock("setup");
     }
-  }, [hydrated, lockInitDone, hasPasscode]);
+  }, [hydrated, hasPasscode]);
 
   if (lock === "setup") {
     return (
