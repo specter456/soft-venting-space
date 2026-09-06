@@ -8,7 +8,6 @@ import { useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
 import { useSeasonEmoji } from "@/components/SeasonalParticles";
 import FutureNoteSection from "@/components/FutureNoteSection";
-import OnThisDay from "@/components/OnThisDay";
 import MonthlyWeather from "@/components/MonthlyWeather";
 import GratitudeJar from "@/components/GratitudeJar";
 import GoodnightWindDown from "@/components/GoodnightWindDown";
@@ -74,7 +73,7 @@ const FEATURES = [
     line: "draw how it feels",
   },
   {
-    to: "/dashboard/create",
+    to: "/dashboard/create?view=photos",
     title: "Photo Doodle",
     emoji: "🖼️",
     tile: "tile-mint",
@@ -250,26 +249,23 @@ function HomeScreenInner() {
         </div>
       </SoftSection>
 
-      {/* ─── Monthly Weather ────────────────────────────────────── */}
-      <SoftSection name="MonthlyWeather"><MonthlyWeather /></SoftSection>
-
-      {/* ─── On This Day — memories from the same date ──────────── */}
-      <SoftSection name="OnThisDay"><OnThisDay /></SoftSection>
-
-      {/* ─── A Note for Future You ──────────────────────────────── */}
-      <SoftSection name="FutureNote"><FutureNoteSection /></SoftSection>
-
-      {/* ─── Gratitude Jar ──────────────────────────────────────── */}
-      <SoftSection name="GratitudeJar"><GratitudeJar /></SoftSection>
-
-      {/* ─── My Little Plant (Bloom Garden) ───────────────────── */}
+      {/* ─── 4 · My Little Plant — full width ─────────────────── */}
       <SoftSection name="MyLittlePlant"><PlantHomeCard /></SoftSection>
 
-      {/* ─── Tiny Tales ──────────────────────────────────────── */}
-      <SoftSection name="TinyTales"><TinyTales /></SoftSection>
+      {/* ─── 5 · Row: gratitude jar + tiny tales (equal, aligned) ── */}
+      <div className="grid grid-cols-2 items-stretch gap-4 [&>button]:h-full [&>button]:w-full">
+        <SoftSection name="GratitudeJar"><GratitudeJar /></SoftSection>
+        <SoftSection name="TinyTales"><TinyTales /></SoftSection>
+      </div>
 
-      {/* ─── Goodnight Wind-Down ──────────────────────────────── */}
-      <SoftSection name="WindDown"><GoodnightWindDown /></SoftSection>
+      {/* ─── 6 · Row: month's weather + wind-down (equal, aligned) ─ */}
+      <div className="grid grid-cols-2 items-stretch gap-4 [&>button]:h-full [&>button]:w-full">
+        <SoftSection name="MonthlyWeather"><MonthlyWeather /></SoftSection>
+        <SoftSection name="WindDown"><GoodnightWindDown /></SoftSection>
+      </div>
+
+      {/* ─── 7 · A Note for Future You — full width ─────────────── */}
+      <SoftSection name="FutureNote"><FutureNoteSection /></SoftSection>
 
       {/* ─── Polaroid Wall ──────────────────────────────────────── */}
       <SoftSection name="PolaroidWall"><PolaroidWallSection /></SoftSection>

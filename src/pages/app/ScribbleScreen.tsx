@@ -1,6 +1,8 @@
 import { toast } from "sonner";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useNavigate } from "react-router";
 import { useSetDirty } from "@/lib/useUnsavedGuard";
+import { armPendingPin } from "@/components/PolaroidWall";
 import { Eraser, Loader2, Paintbrush, Pen, Save, Square, ImageDown, Copy, Grid2x2 } from "lucide-react";
 import { createVaultItem } from "@/lib/db";
 import { saveToGallery } from "@/lib/save-to-gallery";
@@ -63,6 +65,7 @@ function captureScribble(
 }
 
 export default function ScribbleScreen() {
+  const navigate = useNavigate();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const lastPoint = useRef<{ x: number; y: number } | null>(null);
@@ -147,6 +150,15 @@ export default function ScribbleScreen() {
       });
       toast("Scribble saved", {
         description: "Locked away in your private vault.",
+        action: art
+          ? {
+              label: "pin to wall 📌",
+              onClick: () => {
+                armPendingPin(`vault-${Date.now()}`, art);
+                navigate("/dashboard/polaroid-wall");
+              },
+            }
+          : undefined,
       });
     } catch (error) {
       console.error(error);

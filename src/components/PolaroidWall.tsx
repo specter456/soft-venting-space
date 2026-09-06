@@ -1,11 +1,37 @@
-import { useCallback, useRef, useState } from "react";
-import { Link } from "react-router";
-import { motion } from "framer-motion";
-import { safeGetItem, safeSetItem } from "@/lib/safe-storage";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router";
+import { AnimatePresence, motion } from "framer-motion";
+import { createVaultItem, useTable, type VaultItem } from "@/lib/db";
+import { safeGetItem, safeSetItem, safeRemoveItem } from "@/lib/safe-storage";
 import { isImageArt } from "@/lib/canvas-art";
 import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "venting-polaroid-wall";
+/** Set by Photo Doodle on save; the wall consumes and clears it. */
+export const PENDING_PIN_KEY = "venting-pending-wall-pin";
+
+export interface PendingPin {
+  vaultId: string;
+  art: string;
+}
+
+/** Call after saving a photo/doodle anywhere: arms the next wall visit to pin it. */
+export function armPendingPin(vaultId: string, art: string): void {
+  safeSetItem(PENDING_PIN_KEY, JSON.stringify({ vaultId, art } satisfies PendingPin));
+}
+
+/** Read + clear a pending pin (one-shot). */
+function consumePendingPin(): PendingPin | null {
+  try {
+    const raw = safeGetItem(PENDING_PIN_KEY);
+    if (!raw) return null;
+    safeRemoveItem(PENDING_PIN_KEY);
+    const p = JSON.parse(raw) as PendingPin;
+    return p && typeof p.art === "string" ? p : null;
+  } catch {
+    return null;
+  }
+}
 
 interface PolaroidPin {
   id: string;
@@ -20,7 +46,10 @@ interface PolaroidPin {
 function loadWall(): PolaroidPin[] {
   try {
     const raw = safeGetItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as PolaroidPin[];
+    if (raw) {
+      const arr = JSON.parse(raw) as PolaroidPin[];
+      return Array.isArray(arr) ? arr : [];
+    }
   } catch { /* ignore */ }
   return [];
 }
@@ -29,74 +58,107 @@ function saveWall(pins: PolaroidPin[]) {
   safeSetItem(STORAGE_KEY, JSON.stringify(pins));
 }
 
-/** Card on Home screen */
+/* ─── Home card ──────────────────────────────────────────────────── */
+
 export default function PolaroidWallSection() {
   const wall = loadWall();
   return (
     <section>
       <Link
         to="/dashboard/polaroid-wall"
-        className="clay-card group flex items-center gap-3 px-5 py-4 transition-transform hover:-translate-y-0.5"
+        className="clay-card group flex w-full items-center gap-3 px-5 py-4 transition-transform hover:-translate-y-0.5"
       >
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl tile-lavender text-xl">
           <span aria-hidden className="drop-shadow-sm">📸</span>
         </span>
-        <div className="min-w-0 flex-1">
+        <span className="min-w-0 flex-1">
           <span className="block text-sm font-bold tracking-tight text-ink-deep">
             polaroid wall
           </span>
           <span className="block text-[11px] font-medium text-ink-soft">
-            {wall.length > 0 ? `${wall.length} photo${wall.length === 1 ? "" : "s"} pinned` : "pin your favorite moments"}
+            {wall.length > 0 ? `${wall.length} photo${wall.length === 1 ? "" : "s"} pinned` : "your wall is waiting 📸"}
           </span>
-        </div>
-        <span className="text-sm text-ink-soft group-hover:text-ink-deep transition-colors">→</span>
+        </span>
+        <span aria-hidden className="text-sm text-ink-soft transition-colors group-hover:text-ink-deep">→</span>
       </Link>
     </section>
   );
 }
 
-/** Full wall screen */
+/* ─── Wall screen ────────────────────────────────────────────────── */
+
 export function PolaroidWallScreen() {
+  const navigate = useNavigate();
+  const vaultItems = useTable<VaultItem>("vaultItems");
   const [pins, setPins] = useState<PolaroidPin[]>(loadWall);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [showPicker, setShowPicker] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [sparkleId, setSparkleId] = useState<string | null>(null);
   const dragging = useRef<{ id: string; startX: number; startY: number; origX: number; origY: number } | null>(null);
   const wallRef = useRef<HTMLDivElement>(null);
 
-  const persist = useCallback((next: PolaroidPin[]) => {
-    setPins(next);
-    saveWall(next);
-  }, []);
-
-  const addPin = (vaultId: string, art: string) => {
+  const addPin = useCallback((vaultId: string, art: string) => {
+    const id = `pin-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const pin: PolaroidPin = {
-      id: `pin-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      id,
       vaultId,
       art,
       caption: "",
-      x: 10 + Math.random() * 60,
-      y: 10 + Math.random() * 60,
+      x: 8 + Math.random() * 58,
+      y: 8 + Math.random() * 58,
       tilt: (Math.random() - 0.5) * 16,
     };
-    persist([...pins, pin]);
-    setShowPicker(false);
-  };
+    setPins((prev) => {
+      const next = [...prev, pin];
+      saveWall(next);
+      return next;
+    });
+    setSparkleId(id);
+    setTimeout(() => setSparkleId(null), 1100);
+  }, []);
+
+  // One-shot: if Photo Doodle armed a pending pin, pin it on arrival.
+  useEffect(() => {
+    const pending = consumePendingPin();
+    if (pending) addPin(pending.vaultId, pending.art);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const removePin = (id: string) => {
-    persist(pins.filter((p) => p.id !== id));
+    setPins((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      saveWall(next);
+      return next;
+    });
     if (editingId === id) setEditingId(null);
   };
 
   const updateCaption = (id: string, caption: string) => {
-    persist(pins.map((p) => (p.id === id ? { ...p, caption } : p)));
+    setPins((prev) => {
+      const next = prev.map((p) => (p.id === id ? { ...p, caption } : p));
+      saveWall(next);
+      return next;
+    });
   };
 
   const nudge = (id: string, dx: number, dy: number) => {
-    persist(pins.map((p) => (p.id === id ? { ...p, x: Math.max(0, Math.min(90, p.x + dx)), y: Math.max(0, Math.min(90, p.y + dy)) } : p)));
+    setPins((prev) => {
+      const next = prev.map((p) =>
+        p.id === id
+          ? { ...p, x: Math.max(0, Math.min(90, p.x + dx)), y: Math.max(0, Math.min(90, p.y + dy)) }
+          : p,
+      );
+      saveWall(next);
+      return next;
+    });
   };
 
   const tilt = (id: string, d: number) => {
-    persist(pins.map((p) => (p.id === id ? { ...p, tilt: p.tilt + d } : p)));
+    setPins((prev) => {
+      const next = prev.map((p) => (p.id === id ? { ...p, tilt: p.tilt + d } : p));
+      saveWall(next);
+      return next;
+    });
   };
 
   // Drag handlers
@@ -125,17 +187,27 @@ export function PolaroidWallScreen() {
     }
   };
 
+  // Vault photos + saved photo doodles — the REAL vault (IndexedDB).
+  const photos = vaultItems.filter((i) => i && (i.kind === "photo" || i.kind === "doodle"));
+
+  const openMakeNew = () => {
+    // Go directly to Photo Doodle (photos view), never the generic hub.
+    navigate("/dashboard/create?view=photos&from=wall");
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm font-bold tracking-tight text-ink-deep">📸 polaroid wall</p>
-        <button
-          type="button"
-          onClick={() => setShowPicker(true)}
-          className="clay-chip rounded-full px-3 py-1.5 text-[11px] font-bold text-ink-deep transition-transform hover:scale-105 active:scale-95"
-        >
-          + pin a photo
-        </button>
+        {pins.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="clay-chip rounded-full px-3 py-1.5 text-[11px] font-bold text-ink-deep transition-transform hover:scale-105 active:scale-95"
+          >
+            + add
+          </button>
+        )}
       </div>
 
       {/* Cork board */}
@@ -146,15 +218,30 @@ export function PolaroidWallScreen() {
         className="relative min-h-[60vh] overflow-hidden rounded-3xl border-2 border-dashed border-[#C4A882]/40"
         style={{ background: "linear-gradient(135deg, #E8D5B7 0%, #DCC9A3 50%, #E0CEAE 100%)" }}
       >
-        {pins.length === 0 && (
-          <div className="flex min-h-[60vh] items-center justify-center">
-            <div className="text-center">
-              <span className="text-4xl">📌</span>
-              <p className="mt-2 text-sm font-bold text-[#8B7355]">your wall is empty</p>
-              <p className="mt-1 text-xs text-[#A08B6B]">pin your favorite photos from the vault</p>
+        {pins.length === 0 ? (
+          <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 px-6">
+            <span className="text-4xl" aria-hidden>📸</span>
+            <p className="text-sm font-bold text-[#8B7355]">
+              your wall is waiting for its first memory
+            </p>
+            <div className="mt-1 flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => setPickerOpen(true)}
+                className="clay-btn rounded-full px-5 py-2.5 text-xs font-bold text-white"
+              >
+                pick from vault
+              </button>
+              <button
+                type="button"
+                onClick={openMakeNew}
+                className="clay-chip rounded-full px-5 py-2.5 text-xs font-bold text-ink-deep"
+              >
+                make a new one
+              </button>
             </div>
           </div>
-        )}
+        ) : null}
 
         {pins.map((pin) => (
           <div
@@ -173,6 +260,19 @@ export function PolaroidWallScreen() {
               <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-10">
                 <div className="h-4 w-8 rounded-sm bg-[#F5E6C8]/80 shadow-sm" style={{ transform: `rotate(${pin.tilt * 0.3}deg)` }} />
               </div>
+
+              {/* Pinned! sparkle */}
+              {sparkleId === pin.id && (
+                <motion.span
+                  initial={{ opacity: 0, scale: 0.4, y: 6 }}
+                  animate={{ opacity: [0, 1, 0], scale: [0.5, 1.3, 1], y: [-4, -26, -40] }}
+                  transition={{ duration: 1.05, ease: "easeOut" }}
+                  className="absolute -top-7 left-1/2 z-20 -translate-x-1/2 text-lg"
+                  aria-hidden
+                >
+                  ✨ pinned!
+                </motion.span>
+              )}
 
               {/* Polaroid card */}
               <div className="w-32 bg-white p-1.5 pb-6 shadow-lg shadow-black/15">
@@ -229,32 +329,51 @@ export function PolaroidWallScreen() {
         drag to move · tap to caption · photos stay in your vault
       </p>
 
-      {/* Photo picker overlay */}
-      {showPicker && (
-        <VaultPhotoPicker onSelect={addPin} onClose={() => setShowPicker(false)} />
-      )}
+      {/* Picker overlay — real vault photos + doodles */}
+      <AnimatePresence>
+        {pickerOpen && (
+          <VaultPhotoPicker
+            photos={photos}
+            onSelect={(vaultId, art) => {
+              addPin(vaultId, art);
+              setPickerOpen(false);
+            }}
+            onMakeNew={openMakeNew}
+            onClose={() => setPickerOpen(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-/** Simple vault photo picker (reads from localStorage vault items) */
-function VaultPhotoPicker({ onSelect, onClose }: { onSelect: (vaultId: string, art: string) => void; onClose: () => void }) {
-  // Read vault items from localStorage
-  let items: { _id: string; art: string; kind: string; caption?: string }[] = [];
-  try {
-    const raw = safeGetItem("venting-vault-items");
-    if (raw) items = JSON.parse(raw);
-  } catch { /* ignore */ }
+/* ─── Picker overlay ─────────────────────────────────────────────── */
 
-  const photos = items.filter((i) => i.kind === "photo" || i.kind === "doodle");
-
+function VaultPhotoPicker({
+  photos,
+  onSelect,
+  onMakeNew,
+  onClose,
+}: {
+  photos: VaultItem[];
+  onSelect: (vaultId: string, art: string) => void;
+  onMakeNew: () => void;
+  onClose: () => void;
+}) {
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-ink-deep/30 px-5 backdrop-blur-sm" onClick={onClose}>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-ink-deep/30 px-5 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.94, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95 }}
         onClick={(e) => e.stopPropagation()}
-        className="clay-card w-full max-w-sm max-h-[70vh] overflow-y-auto p-4"
+        className="clay-card max-h-[70vh] w-full max-w-sm overflow-y-auto p-4"
       >
         <div className="flex items-center justify-between">
           <p className="text-sm font-bold text-ink-deep">choose a photo to pin</p>
@@ -263,9 +382,13 @@ function VaultPhotoPicker({ onSelect, onClose }: { onSelect: (vaultId: string, a
         {photos.length === 0 ? (
           <div className="py-8 text-center">
             <p className="text-sm text-ink-soft">no photos in your vault yet</p>
-            <Link to="/dashboard/create" onClick={onClose} className="mt-3 inline-block rounded-full bg-lavender-500 px-4 py-2 text-xs font-bold text-white">
-              create a photo first
-            </Link>
+            <button
+              type="button"
+              onClick={onMakeNew}
+              className="clay-btn mt-3 rounded-full px-4 py-2 text-xs font-bold text-white"
+            >
+              make a new one
+            </button>
           </div>
         ) : (
           <div className="mt-3 grid grid-cols-3 gap-2">
@@ -274,7 +397,10 @@ function VaultPhotoPicker({ onSelect, onClose }: { onSelect: (vaultId: string, a
                 key={item._id}
                 type="button"
                 onClick={() => onSelect(item._id, item.art)}
-                className={cn("aspect-square overflow-hidden rounded-xl border-2 border-transparent transition-all hover:border-lavender-400 hover:scale-105", item.art && isImageArt(item.art) ? "" : "tile-lavender flex items-center justify-center")}
+                className={cn(
+                  "aspect-square overflow-hidden rounded-xl border-2 border-transparent transition-all hover:border-lavender-400 hover:scale-105",
+                  !isImageArt(item.art) && "tile-lavender flex items-center justify-center",
+                )}
               >
                 {isImageArt(item.art) ? (
                   <img src={item.art} alt={item.caption ?? "photo"} draggable={false} className="h-full w-full object-cover" />
@@ -285,7 +411,42 @@ function VaultPhotoPicker({ onSelect, onClose }: { onSelect: (vaultId: string, a
             ))}
           </div>
         )}
+        <button
+          type="button"
+          onClick={onMakeNew}
+          className="mt-3 w-full rounded-full py-2 text-[11px] font-bold text-ink-soft transition-colors hover:bg-lavender-100/60 hover:text-ink-deep"
+        >
+          + make a new photo instead
+        </button>
       </motion.div>
-    </div>
+    </motion.div>
+  );
+}
+
+/* ─── "Pin to wall" option after saving anywhere ─────────────────── */
+
+/**
+ * Optional chip a save flow can render next to its success toast/action:
+ * stores the art in the vault, arms the one-shot pending pin, and jumps to
+ * the wall where it is pinned automatically.
+ */
+export function PinToWallButton({ art, caption }: { art: string; caption?: string }) {
+  const navigate = useNavigate();
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        let vaultId = "";
+        try {
+          const row = createVaultItem({ kind: "photo", art, bg: "tile-peach", caption: caption || "pinned moment" });
+          vaultId = row._id;
+        } catch { /* ignore */ }
+        armPendingPin(vaultId, art);
+        navigate("/dashboard/polaroid-wall");
+      }}
+      className="clay-chip rounded-full px-3 py-1.5 text-[11px] font-bold text-ink-deep transition-transform hover:scale-105 active:scale-95"
+    >
+      pin to wall 📌
+    </button>
   );
 }

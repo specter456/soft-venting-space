@@ -1,13 +1,14 @@
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { ArrowLeft, Check, Images, Loader2, Lock, Palette, Sparkles, ImageDown, Grid2x2 } from "lucide-react";
 import { createVaultItem } from "@/lib/db";
 import { saveToGallery } from "@/lib/save-to-gallery";
 import { combineIntoCollage } from "@/lib/collage";
 import { PHOTO_SCENES } from "@/lib/art";
 import { renderPhotoScene } from "@/lib/canvas-art";
+import { armPendingPin } from "@/components/PolaroidWall";
 import { cn } from "@/lib/utils";
 
 const TOOLS = [
@@ -38,7 +39,10 @@ const TOOLS = [
 ];
 
 export default function CreateScreen() {
-  const [view, setView] = useState<"hub" | "photos">("hub");
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const fromWall = params.get("from") === "wall";
+  const [view, setView] = useState<"hub" | "photos">(params.get("view") === "photos" ? "photos" : "hub");
   const [selected, setSelected] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -46,23 +50,41 @@ export default function CreateScreen() {
     if (saving || selected.length === 0) return;
     setSaving(true);
     try {
+      let lastArt = "";
+      let lastCaption = "";
       for (const emoji of selected) {
         const scene = PHOTO_SCENES.find((s) => s.emoji === emoji);
         if (!scene) continue;
         // capture the scene as a real PNG — the vault shows the picture,
         // not a raw emoji. Stored on this device only.
+        lastArt = renderPhotoScene(scene.emoji, scene.bg) || scene.emoji;
+        lastCaption = scene.label;
         createVaultItem({
           kind: "photo",
-          art: renderPhotoScene(scene.emoji, scene.bg) || scene.emoji,
+          art: lastArt,
           bg: scene.bg,
-          caption: scene.label,
+          caption: lastCaption,
         });
       }
-      toast("Saved to your vault", {
-        description: `${selected.length} photo${selected.length > 1 ? "s" : ""} tucked behind the double lock.`,
-      });
-      setSelected([]);
-      setView("hub");
+      const count = selected.length;
+      const armAndGo = () => {
+        armPendingPin(`vault-${Date.now()}`, lastArt);
+        navigate("/dashboard/polaroid-wall");
+      };
+      if (fromWall && count === 1 && lastArt) {
+        // Came from the polaroid wall with one photo → pin it automatically.
+        armPendingPin(`vault-${Date.now()}`, lastArt);
+        navigate("/dashboard/polaroid-wall");
+      } else {
+        toast("Saved to your vault", {
+          description: `${count} photo${count > 1 ? "s" : ""} tucked behind the double lock.`,
+          action: lastArt
+            ? { label: "pin to wall 📌", onClick: armAndGo }
+            : undefined,
+        });
+        setSelected([]);
+        setView("hub");
+      }
     } catch (error) {
       console.error(error);
       toast("Couldn't save those photos", { description: "Please try again in a moment." });
@@ -166,7 +188,18 @@ export default function CreateScreen() {
               if (collage) {
                 createVaultItem({ kind: "photo", art: collage, bg: "tile-peach", caption: `a ${arts.length}-photo collage` });
                 saveToGallery(collage, `venting-collage-${Date.now()}.png`);
-                toast("Collage saved", { description: `${arts.length} photos combined into one framed photo.` });
+                const armAndGo = () => {
+                  armPendingPin(`vault-${Date.now()}`, collage);
+                  navigate("/dashboard/polaroid-wall");
+                };
+                if (fromWall) {
+                  armAndGo();
+                } else {
+                  toast("Collage saved", {
+                    description: `${arts.length} photos combined into one framed photo.`,
+                    action: { label: "pin to wall 📌", onClick: armAndGo },
+                  });
+                }
               }
             }}
             className="clay-btn-soft flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-ink-deep"
