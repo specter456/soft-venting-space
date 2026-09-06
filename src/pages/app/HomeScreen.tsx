@@ -13,7 +13,10 @@ import GratitudeJar from "@/components/GratitudeJar";
 import GoodnightWindDown from "@/components/GoodnightWindDown";
 import TinyTales from "@/components/TinyTales";
 import PolaroidWallSection from "@/components/PolaroidWall";
-import { PlantHomeCard } from "@/components/MyLittlePlant";
+import { PlantHomeCard, BuilderShell } from "@/components/BuilderShell";
+import { TinyGameEngine } from "@/pages/app/GamesScreen";
+import { useRef } from "react";
+import { cn } from "@/lib/utils";
 
 /** Per-section error boundary: if one card crashes, the rest of Home still shows. */
 class SectionBoundary extends Component<{ name: string; children: ReactNode }, { hasError: boolean }> {

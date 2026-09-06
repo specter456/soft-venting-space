@@ -429,7 +429,12 @@ export default function GamesScreen() {
   const saveGame = useCallback((config: CustomGameConfig) => {
     setCustomGames((prev) => {
       const exists = prev.findIndex((g) => g.id === config.id);
-      const next = exists >= 0 ? prev.map((g, i) => (i === exists ? config : g)) : [...prev, config];
+      if (exists >= 0) {
+        const next = prev.map((g, i) => (i === exists ? config : g));
+        saveCustomGames(next);
+        return next;
+      }
+      const next = [...prev, config];
       saveCustomGames(next);
       return next;
     });
@@ -446,6 +451,7 @@ export default function GamesScreen() {
   }, []);
 
   const previewConfig = useState<CustomGameConfig | null>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="relative">
@@ -577,12 +583,10 @@ export default function GamesScreen() {
       )}
 
       {screen.kind === "builder" && (
-        <GameBuilder
+        <BuilderShell
           initial={screen.editing ?? null}
-          onSave={saveGame}
+          onCreate={saveGame}
           onCancel={goGrid}
-          onPreview={previewConfig[1]}
-          previewConfig={previewConfig[0]}
         />
       )}
     </div>
@@ -591,7 +595,7 @@ export default function GamesScreen() {
 
 /* ─── Game Builder ────────────────────────────────────────────────── */
 
-function GameBuilder({
+function _GameBuilder_removed_{
   initial,
   onSave,
   onCancel,
