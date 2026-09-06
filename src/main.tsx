@@ -1,7 +1,7 @@
 import '@vly-ai/integrations';
 import { Toaster } from "@/components/ui/sonner";
 import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
-import { AppErrorBoundary, installGlobalErrorHandlers } from "@/components/AppErrorBoundary";
+import { AppErrorBoundary, ScreenBoundary, installGlobalErrorHandlers } from "@/components/AppErrorBoundary";
 import { OfflineNotice } from "@/components/Friendly";
 import { hydrate } from "@/lib/db";
 import React, { Suspense } from "react";
@@ -75,12 +75,21 @@ class ToolbarErrorBoundary extends React.Component<
   }
 }
 
-/** Small per-route boundary so one broken screen never blanks the whole app. */
+/** Per-route boundary so one broken screen never blanks the whole app. */
 function RouteShell({ children }: { children: React.ReactNode }) {
   return (
     <AppErrorBoundary onContinue={() => (window.location.href = "/")}>
       {children}
     </AppErrorBoundary>
+  );
+}
+
+/** Inner-screen boundary: shell survives; auto-resets on navigation. */
+function InnerRoute({ children }: { children: React.ReactNode }) {
+  return (
+    <Lazy>
+      <ScreenBoundary>{children}</ScreenBoundary>
+    </Lazy>
   );
 }
 
@@ -174,23 +183,23 @@ createRoot(rootEl).render(
               </RouteShell>
             }
           >
-            <Route index element={<Lazy><HomeScreen /></Lazy>} />
-            <Route path="record" element={<Lazy><RecordScreen /></Lazy>} />
-            <Route path="notes" element={<Lazy><NotesScreen /></Lazy>} />
-            <Route path="notes/new" element={<Lazy><NoteEditor /></Lazy>} />
-            <Route path="create" element={<Lazy><CreateScreen /></Lazy>} />
-            <Route path="scribble" element={<Lazy><ScribbleScreen /></Lazy>} />
-            <Route path="stickers" element={<Lazy><StickerStudio /></Lazy>} />
-            <Route path="gif-studio" element={<Lazy><GifStudio /></Lazy>} />
-            <Route path="vault" element={<Lazy><VaultScreen /></Lazy>} />
-            <Route path="games" element={<Lazy><GamesScreen /></Lazy>} />
-            <Route path="calendar" element={<Lazy><CalendarScreen /></Lazy>} />
-            <Route path="calendar/:dateKey" element={<Lazy><CalendarDayView /></Lazy>} />
-            <Route path="settings" element={<Lazy><SettingsScreen /></Lazy>} />
-            <Route path="diary" element={<Lazy><DiaryScreen /></Lazy>} />
-            <Route path="polaroid-wall" element={<Lazy><PolaroidWallScreen /></Lazy>} />
+            <Route index element={<InnerRoute><HomeScreen /></InnerRoute>} />
+            <Route path="record" element={<InnerRoute><RecordScreen /></InnerRoute>} />
+            <Route path="notes" element={<InnerRoute><NotesScreen /></InnerRoute>} />
+            <Route path="notes/new" element={<InnerRoute><NoteEditor /></InnerRoute>} />
+            <Route path="create" element={<InnerRoute><CreateScreen /></InnerRoute>} />
+            <Route path="scribble" element={<InnerRoute><ScribbleScreen /></InnerRoute>} />
+            <Route path="stickers" element={<InnerRoute><StickerStudio /></InnerRoute>} />
+            <Route path="gif-studio" element={<InnerRoute><GifStudio /></InnerRoute>} />
+            <Route path="vault" element={<InnerRoute><VaultScreen /></InnerRoute>} />
+            <Route path="games" element={<InnerRoute><GamesScreen /></InnerRoute>} />
+            <Route path="calendar" element={<InnerRoute><CalendarScreen /></InnerRoute>} />
+            <Route path="calendar/:dateKey" element={<InnerRoute><CalendarDayView /></InnerRoute>} />
+            <Route path="settings" element={<InnerRoute><SettingsScreen /></InnerRoute>} />
+            <Route path="diary" element={<InnerRoute><DiaryScreen /></InnerRoute>} />
+            <Route path="polaroid-wall" element={<InnerRoute><PolaroidWallScreen /></InnerRoute>} />
           </Route>
-          <Route path="*" element={<NotFound title="Page not found" />} />
+          <Route path="*" element={<RouteShell><NotFound title="Page not found" /></RouteShell>} />
         </Routes>
       </BrowserRouter>
       </ThemeProvider>

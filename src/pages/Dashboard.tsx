@@ -1,5 +1,6 @@
 import { Lock } from "lucide-react";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { QuietBoundary } from "@/components/AppErrorBoundary";
 import { Link, Outlet, useLocation, useNavigate } from "react-router";
 import { useUnsavedGuard } from "@/lib/useUnsavedGuard";
 import { UnsavedDialog } from "@/components/UnsavedDialog";
@@ -217,7 +218,9 @@ export default function Dashboard() {
       <div className="sky-cloud sky-cloud-3" aria-hidden />
       <div className="sky-cloud sky-cloud-4" aria-hidden />
 
-      <SeasonalParticles />
+      <QuietBoundary name="SeasonalParticles">
+        <SeasonalParticles />
+      </QuietBoundary>
       <div className="relative mx-auto flex w-full max-w-[600px] flex-col">
         {/* ─── Header ─────────────────────────────────────────────── */}
         <header className="sticky top-0 z-40 px-5 pt-6 pb-3 border-b border-white/40" style={{ background: "var(--theme-header-bg, rgba(200,225,250,0.8))" }}>
@@ -276,7 +279,9 @@ export default function Dashboard() {
 
         {/* ─── Current room ───────────────────────────────────────── */}
         <main className={cn("px-5", showBar ? "pb-32" : "pb-14")}>
+          <QuietBoundary name="MusicWidget">
           <MusicWidget />
+        </QuietBoundary>
           {hydrated ? (
             <Outlet />
           ) : (
@@ -292,10 +297,14 @@ export default function Dashboard() {
         {showGuard && <UnsavedDialog onSave={handleSave} onLeave={handleLeave} />}
 
         {/* ─── Gentle daily reminder (one toast per day) ────────── */}
-        <GentleReminder />
+        <QuietBoundary name="GentleReminder">
+          <GentleReminder />
+        </QuietBoundary>
 
         {/* ─── "I need a minute" breathing bubble — ONLY after unlock ──── */}
-        <BreathingMinute />
+        <QuietBoundary name="BreathingMinute">
+          <BreathingMinute />
+        </QuietBoundary>
 
         {/* ─── Bottom taskbar — Home | Games | Calendar | Settings ───── */}
         {showBar && (
