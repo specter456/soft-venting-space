@@ -106,8 +106,7 @@ function HomeScreenInner() {
 
   const [feelingText, setFeelingText] = useState("");
   const greet = greeting();
-  let seasonEmoji = "✨";
-  try { seasonEmoji = useSeasonEmoji(); } catch { /* safe fallback */ }
+  const seasonEmoji = useSeasonEmoji();
   const todayMood = today?.mood ? moodById(today.mood) : undefined;
 
   // one tap records one mood — held/double presses are ignored
