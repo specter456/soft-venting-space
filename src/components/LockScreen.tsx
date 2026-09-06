@@ -121,11 +121,18 @@ export function LockScreen({
           fail();
         }
       } catch (err) {
-        console.error("Passcode verification failed:", err);
-        fail();
+        console.warn("Passcode verification error:", err);
+        setError("something went softly wrong — try once more.");
+        setShakeKey((k) => k + 1);
+        setDigits("");
       } finally {
         setBusy(false);
       }
+    } else {
+      // Missing stored credentials — fall through safely
+      setError("that code didn't match. your space stays sealed.");
+      setShakeKey((k) => k + 1);
+      setDigits("");
     }
   };
 
@@ -144,7 +151,7 @@ export function LockScreen({
   };
 
   return (
-    <div className="fixed inset-0 z-[80] overflow-y-auto bg-gradient-to-b from-cream-soft via-cream to-lavender-50 text-ink">
+    <div className="fixed inset-0 z-[80] overflow-y-auto text-ink" style={{background: "linear-gradient(180deg, var(--theme-bg-start, #9CCFF0) 0%, var(--theme-bg-mid, #C6E6FA) 50%, var(--theme-bg-end, #EAF7FF) 100%)"}}>
       {/* dreamy blobs */}
       <div
         aria-hidden
@@ -158,6 +165,9 @@ export function LockScreen({
         aria-hidden
         className="pointer-events-none fixed top-1/3 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-lavender-100/35 blur-2xl"
       />
+      {/* drifting sky clouds */}
+      <div className="sky-cloud sky-cloud-1" aria-hidden />
+      <div className="sky-cloud sky-cloud-2" aria-hidden />
 
       <div className="relative flex min-h-full items-center justify-center px-4 py-8">
         <motion.div

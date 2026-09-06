@@ -173,17 +173,17 @@
     @apply border-border outline-ring/50;
   }
   html {
-    background: var(--theme-bg-start, #FDF5E6);
+    background: var(--theme-bg-start, #9CCFF0);
   }
   body {
-    color: var(--theme-text, #3A4170);
+    color: var(--theme-text, #2A4A6A);
     min-height: 100dvh;
     overflow-x: hidden;
     background: linear-gradient(
       180deg,
-      var(--theme-bg-start, #FDF5E6) 0%,
-      var(--theme-bg-mid, #EDEBF6) 50%,
-      var(--theme-bg-end, #D9DEF4) 100%
+      var(--theme-bg-start, #9CCFF0) 0%,
+      var(--theme-bg-mid, #C6E6FA) 50%,
+      var(--theme-bg-end, #EAF7FF) 100%
     );
     font-family: "Nunito", ui-rounded, "SF Pro Rounded",
       system-ui, -apple-system, "Segoe UI", Roboto,
@@ -235,10 +235,9 @@
 /* ─── Frosted glass surfaces — Old Lace tinted ────────────────────── */
 @layer components {
   .clay-card {
-    background: var(--theme-card, rgba(253, 245, 230, 0.7));
-    border: 1px solid var(--theme-card-border, rgba(253, 245, 230, 0.6));
-    border-radius: 55% 45% 60% 40% / 50% 55% 45% 60%;
-    animation: cloud-morph 7s ease-in-out infinite alternate;
+    background: var(--theme-card, rgba(255, 255, 255, 0.65));
+    border: 1px solid var(--theme-card-border, rgba(200, 220, 245, 0.6));
+    border-radius: 28px;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.6),
       inset 0 -1px 0 rgba(255, 255, 255, 0.15),
@@ -247,10 +246,9 @@
   }
 
   .clay-chip {
-    background: var(--theme-card, rgba(253, 245, 230, 0.55));
-    border: 1px solid var(--theme-card-border, rgba(253, 245, 230, 0.5));
-    border-radius: 50% 50% 55% 45% / 55% 45% 50% 50%;
-    animation: cloud-morph 8s ease-in-out infinite alternate;
+    background: var(--theme-card, rgba(255, 255, 255, 0.55));
+    border: 1px solid var(--theme-card-border, rgba(200, 220, 245, 0.5));
+    border-radius: 999px;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.5),
       inset 0 -1px 0 rgba(255, 255, 255, 0.1),
@@ -269,8 +267,7 @@
   .clay-btn {
     background: linear-gradient(180deg, var(--theme-accent, #6F7BC0), var(--theme-accent-deep, #5F6DBE));
     border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 55% 45% 50% 50% / 50% 55% 45% 55%;
-    animation: cloud-morph 6s ease-in-out infinite alternate;
+    border-radius: 26px 30px 28px 30px;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.35),
       inset 0 -1px 0 rgba(255, 255, 255, 0.1),
@@ -295,8 +292,7 @@
   .clay-btn-soft {
     background: linear-gradient(180deg, #D9C080, #C9A96A);
     border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 45% 55% 55% 45% / 55% 45% 50% 50%;
-    animation: cloud-morph 7s ease-in-out infinite alternate;
+    border-radius: 26px 30px 28px 30px;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.4),
       inset 0 -1px 0 rgba(255, 255, 255, 0.1),
@@ -317,8 +313,7 @@
   .clay-btn-blush {
     background: linear-gradient(180deg, #D4A0B0, #C48B9E);
     border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 60% 40% 45% 55% / 45% 55% 50% 50%;
-    animation: cloud-morph 7.5s ease-in-out infinite alternate;
+    border-radius: 26px 30px 28px 30px;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.35),
       inset 0 -1px 0 rgba(255, 255, 255, 0.1),
@@ -343,9 +338,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 55% 45% 60% 40% / 50% 55% 45% 60%;
+    border-radius: 999px;
     border: 1px solid rgba(255, 255, 255, 0.7);
-    animation: cloud-morph 6s ease-in-out infinite alternate;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.5),
       inset 0 -1px 0 rgba(255, 255, 255, 0.15),
@@ -432,8 +426,7 @@
       inset 0 -6px 12px -6px rgba(100, 110, 180, 0.45),
       0 10px 16px -8px rgba(120, 130, 200, 0.5);
   }
-    border-radius: 55% 45% 58% 42% / 52% 55% 45% 58%;
-    animation: cloud-morph 6.3s ease-in-out infinite alternate;
+    border-radius: 28px;
   .tile-blush {
     background: linear-gradient(180deg, #D4A0B8, #B79BD9);
     box-shadow:
@@ -441,8 +434,7 @@
       inset 0 -6px 12px -6px rgba(140, 100, 170, 0.45),
       0 10px 16px -8px rgba(160, 120, 190, 0.5);
   }
-    border-radius: 48% 52% 55% 45% / 55% 48% 52% 48%;
-    animation: cloud-morph 6.6s ease-in-out infinite alternate;
+    border-radius: 28px;
   .tile-mist {
     background: linear-gradient(180deg, #9AB0D0, #7F9BD9);
     box-shadow:
@@ -450,8 +442,7 @@
       inset 0 -6px 12px -6px rgba(90, 110, 160, 0.45),
       0 10px 16px -8px rgba(110, 130, 180, 0.5);
   }
-    border-radius: 52% 48% 45% 55% / 48% 52% 55% 45%;
-    animation: cloud-morph 6.9s ease-in-out infinite alternate;
+    border-radius: 28px;
   .tile-mint {
     background: linear-gradient(180deg, #A0C4B8, #8FA8C9);
     box-shadow:
@@ -459,8 +450,7 @@
       inset 0 -6px 12px -6px rgba(100, 130, 150, 0.45),
       0 10px 16px -8px rgba(120, 150, 170, 0.5);
   }
-    border-radius: 58% 42% 52% 48% / 55% 45% 48% 55%;
-    animation: cloud-morph 7.2s ease-in-out infinite alternate;
+    border-radius: 28px;
   .tile-peach {
     background: linear-gradient(180deg, #E5C898, #C9A96A);
     box-shadow:
@@ -468,8 +458,7 @@
       inset 0 -6px 12px -6px rgba(160, 130, 70, 0.45),
       0 10px 16px -8px rgba(180, 150, 90, 0.5);
   }
-    border-radius: 45% 55% 50% 50% / 50% 55% 45% 55%;
-    animation: cloud-morph 7.5s ease-in-out infinite alternate;
+    border-radius: 28px;
 }
 
 /* ─── Script font utility — Caveat for special words only ─────────── */
@@ -631,6 +620,50 @@
   75% {
     border-radius: 60% 40% 45% 55% / 45% 60% 50% 50%;
   }
+}
+
+/* ─── Drifting sky clouds (decorative, behind content) ──────────── */
+.sky-cloud {
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  filter: blur(30px);
+  opacity: 0.5;
+}
+.sky-cloud-1 {
+  width: 300px; height: 120px;
+  top: 8%; left: -5%;
+  animation: cloud-drift 22s ease-in-out infinite alternate;
+}
+.sky-cloud-2 {
+  width: 250px; height: 100px;
+  top: 25%; right: -8%;
+  animation: cloud-drift-reverse 26s ease-in-out infinite alternate;
+  animation-delay: 3s;
+}
+.sky-cloud-3 {
+  width: 200px; height: 80px;
+  top: 55%; left: 10%;
+  animation: cloud-drift 30s ease-in-out infinite alternate;
+  animation-delay: 8s;
+}
+.sky-cloud-4 {
+  width: 280px; height: 110px;
+  bottom: 15%; right: 5%;
+  animation: cloud-drift-reverse 24s ease-in-out infinite alternate;
+  animation-delay: 5s;
+}
+@keyframes cloud-drift {
+  0% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(40px) translateY(-10px); }
+  100% { transform: translateX(80px) translateY(5px); }
+}
+@keyframes cloud-drift-reverse {
+  0% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(-40px) translateY(10px); }
+  100% { transform: translateX(-80px) translateY(-5px); }
 }
 
 /* Thin, soft scrollbar for the app column */

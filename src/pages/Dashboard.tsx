@@ -94,9 +94,11 @@ export default function Dashboard() {
     document.title = title === "Venting" ? "Venting" : `${title} — Venting`;
   }, [title]);
 
-  // Decide the initial lock state once storage has hydrated. Adjusting state
-  // during render (guarded, runs once) avoids effect cascades.
-  if (hydrated && !lockInitDone) {
+  // Decide the initial lock state once storage has hydrated.
+  // Moved to useEffect so StrictMode double-render doesn't race with
+  // sessionStorage flag consumption (prevents double-welcome after onboarding).
+  useEffect(() => {
+    if (!hydrated || lockInitDone) return;
     setLockInitDone(true);
     // If the user JUST completed onboarding in this session, skip the lock
     // (they already typed their passcode moments ago).
@@ -108,7 +110,7 @@ export default function Dashboard() {
     } else if (safeSessionGetItem(LOCK_DISMISSED_KEY) !== "1") {
       setLock("setup");
     }
-  }
+  }, [hydrated, lockInitDone, hasPasscode]);
 
   if (lock === "setup") {
     return (
@@ -143,27 +145,34 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="relative overflow-x-hidden text-ink">        {/* dreamy background blobs — full viewport, theme colors */}
+    <div className="relative overflow-x-hidden text-ink">
+      {/* dreamy background blobs — full viewport, theme colors */}
       <div
         aria-hidden
         className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full blur-2xl"
-        style={{ background: "var(--theme-blob-1, rgba(170,182,227,0.3))" }}
+        style={{ background: "var(--theme-blob-1, rgba(180,210,240,0.3))" }}
       />
       <div
         aria-hidden
         className="pointer-events-none fixed top-72 -right-24 h-80 w-80 rounded-full blur-2xl"
-        style={{ background: "var(--theme-blob-2, rgba(243,231,201,0.3))" }}
+        style={{ background: "var(--theme-blob-2, rgba(255,255,255,0.4))" }}
       />
       <div
         aria-hidden
         className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full blur-2xl"
-        style={{ background: "var(--theme-blob-3, rgba(196,203,232,0.3))" }}
+        style={{ background: "var(--theme-blob-3, rgba(200,225,250,0.3))" }}
       />
+
+      {/* ─── Drifting sky clouds (decorative) ──────────────────── */}
+      <div className="sky-cloud sky-cloud-1" aria-hidden />
+      <div className="sky-cloud sky-cloud-2" aria-hidden />
+      <div className="sky-cloud sky-cloud-3" aria-hidden />
+      <div className="sky-cloud sky-cloud-4" aria-hidden />
 
       <SeasonalParticles />
       <div className="relative mx-auto flex w-full max-w-[800px] flex-col">
         {/* ─── Header ─────────────────────────────────────────────── */}
-        <header className="sticky top-0 z-40 px-5 pt-6 pb-3 border-b border-[var(--theme-accent-light)]" style={{ background: "var(--theme-header-bg, rgba(237,235,246,0.8))" }}>
+        <header className="sticky top-0 z-40 px-5 pt-6 pb-3 border-b border-white/40" style={{ background: "var(--theme-header-bg, rgba(200,225,250,0.8))" }}>
           <div className="flex items-center justify-between">
             {isHome ? (
               <div className="flex items-center gap-2.5">
@@ -220,8 +229,6 @@ export default function Dashboard() {
         {/* ─── Current room ───────────────────────────────────────── */}
         <main className={cn("px-5", showBar ? "pb-32" : "pb-14")}>
           <MusicWidget />
-          {/* The shell paints instantly; room content fills in softly once
-              the on-device cache is ready. No blocking "Loading…" screen. */}
           {hydrated ? (
             <Outlet />
           ) : (
@@ -236,19 +243,22 @@ export default function Dashboard() {
 
         {showGuard && <UnsavedDialog onSave={handleSave} onLeave={handleLeave} />}
 
-        {/* ─── "I need a minute" breathing bubble ──────────────── */}
+        {/* ─── "I need a minute" breathing bubble — ONLY after unlock ──── */}
         <BreathingMinute />
 
         {/* ─── Gentle daily reminder (one toast per day) ────────── */}
         <GentleReminder />
 
-        {/* ─── Bottom taskbar — Home | Games | Settings ───────────── */}
+        {/* ─── Bottom taskbar — Home | Games | Calendar | Settings ───── */}
         {showBar && (
           <nav
             aria-label="Main"
             className="fixed right-0 bottom-4 left-0 z-40 flex justify-center px-5"
           >
-            <div className="flex w-full max-w-[720px] items-center gap-1 p-1.5 bg-[#FDF5E6]/85 border border-[#C4CBE8]/40 shadow-lg shadow-[#8C9AD6]/15" style={{borderRadius:"55% 45% 58% 42% / 50% 55% 45% 55%", animation:"cloud-morph 8s ease-in-out infinite alternate"}}>
+            <div
+              className="flex w-full max-w-[720px] items-center gap-1 p-1.5 bg-white/70 backdrop-blur-md border border-white/50 shadow-lg shadow-[#8C9AD6]/15"
+              style={{ borderRadius: "24px" }}
+            >
               {TABS.map((tab) => {
                 const active = tab.to === "/dashboard/calendar"
                   ? location.pathname.startsWith("/dashboard/calendar")
@@ -259,10 +269,13 @@ export default function Dashboard() {
                     to={tab.to}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "flex flex-1 flex-col items-center gap-0.5 rounded-full py-2 transition-all",
+                      "flex flex-1 flex-col items-center gap-0.5 py-2 transition-all",
                       !active && "hover:bg-[var(--theme-accent-light)]",
                     )}
-                    style={{...(active ? { background: "var(--theme-accent-deep, #5F6DBE)", borderRadius: "50% 50% 55% 45% / 55% 45% 50% 50%" } : { borderRadius: "50% 50% 55% 45% / 55% 45% 50% 50%" })}}
+                    style={{
+                      borderRadius: "999px",
+                      ...(active ? { background: "var(--theme-accent-deep, #5A8ABE)" } : {}),
+                    }}
                   >
                     <span
                       className={cn(

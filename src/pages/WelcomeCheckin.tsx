@@ -60,6 +60,9 @@ export default function WelcomeCheckin() {
         aria-hidden
         className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full bg-[#C4CBE8]/30 blur-2xl"
       />
+      {/* drifting sky clouds */}
+      <div className="sky-cloud sky-cloud-1" aria-hidden />
+      <div className="sky-cloud sky-cloud-2" aria-hidden />
 
       {/* ─── Soft popup card ──────────────────────────────────────── */}
       <motion.div
