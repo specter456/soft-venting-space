@@ -105,35 +105,40 @@ export default function Dashboard() {
   // (hasPasscode may start as false then flip to true once data arrives).
   useEffect(() => {
     if (!hydrated || lockInitRef.current) return;
-    // If the user JUST completed onboarding in this session, skip the lock
-    // (they already typed their passcode moments ago).
-    if (sessionStorage.getItem("venting-just-onboarded") === "1") {
-      sessionStorage.removeItem("venting-just-onboarded");
-      lockInitRef.current = true;
-      // stays "unlocked"
-      return;
-    }
-    // If we haven't loaded kv data yet, wait for it before deciding.
-    // hasPasscode flips from false→true once the kv table populates.
-    if (hasPasscode && !lockHadPasscodeRef.current) {
-      lockHadPasscodeRef.current = true;
-    }
-    if (!lockHadPasscodeRef.current && !hasPasscode) {
-      // kv data hasn't shown a passcode yet — don't decide yet.
-      // Also don't set lockInitRef so we can re-check on next render.
-      if (safeSessionGetItem(LOCK_DISMISSED_KEY) === "1") {
-        // User already dismissed setup — go straight in.
+    try {
+      // If the user JUST completed onboarding in this session, skip the lock
+      // (they already typed their passcode moments ago).
+      if (sessionStorage.getItem("venting-just-onboarded") === "1") {
+        sessionStorage.removeItem("venting-just-onboarded");
         lockInitRef.current = true;
+        // stays "unlocked"
+        return;
       }
-      return;
-    }
-    // Now we know: either hasPasscode is true (and we saw it),
-    // or kv loaded and there's no passcode.
-    lockInitRef.current = true;
-    if (hasPasscode) {
-      setLock("unlock");
-    } else if (safeSessionGetItem(LOCK_DISMISSED_KEY) !== "1") {
-      setLock("setup");
+      // If we haven't loaded kv data yet, wait for it before deciding.
+      // hasPasscode flips from false→true once the kv table populates.
+      if (hasPasscode && !lockHadPasscodeRef.current) {
+        lockHadPasscodeRef.current = true;
+      }
+      if (!lockHadPasscodeRef.current && !hasPasscode) {
+        // kv data hasn't shown a passcode yet — don't decide yet.
+        // Also don't set lockInitRef so we can re-check on next render.
+        if (safeSessionGetItem(LOCK_DISMISSED_KEY) === "1") {
+          // User already dismissed setup — go straight in.
+          lockInitRef.current = true;
+        }
+        return;
+      }
+      // Now we know: either hasPasscode is true (and we saw it),
+      // or kv loaded and there's no passcode.
+      lockInitRef.current = true;
+      if (hasPasscode) {
+        setLock("unlock");
+      } else if (safeSessionGetItem(LOCK_DISMISSED_KEY) !== "1") {
+        setLock("setup");
+      }
+    } catch {
+      // Any storage error must never block the user from reaching home
+      lockInitRef.current = true;
     }
   }, [hydrated, hasPasscode]);
 

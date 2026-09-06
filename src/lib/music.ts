@@ -455,12 +455,16 @@ class MusicEngine {
   /** Prime both layers on user gesture. */
   private gesturePrimed = false;
   private gestureListener = (): void => {
-    if (this.gesturePrimed) return;
-    this.gesturePrimed = true;
-    this.ambient.prime(this._effectiveVol());
-    this.game.prime(this._effectiveVol());
-    // Auto-start ambient if not muted and nothing is playing
-    if (!this._muted && !this._playing && !this._activeScene) this.startAmbient();
+    try {
+      if (this.gesturePrimed) return;
+      this.gesturePrimed = true;
+      this.ambient.prime(this._effectiveVol());
+      this.game.prime(this._effectiveVol());
+      // Auto-start ambient if not muted and nothing is playing
+      if (!this._muted && !this._playing && !this._activeScene) this.startAmbient();
+    } catch {
+      // Audio issues on first gesture should never crash the app
+    }
     window.removeEventListener("click", this.gestureListener);
     window.removeEventListener("touchstart", this.gestureListener);
   };
@@ -487,7 +491,7 @@ class MusicEngine {
     activeScene: this._activeScene,
   });
 
-  private emit(): void { for (const l of this.listeners) l(); }
+  private emit(): void { for (const l of this.listeners) { try { l(); } catch { /* subscriber error must never crash */ } } }
 
   private _effectiveVol(): number { return this._muted ? 0 : this._volume; }
 
@@ -495,18 +499,22 @@ class MusicEngine {
 
   /** Start the ambient track (called on first gesture or manually). */
   startAmbient(): void {
-    if (this._muted || this._layer === "game" || this._activeScene) return; // don't start ambient while game or scene is playing
-    const track = this.ambientTrack ?? { kind: "builtin", id: readAmbientTrackId() ?? "piano" as BuiltinTrackId };
-    this.ambientTrack = track;
-    this.ambient.prime(this._effectiveVol());
-    if (track.kind === "builtin") {
-      this.ambient.playBuiltin(track.id, this._effectiveVol());
-    } else {
-      this.ambient.playLocal(track.url, this._effectiveVol());
+    try {
+      if (this._muted || this._layer === "game" || this._activeScene) return; // don't start ambient while game or scene is playing
+      const track = this.ambientTrack ?? { kind: "builtin", id: readAmbientTrackId() ?? "piano" as BuiltinTrackId };
+      this.ambientTrack = track;
+      this.ambient.prime(this._effectiveVol());
+      if (track.kind === "builtin") {
+        this.ambient.playBuiltin(track.id, this._effectiveVol());
+      } else {
+        this.ambient.playLocal(track.url, this._effectiveVol());
+      }
+      this._playing = true;
+      this._layer = "ambient";
+      this.emit();
+    } catch {
+      // Audio playback failures must never crash the app
     }
-    this._playing = true;
-    this._layer = "ambient";
-    this.emit();
   }
 
   /** Change the ambient track (from the CD menu on app screens). */

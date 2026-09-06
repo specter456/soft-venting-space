@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Component, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router";
 
 import { MoodBubble } from "@/components/MoodBubble";
@@ -15,6 +15,17 @@ import GoodnightWindDown from "@/components/GoodnightWindDown";
 import TinyTales from "@/components/TinyTales";
 import PolaroidWallSection from "@/components/PolaroidWall";
 import { getKvFromCache } from "@/lib/db"
+
+/** Local error boundary so one broken card never blanks the whole home. */
+class HomeErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(err: Error) { console.warn("[home] caught render error:", err?.message); }
+  render() {
+    if (this.state.hasError) return null; // silently hide broken card
+    return this.props.children;
+  }
+}
 
 /** Exactly four quick moods — one tap selects only that one. */
 const QUICK_MOODS: MoodId[] = ["happy", "sad", "angry", "nervous"];
@@ -87,29 +98,36 @@ function greeting(): { text: string; emoji: string } {
   return { text: "Good night", emoji: "✨" };
 }
 
-export default function HomeScreen() {
+function HomeScreenInner() {
   const navigate = useNavigate();
   const checkins = useTable<MoodCheckin>("moodCheckins");
   const dateKey = todayDateKey();
-  const today = checkins.find((c) => c.dateKey === dateKey);
+  const today = (checkins ?? []).find((c) => c?.dateKey === dateKey);
 
   const [feelingText, setFeelingText] = useState("");
   const greet = greeting();
-  const seasonEmoji = useSeasonEmoji();
-  const todayMood = today ? moodById(today.mood) : undefined;
+  let seasonEmoji = "✨";
+  try { seasonEmoji = useSeasonEmoji(); } catch { /* safe fallback */ }
+  const todayMood = today?.mood ? moodById(today.mood) : undefined;
 
   // one tap records one mood — held/double presses are ignored
   const pickMood = useTapGuard((mood: MoodId) => {
-    saveCheckin({
-      dateKey,
-      mood,
-      intensity: 3,
-      note: feelingText.trim() || undefined,
-    });
+    try {
+      saveCheckin({
+        dateKey,
+        mood,
+        intensity: 3,
+        note: feelingText.trim() || undefined,
+      });
+    } catch {
+      console.warn("[home] saveCheckin failed");
+    }
   }, 450);
 
   const clearToday = useTapGuard(() => {
-    if (today) removeItem("moodCheckins", today._id);
+    try {
+      if (today) removeItem("moodCheckins", today._id);
+    } catch { /* ignore */ }
   }, 450);
 
   return (
@@ -319,8 +337,18 @@ function MoodSuggestion({ moodId }: { moodId: string }) {
   );
 }
 
+/** Wrap the inner screen in a local boundary so one broken card never blanks home. */
+export default function HomeScreen() {
+  return (
+    <HomeErrorBoundary>
+      <HomeScreenInner />
+    </HomeErrorBoundary>
+  );
+}
+
 function UserAvatar() {
-  const avatar = getKvFromCache("profileAvatar") || "💜";
+  let avatar = "💜";
+  try { avatar = getKvFromCache("profileAvatar") || "💜"; } catch { /* safe fallback */ }
   // If it's an emoji, show it big. If it's a data URL (sticker), show as image.
   if (avatar.startsWith("data:") || avatar.startsWith("http")) {
     return (
