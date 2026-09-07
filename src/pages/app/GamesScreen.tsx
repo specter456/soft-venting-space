@@ -616,11 +616,17 @@ export default function GamesScreen() {
     setScreen({ kind: "grid" });
   }, []);
 
-  const previewConfig = useState<CustomGameConfig | null>(null);
+  const previewConfig = useMemo<CustomGameConfig | null>(() => screen.kind === "builder" ? (screen.editing ?? null) : null, [screen]);
   const previewRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="relative">
+      {previewConfig && !screen.kind.startsWith('builder') && (
+        <div className="sticky top-0 z-10">
+          <div className="clay-chip rounded-full px-4 py-2 text-xs font-bold text-white transition-transform hover:scale-105 active:scale-95">▶ preview ↻ tap inside to play</div>
+          <TinyGameEngine config={previewConfig} minimal />
+        </div>
+      )}
 
       {screen.kind === "grid" && (
         <div className="space-y-5">
@@ -749,12 +755,15 @@ export default function GamesScreen() {
       )}
 
       {screen.kind === "builder" && (
-        {isBuilder &&            {isBuilder && <BuilderShell
-          initial={screen.editing ?? null}
-          onCreate={saveGame}
-          onCancel={goGrid}
-        />
-      )}
+      <BuilderShell
+        initial={screen.editing ?? null}
+        onCreate={saveGame}
+        onCancel={goGrid}
+        onPlay={(config) => {
+          setScreen({ kind: "custom-play-saved", config });
+        }}
+      />
+    )}
     </div>
   );
 }

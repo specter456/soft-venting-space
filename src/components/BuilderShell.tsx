@@ -71,7 +71,7 @@ export function StarterRow({ onApply, current }: { onApply: (preset: Partial<Cus
             <button
               key={r.id}
               type="button"
-              onClick={() => applied(r.id)}
+              onClick={() => applied(r.preset)}
               className={cn(
                 "rounded-full px-4 py-2 text-xs font-bold transition-all",
                 chosen
@@ -99,14 +99,28 @@ function makeDefaultConfig(): CustomGameConfig {
   return { id: `custom-${Date.now()}`, name: "My Game", world: w, things: t, touch: tc, sparkleStyle: ss, objectSize: os, whisper: "", sound: s, pace: p, createdAt: Date.now() };
 }
 
+interface BuilderShellProps {
+  initial: CustomGameConfig | null;
+  onCreate: (config: CustomGameConfig) => void;
+  onCancel: () => void;
+  onPlay?: (config: CustomGameConfig) => void;
+}
+
 export function BuilderShell({
   initial,
   onCreate,
   onCancel,
+  onPlay = () => {},
+}: BuilderShellProps) {{
+  initial,
+  onCreate,
+  onCancel,
+  onPlay = () => {},
 }: {
   initial: CustomGameConfig | null;
   onCreate: (config: CustomGameConfig) => void;
   onCancel: () => void;
+  onPlay?: (config: CustomGameConfig) => void;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [world, setWorld] = useState<World>(initial?.world ?? "sky");
@@ -273,10 +287,9 @@ export function SavedGameCards({
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold text-ink-deep">{g.name || "my little game"}</p>
                       <p className="truncate text-[11px] text-ink-soft">{meta}</p>
-                    </div>
-                    <button
+                    </div>                      <button
                       type="button"
-                      onClick={() => onOpen(g)}
+                      onClick={() => onPlay(g)}
                       className="shrink-0 clay-chip rounded-full px-3 py-1 text-[10px] font-bold text-ink-deep hover:scale-105"
                     >
                       ▶ play
