@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import MyLittlePlant from "@/components/MyLittlePlant";
+import { BuilderShell } from "@/components/BuilderShell";
 import { WORRY_BUBBLES } from "@/lib/art";
 import { music, type BuiltinTrackId } from "@/lib/music";
 import { useTapGuard } from "@/lib/useTapGuard";
@@ -10,15 +11,15 @@ import { cn } from "@/lib/utils";
 
 /* ─── Custom game types & storage ─────────────────────────────────── */
 
-type World = "sky" | "sunset" | "starry" | "garden" | "sea" | "cozy";
-type FloatingThing = "bubbles" | "stars" | "clouds" | "petals" | "fireflies" | "hearts" | "fish";
-type TouchAction = "pop" | "catch" | "note" | "blow" | "soothe";
-type SparkleStyle = "sparkles" | "ripples" | "hearts" | "notes";
-type ObjectSize = "small" | "medium" | "large";
-type GameSound = "chimes" | "rain" | "wind" | "piano" | "none";
-type GamePace = "very-slow" | "slow" | "medium";
+export type World = "sky" | "sunset" | "starry" | "garden" | "sea" | "cozy";
+export type FloatingThing = "bubbles" | "stars" | "clouds" | "petals" | "fireflies" | "hearts" | "fish";
+export type TouchAction = "pop" | "catch" | "note" | "blow" | "soothe";
+export type SparkleStyle = "sparkles" | "ripples" | "hearts" | "notes";
+export type ObjectSize = "small" | "medium" | "large";
+export type GameSound = "chimes" | "rain" | "wind" | "piano" | "none";
+export type GamePace = "very-slow" | "slow" | "medium";
 
-interface CustomGameConfig {
+export interface CustomGameConfig {
   id: string;
   name: string;
   world: World;
@@ -330,6 +331,148 @@ export function sfxArpeggio() {
 
 type BuiltInGameId = "pop" | "tiles" | "moon" | "honeycomb" | "nimbus" | "garden" | "coloring" | "bloom" | "pond" | "clouds" | "jelly" | "plinko" | "band" | "fireworks";
 
+/* ─── Moonlight Glide music ( Moonlight Glide ──────────────────────────────────────── */
+
+type MoonTrack = "dreamy-piano" | "warm-hum" | "night-wind" | "music-box" | "no-music";
+
+const MOON_TRACKS: { id: MoonTrack; label: string }[] = [
+  { id: "dreamy-piano", label: "dreamy piano" },
+  { id: "warm-hum", label: "warm hum" },
+  { id: "night-wind", label: "night wind" },
+  { id: "music-box", label: "quiet music box" },
+  { id: "no-music", label: "no music" },
+];
+
+const MOON_MUSIC_KEY = "venting-moon-track";
+
+function loadMoonTrack(): MoonTrack {
+  try {
+    const raw = safeGetItem(MOON_MUSIC_KEY);
+    if (raw && MOON_TRACKS.some((t) => t.id === raw)) return raw as MoonTrack;
+  } catch { /* ignore */ }
+  return "dreamy-piano";
+}
+
+function saveMoonTrack(track: MoonTrack) {
+  safeSetItem(MOON_MUSIC_KEY, track);
+}
+
+/* Soft ambient music engine for Moonlight Glide */
+let _moonCtx: AudioContext | null = null;
+let _moonNodes: (OscillatorNode | AudioBufferSourceNode)[] = [];
+let _moonGains: GainNode[] = [];
+
+function moonCtx(): AudioContext {
+  if (!_moonCtx) _moonCtx = new AudioContext();
+  return _moonCtx;
+}
+
+function stopMoonMusic() {
+  try {
+    _moonNodes.forEach((n) => { try { n.stop(); } catch { /* ignore */ } });
+    _moonGains.forEach((g) => { try { g.disconnect(); } catch { /* ignore */ } });
+  } catch { /* ignore */ }
+  _moonNodes = [];
+  _moonGains = [];
+}
+
+function playMoonTrack(track: MoonTrack) {
+  stopMoonMusic();
+  if (track === "no-music") return;
+  try {
+    const ctx = moonCtx();
+    if (ctx.state === "suspended") ctx.resume();
+
+    switch (track) {
+      case "dreamy-piano": {
+        const pad = ctx.createOscillator(); const padGain = ctx.createGain();
+        pad.type = "sine"; pad.frequency.value = 220;
+        padGain.gain.value = 0.06;
+        pad.connect(padGain); padGain.connect(ctx.destination);
+        pad.start(); _moonNodes.push(pad); _moonGains.push(padGain);
+
+        const pad2 = ctx.createOscillator(); const pad2Gain = ctx.createGain();
+        pad2.type = "sine"; pad2.frequency.value = 330;
+        pad2Gain.gain.value = 0.04;
+        pad2.connect(pad2Gain); pad2Gain.connect(ctx.destination);
+        pad2.start(); _moonNodes.push(pad2); _moonGains.push(pad2Gain);
+
+        const pianoNotes = [262, 294, 330, 392, 440, 523];
+        const playNote = () => {
+          if (track !== "dreamy-piano") return;
+          const osc = ctx.createOscillator(); const g = ctx.createGain();
+          osc.type = "sine"; osc.frequency.value = pianoNotes[Math.floor(Math.random() * pianoNotes.length)];
+          g.gain.setValueAtTime(0.12, ctx.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2);
+          osc.connect(g); g.connect(ctx.destination);
+          osc.start(); osc.stop(ctx.currentTime + 2);
+          setTimeout(playNote, 2000 + Math.random() * 4000);
+        };
+        setTimeout(playNote, 1500);
+        break;
+      }
+      case "warm-hum": {
+        const osc = ctx.createOscillator(); const g = ctx.createGain();
+        osc.type = "sine"; osc.frequency.value = 110;
+        g.gain.value = 0.07;
+        osc.connect(g); g.connect(ctx.destination);
+        osc.start(); _moonNodes.push(osc); _moonGains.push(g);
+
+        const osc2 = ctx.createOscillator(); const g2 = ctx.createGain();
+        osc2.type = "sine"; osc2.frequency.value = 165;
+        g2.gain.value = 0.04;
+        osc2.connect(g2); g2.connect(ctx.destination);
+        osc2.start(); _moonNodes.push(osc2); _moonGains.push(g2);
+        break;
+      }
+      case "night-wind": {
+        const bufferSize = ctx.sampleRate * 2;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        const noise = ctx.createBufferSource(); noise.buffer = buffer; noise.loop = true;
+        const filter = ctx.createBiquadFilter(); filter.type = "lowpass"; filter.frequency.value = 400;
+        const g = ctx.createGain(); g.gain.value = 0.05;
+        noise.connect(filter); filter.connect(g); g.connect(ctx.destination);
+        noise.start(); _moonNodes.push(noise); _moonGains.push(g);
+
+        const chimeNotes = [800, 1000, 1200, 1400];
+        const playChime = () => {
+          if (track !== "night-wind") return;
+          const osc = ctx.createOscillator(); const cg = ctx.createGain();
+          osc.type = "sine"; osc.frequency.value = chimeNotes[Math.floor(Math.random() * chimeNotes.length)];
+          cg.gain.setValueAtTime(0.08, ctx.currentTime);
+          cg.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
+          osc.connect(cg); cg.connect(ctx.destination);
+          osc.start(); osc.stop(ctx.currentTime + 1.5);
+          setTimeout(playChime, 3000 + Math.random() * 5000);
+        };
+        setTimeout(playChime, 2000);
+        break;
+      }
+      case "music-box": {
+        const notes = [523, 659, 784, 880, 1047];
+        let noteIdx = 0;
+        const playBox = () => {
+          if (track !== "music-box") return;
+          const osc = ctx.createOscillator(); const g = ctx.createGain();
+          osc.type = "sine"; osc.frequency.value = notes[noteIdx % notes.length];
+          g.gain.setValueAtTime(0.1, ctx.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1);
+          osc.connect(g); g.connect(ctx.destination);
+          osc.start(); osc.stop(ctx.currentTime + 1);
+          noteIdx++;
+          setTimeout(playBox, 800 + Math.random() * 600);
+        };
+        setTimeout(playBox, 500);
+        break;
+      }
+    }
+  } catch { /* audio unavailable */ }
+}
+
+/* ─── Tiny Game Engine ────────────────────────────────────────────── */
+
 const BUILT_IN_GAMES: {
   id: BuiltInGameId;
   emoji: string;
@@ -592,455 +735,6 @@ export default function GamesScreen() {
     </div>
   );
 }
-
-/* ─── Game Builder ────────────────────────────────────────────────── */
-
-function _GameBuilder_removed_{
-  initial,
-  onSave,
-  onCancel,
-  onPreview,
-  previewConfig,
-}: {
-  initial: CustomGameConfig | null;
-  onSave: (config: CustomGameConfig) => void;
-  onCancel: () => void;
-  onPreview: (config: CustomGameConfig | null) => void;
-  previewConfig: CustomGameConfig | null;
-}) {
-  const [name, setName] = useState(initial?.name ?? "");
-  const [world, setWorld] = useState<World>(initial?.world ?? "sky");
-  const [things, setThings] = useState<FloatingThing[]>(initial?.things ?? ["stars"]);
-  const [touch, setTouch] = useState<TouchAction>(initial?.touch ?? "catch");
-  const [sparkleStyle, setSparkleStyle] = useState<SparkleStyle>(initial?.sparkleStyle ?? "sparkles");
-  const [objectSize, setObjectSize] = useState<ObjectSize>(initial?.objectSize ?? "medium");
-  const [whisper, setWhisper] = useState(initial?.whisper ?? "");
-  const [sound, setSound] = useState<GameSound>(initial?.sound ?? "chimes");
-  const [pace, setPace] = useState<GamePace>(initial?.pace ?? "slow");
-  const [worldPhoto, setWorldPhoto] = useState<string | undefined>(initial?.worldPhoto);
-  const [myDoodle, setMyDoodle] = useState<string | undefined>(initial?.myDoodle);
-  const [showDoodleCanvas, setShowDoodleCanvas] = useState(false);
-  const [doodleCtx, setDoodleCtx] = useState<CanvasRenderingContext2D | null>(null);
-  const doodleRef = useRef<HTMLCanvasElement>(null);
-  const doodleDrawing = useRef(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  // Update preview whenever options change
-  useEffect(() => {
-    const cfg: CustomGameConfig = {
-      id: initial?.id ?? `custom-${Date.now()}`,
-      name, world, things, touch, sparkleStyle, objectSize, whisper, sound, pace,
-      worldPhoto, myDoodle,
-      createdAt: initial?.createdAt ?? Date.now(),
-    };
-    onPreview(cfg);
-  }, [name, world, things, touch, sparkleStyle, objectSize, whisper, sound, pace, worldPhoto, myDoodle, initial, onPreview]);
-
-  const buildConfig = (): CustomGameConfig => ({
-    id: initial?.id ?? `custom-${Date.now()}`,
-    name, world, things, touch, sparkleStyle, objectSize, whisper, sound, pace,
-    worldPhoto, myDoodle,
-    createdAt: initial?.createdAt ?? Date.now(),
-  });
-
-  const handleSave = useTapGuard(() => {
-    onSave(buildConfig());
-  }, 500);
-
-  const toggleThing = (t: FloatingThing) => {
-    setThings((prev) => {
-      if (prev.includes(t)) return prev.filter((x) => x !== t);
-      if (prev.length >= 3) return prev; // max 3
-      return [...prev, t];
-    });
-  };
-
-  // Doodle canvas
-  const initDoodleCanvas = useCallback(() => {
-    const canvas = doodleRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.fillStyle = "rgba(255,255,255,0.3)";
-    ctx.fillRect(0, 0, 200, 200);
-    ctx.strokeStyle = "#5F6DBE";
-    ctx.lineWidth = 3;
-    ctx.lineCap = "round";
-    setDoodleCtx(ctx);
-  }, []);
-
-  const startDoodle = (e: React.PointerEvent) => {
-    doodleDrawing.current = true;
-    const canvas = doodleRef.current;
-    if (!canvas || !doodleCtx) return;
-    const rect = canvas.getBoundingClientRect();
-    doodleCtx.beginPath();
-    doodleCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
-  };
-
-  const moveDoodle = (e: React.PointerEvent) => {
-    if (!doodleDrawing.current || !doodleCtx) return;
-    const canvas = doodleRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    doodleCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-    doodleCtx.stroke();
-  };
-
-  const endDoodle = () => {
-    doodleDrawing.current = false;
-    if (doodleRef.current) {
-      setMyDoodle(doodleRef.current.toDataURL());
-    }
-  };
-
-  const clearDoodle = () => {
-    if (!doodleCtx) return;
-    doodleCtx.clearRect(0, 0, 200, 200);
-    // eslint-disable-next-line
-    doodleCtx.fillStyle = "rgba(255,255,255,0.3)";
-    doodleCtx.fillRect(0, 0, 200, 200);
-    setMyDoodle(undefined);
-  };
-
-  const handleWorldPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setWorldPhoto(reader.result as string);
-    reader.readAsDataURL(file);
-    e.target.value = "";
-  };
-
-  return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-      <div className="flex items-center gap-3">
-        <button type="button" onClick={onCancel} className="clay-chip rounded-full px-4 py-2 text-xs font-bold text-ink-deep transition-transform hover:scale-105 active:scale-95">← cancel</button>
-        <p className="text-base font-bold text-ink-deep">✨ {initial ? "Edit your game" : "Create your own game"}</p>
-      </div>
-
-      {/* Big playable live preview */}
-      {previewConfig && (
-        <div className="clay-card overflow-hidden p-3">
-          <p className="mb-2 text-xs font-bold text-ink-soft">tap inside to play ✨</p>
-          <div className="relative h-64 sm:h-80 overflow-hidden rounded-2xl">
-            <TinyGameEngine config={previewConfig} minimal />
-          </div>
-        </div>
-      )}
-
-      {/* Builder options */}
-      <div className="clay-card px-5 py-6 space-y-5">
-        {/* Name */}
-        <div>
-          <label className="text-xs font-bold text-ink-deep">Name (optional)</label>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="name your game…"
-            maxLength={40} className="mt-1.5 w-full rounded-xl border-0 bg-[#FDF5E6]/70 px-3 py-2.5 text-sm text-ink-deep placeholder:text-ink-soft/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8C9AD6]" />
-        </div>
-
-        {/* World */}
-        <div>
-          <label className="text-xs font-bold text-ink-deep">World</label>
-          <div className="mt-1.5 flex flex-wrap gap-2">
-            {WORLDS.map((w) => (
-              <button key={w.id} type="button" onClick={() => { setWorld(w.id); setWorldPhoto(undefined); }}
-                className={cn("rounded-full px-3 py-1.5 text-xs font-bold transition-all",
-                  world === w.id && !worldPhoto ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
-                {w.label}
-              </button>
-            ))}
-            <button type="button" onClick={() => fileRef.current?.click()}
-              className={cn("rounded-full px-3 py-1.5 text-xs font-bold transition-all",
-                worldPhoto ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
-              📷 my photo
-            </button>
-          </div>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleWorldPhoto} />
-          {worldPhoto && (
-            <div className="mt-2 flex items-center gap-2">
-              <img src={worldPhoto} alt="" className="h-10 w-10 rounded-lg object-cover" />
-              <button type="button" onClick={() => setWorldPhoto(undefined)} className="text-[10px] font-bold text-blush-500">remove photo</button>
-            </div>
-          )}
-        </div>
-
-        {/* Floating things (multi-select, up to 3) */}
-        <div>
-          <label className="text-xs font-bold text-ink-deep">Floating things <span className="text-ink-soft">(tap up to 3)</span></label>
-          <div className="mt-1.5 flex flex-wrap gap-2">
-            {THINGS.map((t) => (
-              <button key={t.id} type="button" onClick={() => toggleThing(t.id)}
-                className={cn("flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition-all",
-                  things.includes(t.id) ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
-                <span>{t.emoji}</span> {t.label}
-              </button>
-            ))}
-          </div>
-          <div className="mt-2 flex items-center gap-2">
-            <button type="button" onClick={() => setShowDoodleCanvas(!showDoodleCanvas)}
-              className={cn("rounded-full px-3 py-1.5 text-xs font-bold transition-all",
-                myDoodle ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
-              ✏️ my doodle {myDoodle ? "✓" : ""}
-            </button>
-          </div>
-          {showDoodleCanvas && (
-            <div className="mt-2 space-y-2">
-              <canvas ref={doodleRef} width={200} height={200}
-                onPointerDown={(e) => { initDoodleCanvas(); startDoodle(e); }}
-                onPointerMove={moveDoodle}
-                onPointerUp={endDoodle}
-                onPointerLeave={endDoodle}
-                className="rounded-xl border-2 border-dashed border-[#C4CBE8] bg-white/40 cursor-crosshair touch-none"
-                style={{ width: 160, height: 160 }} />
-              <div className="flex gap-2">
-                <button type="button" onClick={clearDoodle} className="text-[10px] font-bold text-ink-soft hover:text-ink-deep">clear doodle</button>
-                {myDoodle && <img src={myDoodle} alt="" className="h-8 w-8 rounded-lg border border-[#C4CBE8]" />}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Object size */}
-        <div>
-          <label className="text-xs font-bold text-ink-deep">Object size</label>
-          <div className="mt-1.5 flex flex-wrap gap-2">
-            {OBJECT_SIZES.map((s) => (
-              <button key={s.id} type="button" onClick={() => setObjectSize(s.id)}
-                className={cn("rounded-full px-3 py-1.5 text-xs font-bold transition-all",
-                  objectSize === s.id ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
-                {s.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Touch action */}
-        <div>
-          <label className="text-xs font-bold text-ink-deep">What touch does</label>
-          <div className="mt-1.5 flex flex-wrap gap-2">
-            {TOUCHES.map((t) => (
-              <button key={t.id} type="button" onClick={() => setTouch(t.id)}
-                className={cn("flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition-all",
-                  touch === t.id ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
-                <span>{t.emoji}</span> {t.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Sparkle style */}
-        <div>
-          <label className="text-xs font-bold text-ink-deep">Sparkle style</label>
-          <div className="mt-1.5 flex flex-wrap gap-2">
-            {SPARKLE_STYLES.map((s) => (
-              <button key={s.id} type="button" onClick={() => setSparkleStyle(s.id)}
-                className={cn("flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold transition-all",
-                  sparkleStyle === s.id ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
-                <span>{s.emoji}</span> {s.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Whisper line */}
-        <div>
-          <label className="text-xs font-bold text-ink-deep">Whisper line <span className="text-ink-soft">(optional)</span></label>
-          <input type="text" value={whisper} onChange={(e) => setWhisper(e.target.value)}
-            placeholder="a soft line your game will whisper…"
-            maxLength={100} className="mt-1.5 w-full rounded-xl border-0 bg-[#FDF5E6]/70 px-3 py-2.5 text-sm text-ink-deep placeholder:text-ink-soft/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8C9AD6]" />
-        </div>
-
-        {/* Sound */}
-        <div>
-          <label className="text-xs font-bold text-ink-deep">Sound</label>
-          <div className="mt-1.5 flex flex-wrap gap-2">
-            {SOUNDS.map((s) => (
-              <button key={s.id} type="button" onClick={() => setSound(s.id)}
-                className={cn("rounded-full px-3 py-1.5 text-xs font-bold transition-all",
-                  sound === s.id ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
-                {s.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Pace */}
-        <div>
-          <label className="text-xs font-bold text-ink-deep">Pace</label>
-          <div className="mt-1.5 flex flex-wrap gap-2">
-            {PACES.map((p) => (
-              <button key={p.id} type="button" onClick={() => setPace(p.id)}
-                className={cn("rounded-full px-3 py-1.5 text-xs font-bold transition-all",
-                  pace === p.id ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-deep hover:scale-105")}>
-                {p.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-3">
-        <button type="button" onClick={handleSave}
-          className="clay-btn flex-1 rounded-2xl px-5 py-3 text-sm font-bold text-white">
-          save to my games
-        </button>
-        <button type="button" onClick={() => onSave(buildConfig())}
-          className="clay-btn-soft flex-1 rounded-2xl px-5 py-3 text-sm font-bold text-ink-deep">
-          play it ✨
-        </button>
-      </div>
-    </motion.div>
-  );
-}
-
-/* ─── Moonlight Glide music
-/* ─── Moonlight Glide music ──────────────────────────────────────── */
-
-type MoonTrack = "dreamy-piano" | "warm-hum" | "night-wind" | "music-box" | "no-music";
-
-const MOON_TRACKS: { id: MoonTrack; label: string }[] = [
-  { id: "dreamy-piano", label: "dreamy piano" },
-  { id: "warm-hum", label: "warm hum" },
-  { id: "night-wind", label: "night wind" },
-  { id: "music-box", label: "quiet music box" },
-  { id: "no-music", label: "no music" },
-];
-
-const MOON_MUSIC_KEY = "venting-moon-track";
-
-function loadMoonTrack(): MoonTrack {
-  try {
-    const raw = safeGetItem(MOON_MUSIC_KEY);
-    if (raw && MOON_TRACKS.some((t) => t.id === raw)) return raw as MoonTrack;
-  } catch { /* ignore */ }
-  return "dreamy-piano";
-}
-
-function saveMoonTrack(track: MoonTrack) {
-  safeSetItem(MOON_MUSIC_KEY, track);
-}
-
-/* Soft ambient music engine for Moonlight Glide */
-let _moonCtx: AudioContext | null = null;
-let _moonNodes: (OscillatorNode | AudioBufferSourceNode)[] = [];
-let _moonGains: GainNode[] = [];
-
-function moonCtx(): AudioContext {
-  if (!_moonCtx) _moonCtx = new AudioContext();
-  return _moonCtx;
-}
-
-function stopMoonMusic() {
-  try {
-    _moonNodes.forEach((n) => { try { n.stop(); } catch { /* ignore */ } });
-    _moonGains.forEach((g) => { try { g.disconnect(); } catch { /* ignore */ } });
-  } catch { /* ignore */ }
-  _moonNodes = [];
-  _moonGains = [];
-}
-
-function playMoonTrack(track: MoonTrack) {
-  stopMoonMusic();
-  if (track === "no-music") return;
-  try {
-    const ctx = moonCtx();
-    if (ctx.state === "suspended") ctx.resume();
-
-    switch (track) {
-      case "dreamy-piano": {
-        // Slow ambient pad + occasional soft piano notes
-        const pad = ctx.createOscillator(); const padGain = ctx.createGain();
-        pad.type = "sine"; pad.frequency.value = 220;
-        padGain.gain.value = 0.06;
-        pad.connect(padGain); padGain.connect(ctx.destination);
-        pad.start(); _moonNodes.push(pad); _moonGains.push(padGain);
-
-        const pad2 = ctx.createOscillator(); const pad2Gain = ctx.createGain();
-        pad2.type = "sine"; pad2.frequency.value = 330;
-        pad2Gain.gain.value = 0.04;
-        pad2.connect(pad2Gain); pad2Gain.connect(ctx.destination);
-        pad2.start(); _moonNodes.push(pad2); _moonGains.push(pad2Gain);
-
-        // Occasional piano notes
-        const pianoNotes = [262, 294, 330, 392, 440, 523];
-        const playNote = () => {
-          if (track !== "dreamy-piano") return;
-          const osc = ctx.createOscillator(); const g = ctx.createGain();
-          osc.type = "sine"; osc.frequency.value = pianoNotes[Math.floor(Math.random() * pianoNotes.length)];
-          g.gain.setValueAtTime(0.12, ctx.currentTime);
-          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2);
-          osc.connect(g); g.connect(ctx.destination);
-          osc.start(); osc.stop(ctx.currentTime + 2);
-          setTimeout(playNote, 2000 + Math.random() * 4000);
-        };
-        setTimeout(playNote, 1500);
-        break;
-      }
-      case "warm-hum": {
-        // Low ambient drone
-        const osc = ctx.createOscillator(); const g = ctx.createGain();
-        osc.type = "sine"; osc.frequency.value = 110;
-        g.gain.value = 0.07;
-        osc.connect(g); g.connect(ctx.destination);
-        osc.start(); _moonNodes.push(osc); _moonGains.push(g);
-
-        const osc2 = ctx.createOscillator(); const g2 = ctx.createGain();
-        osc2.type = "sine"; osc2.frequency.value = 165;
-        g2.gain.value = 0.04;
-        osc2.connect(g2); g2.connect(ctx.destination);
-        osc2.start(); _moonNodes.push(osc2); _moonGains.push(g2);
-        break;
-      }
-      case "night-wind": {
-        // Soft filtered noise + distant chimes
-        const bufferSize = ctx.sampleRate * 2;
-        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-        const noise = ctx.createBufferSource(); noise.buffer = buffer; noise.loop = true;
-        const filter = ctx.createBiquadFilter(); filter.type = "lowpass"; filter.frequency.value = 400;
-        const g = ctx.createGain(); g.gain.value = 0.05;
-        noise.connect(filter); filter.connect(g); g.connect(ctx.destination);
-        noise.start(); _moonNodes.push(noise); _moonGains.push(g);
-
-        // Distant chimes
-        const chimeNotes = [800, 1000, 1200, 1400];
-        const playChime = () => {
-          if (track !== "night-wind") return;
-          const osc = ctx.createOscillator(); const cg = ctx.createGain();
-          osc.type = "sine"; osc.frequency.value = chimeNotes[Math.floor(Math.random() * chimeNotes.length)];
-          cg.gain.setValueAtTime(0.08, ctx.currentTime);
-          cg.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
-          osc.connect(cg); cg.connect(ctx.destination);
-          osc.start(); osc.stop(ctx.currentTime + 1.5);
-          setTimeout(playChime, 3000 + Math.random() * 5000);
-        };
-        setTimeout(playChime, 2000);
-        break;
-      }
-      case "music-box": {
-        // Music box tones — high, soft, slightly detuned
-        const notes = [523, 659, 784, 880, 1047];
-        let noteIdx = 0;
-        const playBox = () => {
-          if (track !== "music-box") return;
-          const osc = ctx.createOscillator(); const g = ctx.createGain();
-          osc.type = "sine"; osc.frequency.value = notes[noteIdx % notes.length];
-          g.gain.setValueAtTime(0.1, ctx.currentTime);
-          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1);
-          osc.connect(g); g.connect(ctx.destination);
-          osc.start(); osc.stop(ctx.currentTime + 1);
-          noteIdx++;
-          setTimeout(playBox, 800 + Math.random() * 600);
-        };
-        setTimeout(playBox, 500);
-        break;
-      }
-    }
-  } catch { /* audio unavailable */ }
-}
-
 /* ─── Tiny Game Engine ────────────────────────────────────────────── */
 
 interface FloatingObj {
@@ -1052,7 +746,7 @@ interface FloatingObj {
   sparkle: string;
 }
 
-function TinyGameEngine({ config, minimal = false }: { config: CustomGameConfig; minimal?: boolean }) {
+export function TinyGameEngine({ config, minimal = false }: { config: CustomGameConfig; minimal?: boolean }) {
   const [objects, setObjects] = useState<FloatingObj[]>([]);
   const [counter, setCounter] = useState(0);
   const [sparkles, setSparkles] = useState<{ id: number; x: number; y: number; emoji: string }[]>([]);

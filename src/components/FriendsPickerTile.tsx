@@ -32,10 +32,11 @@ export function FriendsPickerTile({
   onDoodleChange: (dataUrl: string | undefined) => void;
 }) {
   const toggled = (t: FloatingThing) => {
-    setFriends((prev) => {
-      if (prev.includes(t)) return prev.filter((x) => x !== t);
-      if (prev.length >= 3) return prev;
-      return [...prev, t];
+    setFriends((prev: FloatingThing[]): FloatingThing[] => {
+      const p: FloatingThing[] = prev !== undefined ? prev : friends;
+      if (p.includes(t)) return p.filter((x: FloatingThing) => x !== t);
+      if (p.length >= 3) return p;
+      return [...p, t];
     });
   };
 
@@ -94,7 +95,7 @@ export function FriendsPickerTile({
         <input
           type="checkbox"
           checked={!!showDoodleCanvas}
-          onChange={() => setShowDoodleCanvas(!showDoodleCanvas)}
+          onChange={() => { setShowDoodleCanvas(!showDoodleCanvas); }}
           className="sr-only"
         />
       </label>
@@ -109,15 +110,14 @@ export function FriendsPickerTile({
 }
 
 function FriendPreview({ emoji }: { emoji: FloatingThing }) {
-  const motionStyle = {
-    bubbles: "float",
-    stars: "drift",
-    clouds: "float",
-    petals: "fall",
-    fireflies: "glow",
-    hearts: "float",
-    fish: "swim",
-  }[emoji];
+  const motionStyle: string =
+    emoji === "bubbles" ? "float"
+    : emoji === "stars" ? "drift"
+    : emoji === "clouds" ? "float"
+    : emoji === "petals" ? "fall"
+    : emoji === "fireflies" ? "glow"
+    : emoji === "hearts" ? "float"
+    : "swim";
 
   if (motionStyle === "glow") {
     return (
