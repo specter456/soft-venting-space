@@ -120,7 +120,11 @@ export function PolaroidWallScreen() {
   // One-shot: if Photo Doodle armed a pending pin, pin it on arrival.
   useEffect(() => {
     const pending = consumePendingPin();
-    if (pending) addPin(pending.vaultId, pending.art);
+    if (pending) {
+      // Defer so the setState is not synchronous inside the effect.
+      const t = setTimeout(() => addPin(pending.vaultId, pending.art), 0);
+      return () => clearTimeout(t);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

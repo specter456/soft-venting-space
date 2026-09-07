@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 type Season = "spring" | "summer" | "autumn" | "winter";
 
@@ -26,12 +26,14 @@ const SEASON_PARTICLES: Record<Season, string[]> = {
 interface Particle {
   id: number;
   emoji: string;
-  x: number;   // vw percent
-  y: number;   // vh percent
-  size: number; // em
-  opacity: number;
-  drift: number; // horizontal drift speed
-  fall: number;  // vertical fall speed
+  /** Horizontal drift in px (negative = left, positive = right) */
+  drift: number;
+  /** Total fall duration in seconds */
+  duration: number;
+  /** Start X position as vw */
+  x: number;
+  /** Randomised horizontal sway range */
+  sway: number;
 }
 
 let nextId = 0;
@@ -42,11 +44,9 @@ function spawnParticle(season: Season): Particle {
     id: nextId++,
     emoji: emojis[Math.floor(Math.random() * emojis.length)],
     x: Math.random() * 100,
-    y: -5,
-    size: 0.6 + Math.random() * 0.8,
-    opacity: 0.25 + Math.random() * 0.35,
-    drift: (Math.random() - 0.5) * 0.3,
-    fall: 0.15 + Math.random() * 0.2,
+    drift: (Math.random() - 0.5) * 120,   // ±60px total horizontal
+    sway: 8 + Math.random() * 20,         // sway amplitude px
+    duration: 18 + Math.random() * 14,    // 18–32s to fall
   };
 }
 
@@ -55,42 +55,33 @@ export function useSeasonEmoji(): string {
   return SEASON_EMOJI[getSeason(new Date().getMonth())];
 }
 
-/** Floating seasonal particles — UI only, never blocks interaction */
+/**
+ * Floating seasonal particles — decorative, pointer-events-none.
+ *
+ * Motion is pure CSS keyframes (no setState-driven tick), so this
+ * component never triggers re-renders of parent trees.
+ */
 export default function SeasonalParticles() {
-  const [particles, setParticles] = useState<Particle[]>([]);
+  const [particles, setParticles] = useState<Particle[]>(() => {
+    const s = getSeason(new Date().getMonth());
+    return [spawnParticle(s)];
+  });
   const season = getSeason(new Date().getMonth());
 
-  // Spawn a particle every ~10 seconds
+  // Spawn a new particle every ~12 seconds (max 4 on screen)
   useEffect(() => {
     const timer = setInterval(() => {
       setParticles((prev) => {
         const next = [...prev, spawnParticle(season)];
-        // Keep max 3 particles on screen
-        if (next.length > 3) next.shift();
-        return next;
+        return next.length > 4 ? next.slice(-4) : next;
       });
-    }, 10000);
-
-    // Spawn one immediately
-    setParticles([spawnParticle(season)]);
-
+    }, 12000);
     return () => clearInterval(timer);
   }, [season]);
 
-  // Move particles
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setParticles((prev) =>
-        prev
-          .map((p) => ({
-            ...p,
-            y: p.y + p.fall,
-            x: p.x + p.drift,
-          }))
-          .filter((p) => p.y < 110),
-      );
-    }, 80);
-    return () => clearInterval(timer);
+  // Remove particles whose CSS animation has ended
+  const onEnd = useCallback((id: number) => {
+    setParticles((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
   return (
@@ -102,14 +93,19 @@ export default function SeasonalParticles() {
         <span
           key={p.id}
           className="absolute select-none"
-          style={{
-            left: `${p.x}vw`,
-            top: `${p.y}vh`,
-            fontSize: `${p.size}em`,
-            opacity: p.opacity,
-            transition: "none",
-            filter: "blur(0.3px)",
-          }}
+          style={
+            {
+              left: `${p.x}vw`,
+              top: "-1.5em",
+              fontSize: `${0.7 + (p.id % 3) * 0.15}em`,
+              opacity: 0.28,
+              filter: "blur(0.3px)",
+              "--drift": `${p.drift}px`,
+              "--sway": `${p.sway}px`,
+              animation: `particle-fall ${p.duration}s linear forwards`,
+            } as React.CSSProperties
+          }
+          onAnimationEnd={() => onEnd(p.id)}
         >
           {p.emoji}
         </span>

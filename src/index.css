@@ -672,6 +672,15 @@
   50% { transform: translateX(-40px) translateY(10px); }
   100% { transform: translateX(-80px) translateY(-5px); }
 }
+/* Seasonal particle fall + horizontal sway — driven entirely by CSS, zero setState re-renders */
+@keyframes particle-fall {
+  0%   { transform: translateY(0)     translateX(0); opacity: 0.28; }
+  25%  { transform: translateY(25vh)  translateX(var(--sway, 12px)); }
+  50%  { transform: translateY(50vh)  translateX(calc(-1 * var(--sway, 12px))); opacity: 0.22; }
+  75%  { transform: translateY(75vh)  translateX(var(--sway, 12px)); }
+  90%  { opacity: 0.1; }
+  100% { transform: translateY(110vh) translateX(var(--drift, 0px)); opacity: 0; }
+}
 
 /* Thin, soft scrollbar for the app column */
 .soft-scroll::-webkit-scrollbar {
