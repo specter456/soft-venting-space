@@ -524,11 +524,10 @@ type ScreenState =
   | { kind: "custom-play-saved"; config: CustomGameConfig };
 
 export default function GamesScreen() {
-  const params = new URLSearchParams(window.location.search);
-  const route = params.get("game") ?? params.get("route") ?? null;
-  const isPlant = route === "plant";
-  const isBuilder = route === "builder" || params.get("build") === "1";
   const [searchParams, setSearchParams] = useSearchParams();
+  const route = searchParams.get("game") ?? searchParams.get("route") ?? null;
+  const isPlant = route === "plant" || route === "bloom";
+  const isBuilder = route === "builder" || searchParams.get("build") === "1";
   const gameParam = searchParams.get("game") as BuiltInGameId | null;
   const [screen, setScreen] = useState<ScreenState>(() => {
     if (gameParam && BUILT_IN_GAMES.some((g) => g.id === gameParam)) {
@@ -537,6 +536,15 @@ export default function GamesScreen() {
     return { kind: "grid" };
   });
   const [customGames, setCustomGames] = useState<CustomGameConfig[]>(loadCustomGames);
+
+  // Plant deep-link: when arriving with ?route=plant, jump straight into the plant screen.
+  const isPlantRoute = route === "plant" || route === "bloom";
+  useEffect(() => {
+    if (isPlantRoute) {
+      setScreen({ kind: "play", game: "garden" });
+      setSearchParams({}, { replace: true });
+    }
+  }, [isPlantRoute, setSearchParams]);
 
   // Sync query param changes (e.g. from mood suggestion links)
   useEffect(() => {
@@ -727,9 +735,8 @@ export default function GamesScreen() {
           {screen.game === "moon" && <MoonlightGlide />}
           {screen.game === "honeycomb" && <HoneycombPop />}
           {screen.game === "nimbus" && <NimbusFriend />}
-          {screen.game === "garden" && <MemoryGarden />}
+          {screen.game === "garden" && (isPlant ? <MyLittlePlant /> : <MemoryGarden />)}
           {screen.game === "coloring" && <SoftColoring />}
-          {isPlant && <MyLittlePlant />}
           {screen.game === "pond" && <PondPals />}
           {screen.game === "clouds" && <CloudStack />}
           {screen.game === "jelly" && <JellyBounce />}
@@ -754,15 +761,13 @@ export default function GamesScreen() {
       )}
 
       {screen.kind === "builder" && (
-      <BuilderShell
-        initial={screen.editing ?? null}
-        onCreate={saveGame}
-        onCancel={goGrid}
-        onPlay={(config) => {
-          setScreen({ kind: "custom-play-saved", config });
-        }}
-      />
-    )}
+        <BuilderShell
+          initial={screen.editing ?? null}
+          onCreate={saveGame}
+          onCancel={goGrid}
+          onPlay={(config) => setScreen({ kind: "custom-play-saved", config })}
+        />
+      )}
     </div>
   );
 }

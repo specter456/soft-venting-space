@@ -185,7 +185,6 @@ export function BuilderShell({
         setTouch={setTouch}
         sparkleStyle={sparkleStyle}
         setSparkleStyle={setSparkleStyle}
-        objectSize={"medium" as const}
         sound={sound}
         setSound={setSound}
         pace={pace}
@@ -210,10 +209,11 @@ export function BuilderShell({
       {initial && (
         <SavedGameCards
           games={[initial]}
-          onOpen={onCreate}
+          onOpen={onPlay}
           onEdit={onCreate}
           onDuplicate={onCancel}
           onDelete={onCancel}
+          onPlay={onPlay}
         />
       )}
     </motion.div>
@@ -226,12 +226,14 @@ export function SavedGameCards({
   onEdit,
   onDuplicate,
   onDelete,
+  onPlay = () => {},
 }: {
   games: CustomGameConfig[];
   onOpen: (cfg: CustomGameConfig) => void;
   onEdit: (cfg: CustomGameConfig) => void;
   onDuplicate: (cfg: CustomGameConfig) => void;
   onDelete: (id: string) => void;
+  onPlay?: (cfg: CustomGameConfig) => void;
 }) {
   return (
     <div className="space-y-4">

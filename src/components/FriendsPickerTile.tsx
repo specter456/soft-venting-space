@@ -22,6 +22,7 @@ export function FriendsPickerTile({
   friends,
   setFriends,
   myDoodle,
+  showDoodleCanvas,
   setShowDoodleCanvas,
   onDoodleChange,
 }: {
