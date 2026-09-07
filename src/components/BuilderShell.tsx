@@ -116,12 +116,7 @@ export function BuilderShell({
   onCreate,
   onCancel,
   onPlay = () => {},
-}: {
-  initial: CustomGameConfig | null;
-  onCreate: (config: CustomGameConfig) => void;
-  onCancel: () => void;
-  onPlay?: (config: CustomGameConfig) => void;
-}) {
+}: BuilderShellProps) {
   const [name, setName] = useState(initial?.name ?? "");
   const [world, setWorld] = useState<World>(initial?.world ?? "sky");
   const [friends, setFriends] = useState<FloatingThing[]>(initial?.things ?? ["stars"]);
