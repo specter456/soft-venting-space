@@ -1,0 +1,16 @@
+# Venting
+
+Venting is a private, on-device emotional wellness app — a tiny safe room in your phone.
+
+## What it is
+A calming space where users express feelings through voice recordings, notes, doodling, stickers, calming games, a customizable diary, and a private calendar. Everything stays on the user's device. No accounts, no uploads, no social features.
+
+## Key pages
+- Landing: https://venting.app/
+- Login: https://venting.app/login
+
+## Values
+- 100% private — all data is stored locally on the user's device
+- No tracking, no analytics, no cloud sync
+- Soft, cozy, calming design in pastel Old Lace and Wisteria Blue
+- Free to use with no ads
