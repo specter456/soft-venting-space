@@ -37,7 +37,7 @@ function guideLine(id: string | null): string {
   return map[id as keyof typeof map] ?? "";
 }
 
-export function BuilderGuide({ phase, phaseId }: { phase: 1 | 2 | 3; phaseId: string | null }) {
+export function BuilderGuide({ phaseId }: { phase: 1 | 2 | 3; phaseId: string | null }) {
   const line = guideLine(phaseId);
   return (
     <div className="clay-chip flex items-center gap-2 rounded-full bg-[var(--theme-card, rgba(255,255,255,0.65))] px-3 py-1 text-sm font-medium text-ink-soft">
@@ -125,8 +125,9 @@ export function BuilderShell({
     if (!name && !worldPhoto && !myDoodle && (friends?.length ?? 0) === (initial?.things?.length ?? 0)) {
       return initial ?? null;
     }
+    const now = Date.now();
     return {
-      id: initial?.id ?? `custom-${Date.now()}`,
+      id: initial?.id ?? `custom-${now}`,
       name: (name.trim() || initial?.name) ?? "",
       world,
       things: friends,
@@ -138,9 +139,9 @@ export function BuilderShell({
       pace,
       worldPhoto,
       myDoodle,
-      createdAt: initial?.createdAt ?? Date.now(),
+      createdAt: initial?.createdAt ?? now,
     };
-  }, [name, world, friends, touch, sparkleStyle, objectSize, sound, pace, worldPhoto, myDoodle]);
+  }, [name, world, friends, touch, sparkleStyle, objectSize, sound, pace, worldPhoto, myDoodle, initial]);
 
   const handleApply = useCallback((preset: Partial<CustomGameConfig>) => {
     if (preset.world) setWorld(preset.world as World);
@@ -162,9 +163,6 @@ export function BuilderShell({
       <BuilderGuide phase={1} phaseId={world} />
       <WorldPickerTile
         world={world}
-        setWorld={setWorld}
-        worldPhoto={worldPhoto}
-        setWorldPhoto={setWorldPhoto}
         onPhotoSelect={(e) => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = () => setWorldPhoto(r.result as string); r.readAsDataURL(f); }}
         fileRef={useRef<HTMLInputElement>(null) as React.RefObject<HTMLInputElement | null>}
         onClear={() => setWorldPhoto(undefined)}
@@ -209,7 +207,6 @@ export function BuilderShell({
       {initial && (
         <SavedGameCards
           games={[initial]}
-          onOpen={onPlay}
           onEdit={onCreate}
           onDuplicate={onCancel}
           onDelete={onCancel}
@@ -222,14 +219,12 @@ export function BuilderShell({
 
 export function SavedGameCards({
   games,
-  onOpen,
   onEdit,
   onDuplicate,
   onDelete,
   onPlay = () => {},
 }: {
   games: CustomGameConfig[];
-  onOpen: (cfg: CustomGameConfig) => void;
   onEdit: (cfg: CustomGameConfig) => void;
   onDuplicate: (cfg: CustomGameConfig) => void;
   onDelete: (id: string) => void;
@@ -251,7 +246,6 @@ export function SavedGameCards({
         <div className="grid grid-cols-1 gap-4">
           {games.map((g) => {
                             const meta = (g.things?.length ?? 0) > 0 ? g.things.join(", ") : "the world";
-            const firstEmoji = (() => { const t: FloatingThing[] | undefined = g.things ?? []; const map: Record<string, string> = { stars: "⭐", bubbles: "🫧", clouds: "☁️", petals: "🌸", fireflies: "✨", hearts: "💜", fish: "🐟" }; return t && t.length > 0 ? (map[t[0] ?? "stars"] ?? "✨") : "✨"; })();
             return (
               <motion.div
                 key={g.id}
@@ -262,7 +256,7 @@ export function SavedGameCards({
                 {/* live mini thumbnail */}
                 <div className="h-24 overflow-hidden rounded-t-2xl bg-gradient-to-br" style={{ background: worldGradientFor(g.world) }}>
                   <div className="flex h-full items-center justify-center gap-2 opacity-70">
-                    {g.things.slice(0, 3).map((t, i) => (
+                    {g.things.slice(0, 3).map((t) => (
                       <span key={t} className="text-2xl" aria-hidden>{(() => { const m: Record<string, string> = { stars: "⭐", bubbles: "🫧", clouds: "☁️", petals: "🌸", fireflies: "✨", hearts: "💜", fish: "🐟" }; return m[t as string] ?? "✨"; })()}</span>
                     ))}
                   </div>

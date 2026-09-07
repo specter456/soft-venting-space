@@ -72,22 +72,6 @@ const THINGS: { id: FloatingThing; emoji: string; label: string }[] = [
   { id: "fish", emoji: "🐟", label: "Fish" },
 ];
 
-const TOUCHES: { id: TouchAction; emoji: string; label: string }[] = [
-  { id: "pop", emoji: "💥", label: "Pop it" },
-  { id: "catch", emoji: "🫳", label: "Catch it" },
-  { id: "note", emoji: "🎵", label: "Play a note" },
-  { id: "blow", emoji: "🌬️", label: "Blow it away" },
-  { id: "soothe", emoji: "😊", label: "Soothe it" },
-];
-
-const SOUNDS: { id: GameSound; label: string }[] = [
-  { id: "chimes", label: "Chimes" },
-  { id: "rain", label: "Rain" },
-  { id: "wind", label: "Wind" },
-  { id: "piano", label: "Piano" },
-  { id: "none", label: "None" },
-];
-
 const PACES: { id: GamePace; label: string; ms: number }[] = [
   { id: "very-slow", label: "Very slow", ms: 3000 },
   { id: "slow", label: "Slow", ms: 2000 },
@@ -514,6 +498,9 @@ const BUILT_IN_GAMES: {
   { id: "fireworks", emoji: "🎆", name: "Firework Sky", line: "tap the night, bloom soft light", tile: "tile-lavender" },
 ];
 
+/** Games that have their own continuous music override ambient */
+const GAMES_WITH_OWN_MUSIC: BuiltInGameId[] = ["moon"];
+
 /* ─── Main component ──────────────────────────────────────────────── */
 
 type ScreenState =
@@ -527,41 +514,25 @@ export default function GamesScreen() {
   const [searchParams, setSearchParams] = useSearchParams();
   const route = searchParams.get("game") ?? searchParams.get("route") ?? null;
   const isPlant = route === "plant" || route === "bloom";
-  const isBuilder = route === "builder" || searchParams.get("build") === "1";
   const gameParam = searchParams.get("game") as BuiltInGameId | null;
-  const [screen, setScreen] = useState<ScreenState>(() => {
-    if (gameParam && BUILT_IN_GAMES.some((g) => g.id === gameParam)) {
-      return { kind: "play", game: gameParam };
-    }
+  const forcedGame =
+    gameParam && BUILT_IN_GAMES.some((g) => g.id === gameParam) ? gameParam : null;
+  const [screenState, setScreen] = useState<ScreenState>(() => {
+    if (forcedGame) return { kind: "play", game: forcedGame };
+    if (isPlant) return { kind: "play", game: "garden" };
     return { kind: "grid" };
   });
+  // Deep links (?game=x / ?route=plant) win over internal navigation state.
+  const screen: ScreenState = forcedGame
+    ? { kind: "play", game: forcedGame }
+    : screenState;
   const [customGames, setCustomGames] = useState<CustomGameConfig[]>(loadCustomGames);
-
-  // Plant deep-link: when arriving with ?route=plant, jump straight into the plant screen.
-  const isPlantRoute = route === "plant" || route === "bloom";
-  useEffect(() => {
-    if (isPlantRoute) {
-      setScreen({ kind: "play", game: "garden" });
-      setSearchParams({}, { replace: true });
-    }
-  }, [isPlantRoute, setSearchParams]);
-
-  // Sync query param changes (e.g. from mood suggestion links)
-  useEffect(() => {
-    const gp = searchParams.get("game") as BuiltInGameId | null;
-    if (gp && BUILT_IN_GAMES.some((g) => g.id === gp)) {
-      setScreen({ kind: "play", game: gp });
-      setSearchParams({}, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     return () => { music.stopGameTrack(); };
   }, []);
 
   // Games that have their own continuous music override ambient
-  const GAMES_WITH_OWN_MUSIC: BuiltInGameId[] = ["moon"];
-
   const openBuiltIn = useCallback((id: BuiltInGameId) => {
     setScreen({ kind: "play", game: id });
     // Moonlight Glide uses the main music engine; others keep ambient
@@ -576,6 +547,7 @@ export default function GamesScreen() {
       }
     }
     // tiles, pop, breathe, dandelion, buddy, jars, star, shelf, coloring, bloom, pond, cloud, custom: ambient continues
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const openCustom = useCallback((config: CustomGameConfig) => {
@@ -588,8 +560,10 @@ export default function GamesScreen() {
     if (screen.kind === "play" && GAMES_WITH_OWN_MUSIC.includes(screen.game)) {
       music.stopGameTrack();
     }
+    // Clear any deep-link params so the grid stays put
+    setSearchParams({}, { replace: true });
     setScreen({ kind: "grid" });
-  }, [screen]);
+  }, [screen, setSearchParams]);
 
   const openBuilder = useCallback(() => {
     setScreen({ kind: "builder" });
@@ -624,7 +598,6 @@ export default function GamesScreen() {
   }, []);
 
   const previewConfig = useMemo<CustomGameConfig | null>(() => screen.kind === "builder" ? (screen.editing ?? null) : null, [screen]);
-  const previewRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="relative">

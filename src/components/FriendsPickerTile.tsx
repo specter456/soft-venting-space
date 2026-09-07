@@ -169,7 +169,7 @@ function FriendPreview({ emoji }: { emoji: FloatingThing }) {
   );
 }
 
-export function DoodleMicroCanvas({ value, onChange }: { value: string | undefined; onChange: (url: string | undefined) => void }) {
+export function DoodleMicroCanvas() {
   return (
     <div className="clay-card inset-0 mx-auto mt-2 rounded-xl overflow-hidden" style={{ width: 200, height: 72 }}>
       <div className="flex items-center justify-between px-2 pb-1">

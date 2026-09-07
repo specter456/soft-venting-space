@@ -1,5 +1,4 @@
 import { motion, useAnimate } from "framer-motion";
-import { cn } from "@/lib/utils";
 import type { World } from "@/pages/app/GamesScreen";
 
 const WORLDS: {
@@ -62,20 +61,11 @@ const WORLDS: {
 
 export function WorldPickerTile({
   world,
-  setWorld,
-  worldPhoto,
-  setWorldPhoto,
   onPhotoSelect,
   fileRef,
   onClear,
 }: {
   world: World;
-  setWorld: (w: World) => void;
-  worldPhoto: string | undefined;
-  setWorldPhoto: (v: string | undefined) => void;
-  onPhotoSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  fileRef: React.RefObject<HTMLInputElement | null>;
-  onClear: () => void;
 }) {
   const [scope, animate] = useAnimate();
 

@@ -118,7 +118,6 @@ function PlantVisual({
   extraSip: boolean;
 }) {
   const isGlowing = stage >= 28;
-  const petalCount = stage >= 7 ? 6 : stage >= 3 ? 4 : 3;
 
   return (
     <motion.div
@@ -320,11 +319,6 @@ export default function MyLittlePlant() {
   const [extraSip, setExtraSip] = useState(false);
   const [pickSeed, setPickSeed] = useState(false);
   const [milestoneToast, setMilestoneToast] = useState<number | null>(null);
-
-  useEffect(() => {
-    setState(loadPlantState());
-    setShelf(loadShelf());
-  }, []);
 
   const water = useTapGuard(() => {
     if (!state) return;
