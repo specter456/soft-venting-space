@@ -334,7 +334,7 @@ const MOOD_GAME_MAP: Record<string, { name: string; emoji: string; path: string 
   nervous: { name: "Chime Plinko", emoji: "🎐", path: "/dashboard/games?game=plinko" },
   tired: { name: "Moonlight Glide", emoji: "🌙", path: "/dashboard/games?game=moon" },
   overwhelmed: { name: "Firework Sky", emoji: "🎆", path: "/dashboard/games?game=fireworks" },
-  calm: { name: "Bloom Garden", emoji: "🌱", path: "/dashboard/games?game=bloom" },
+  calm: { name: "Soft Tiles", emoji: "🎹", path: "/dashboard/games?game=tiles" },
   irritated: { name: "Jelly Bounce", emoji: "🍮", path: "/dashboard/games?game=jelly" },
 };
 

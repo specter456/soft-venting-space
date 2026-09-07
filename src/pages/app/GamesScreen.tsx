@@ -251,6 +251,19 @@ function sfxThock() {
   } catch { /* */ }
 }
 
+/** Soft water pour — exported for the plant component */
+export function sfxWater() {
+  try { const c = sCtx(); const t = c.currentTime;
+    [0, 0.06, 0.12].forEach((delay) => {
+      const o = c.createOscillator(); const g = c.createGain();
+      o.type = "sine"; o.frequency.value = 600 + Math.random() * 400;
+      g.gain.setValueAtTime(0.15, t + delay);
+      g.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.12);
+      o.connect(g); g.connect(c.destination); o.start(t + delay); o.stop(t + delay + 0.12);
+    });
+  } catch { /* */ }
+}
+
 /** Soft fill / drip — for coloring regions */
 function sfxFill() {
   try { const c = sCtx(); const t = c.currentTime;
@@ -264,18 +277,6 @@ function sfxFill() {
 }
 
 /** Soft water pour — used by Bloom Garden (exported for the plant component). */
-export function sfxWater() {
-  try { const c = sCtx(); const t = c.currentTime;
-    for (let i = 0; i < 4; i++) {
-      const o = c.createOscillator(); const g = c.createGain();
-      o.type = "sine"; o.frequency.value = 400 + Math.random() * 200;
-      const st = t + i * 0.08;
-      g.gain.setValueAtTime(0.12, st); g.gain.exponentialRampToValueAtTime(0.001, st + 0.2);
-      o.connect(g); g.connect(c.destination); o.start(st); o.stop(st + 0.2);
-    }
-  } catch { /* */ }
-}
-
 /** Soft plop — for cloud stack landing */
 function sfxPlop() {
   try { const c = sCtx(); const t = c.currentTime;
@@ -312,26 +313,44 @@ function sfxSplash() {
 
 /** Soft melodic arpeggio (game completion / special moments; exported). */
 export function sfxArpeggio() {
-  try { const c = sCtx(); const t = c.currentTime;
-    [262, 330, 392, 523, 659].forEach((freq, i) => {
-      const o = c.createOscillator(); const o2 = c.createOscillator();
-      const g = c.createGain(); const g2 = c.createGain();
-      o.type = "sine"; o.frequency.value = freq;
-      o2.type = "triangle"; o2.frequency.value = freq * 2;
-      g2.gain.value = 0.06;
-      const st = t + i * 0.12;
-      g.gain.setValueAtTime(0.2, st); g.gain.exponentialRampToValueAtTime(0.001, st + 0.5);
-      o.connect(g); o2.connect(g2); g2.connect(g); g.connect(c.destination);
-      o.start(st); o.stop(st + 0.5); o2.start(st); o2.stop(st + 0.4);
+  try {
+    const c = sCtx();
+    const t = c.currentTime;
+    const base = Math.min(262, c.sampleRate / 40);
+    [0, 0.12, 0.24, 0.36].forEach((delay, i) => {
+      const f = base * (1 << (i / 2));
+      const o = c.createOscillator();
+      const o2 = c.createOscillator();
+      const g = c.createGain();
+      o.type = "sine";
+      o.frequency.value = f;
+      o2.type = "triangle";
+      o2.frequency.value = f * 2.01;
+      const g2 = c.createGain();
+      g2.gain.value = 0.08;
+      g.gain.setValueAtTime(0.18, t + delay);
+      g.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.5);
+      o.connect(g);
+      o2.connect(g2);
+      g2.connect(g);
+      g.connect(c.destination);
+      o.start(t + delay);
+      o.stop(t + delay + 0.5);
+      o2.start(t + delay);
+      o2.stop(t + delay + 0.4);
     });
   } catch { /* */ }
 }
 
 /* ─── Game registry ───────────────────────────────────────────────── */
 
-type BuiltInGameId = "pop" | "tiles" | "moon" | "honeycomb" | "nimbus" | "garden" | "coloring" | "bloom" | "pond" | "clouds" | "jelly" | "plinko" | "band" | "fireworks";
+type BuiltInGameId = "pop" | "tiles" | "moon" | "honeycomb" | "nimbus" | "garden" | "coloring" | "pond" | "clouds" | "jelly" | "plinko" | "band" | "fireworks";
 
-/* ─── Moonlight Glide music ( Moonlight Glide ──────────────────────────────────────── */
+export type PlantRouteId = "plant";
+
+export { default as MyLittlePlant } from "@/components/MyLittlePlant";
+
+/* ─── Moonlight Glide music ─────────────────────────────────────────── */
 
 type MoonTrack = "dreamy-piano" | "warm-hum" | "night-wind" | "music-box" | "no-music";
 
@@ -506,6 +525,10 @@ type ScreenState =
   | { kind: "custom-play-saved"; config: CustomGameConfig };
 
 export default function GamesScreen() {
+  const params = new URLSearchParams(window.location.search);
+  const route = params.get("game") ?? params.get("route") ?? null;
+  const isPlant = route === "plant";
+  const isBuilder = route === "builder" || params.get("build") === "1";
   const [searchParams, setSearchParams] = useSearchParams();
   const gameParam = searchParams.get("game") as BuiltInGameId | null;
   const [screen, setScreen] = useState<ScreenState>(() => {
@@ -701,7 +724,7 @@ export default function GamesScreen() {
           {screen.game === "nimbus" && <NimbusFriend />}
           {screen.game === "garden" && <MemoryGarden />}
           {screen.game === "coloring" && <SoftColoring />}
-          {screen.game === "bloom" && <MyLittlePlant />}
+          {isPlant && <MyLittlePlant />}
           {screen.game === "pond" && <PondPals />}
           {screen.game === "clouds" && <CloudStack />}
           {screen.game === "jelly" && <JellyBounce />}
@@ -726,7 +749,7 @@ export default function GamesScreen() {
       )}
 
       {screen.kind === "builder" && (
-        <BuilderShell
+        {isBuilder &&            {isBuilder && <BuilderShell
           initial={screen.editing ?? null}
           onCreate={saveGame}
           onCancel={goGrid}
@@ -848,8 +871,8 @@ export function TinyGameEngine({ config, minimal = false }: { config: CustomGame
       !config.worldPhoto && getWorldGradient(config.world),
       minimal ? "h-full" : "h-72",
     )} style={worldStyle}>
-      {/* Doodle object (if set) */}
-      {config.myDoodle && objects.filter(o => o.emoji === "✏️").length === 0 && (
+      {/* Doodle object sit in the world, layered among the other floating things */}
+      {config.myDoodle && (
         <></>
       )}
 
