@@ -52,6 +52,8 @@ export interface PlantState {
   dayOffset: number;
   /** Which days of the current month were watered (1..31). */
   wateredMonthDays: number[];
+  /** "YYYY-MM" the wateredMonthDays belong to — reset when the month rolls over. */
+  wateredMonth: string;
 }
 
 export interface PlantStage {
@@ -114,6 +116,7 @@ export function loadPlantState(): PlantState | null {
       lastWateredOn: s.lastWateredOn ?? "",
       dayOffset: typeof s.dayOffset === "number" ? s.dayOffset : 0,
       wateredMonthDays: Array.isArray(s.wateredMonthDays) ? s.wateredMonthDays : [],
+      wateredMonth: typeof s.wateredMonth === "string" ? s.wateredMonth : "",
       milestonesHit: Array.isArray(s.milestonesHit) ? s.milestonesHit : [],
     };
   } catch {
@@ -155,8 +158,11 @@ export function waterPlant(s: PlantState): { state: PlantState; grew: boolean; m
     return { state: s, grew: false };
   }
   const newCareDays = s.careDays + 1;
+  // If the month rolled over since the last watering, start a fresh dot row.
+  const thisMonth = today.slice(0, 7);
+  const baseMonthDays = s.wateredMonth === thisMonth ? s.wateredMonthDays : [];
   const dayNum = parseInt(today.slice(8, 10), 10);
-  const newWateredDays = Array.from(new Set([...s.wateredMonthDays, dayNum])).sort((a, b) => a - b);
+  const newWateredDays = Array.from(new Set([...baseMonthDays, dayNum])).sort((a, b) => a - b);
 
   // milestone check
   let milestoneHit: number | undefined;
@@ -167,6 +173,7 @@ export function waterPlant(s: PlantState): { state: PlantState; grew: boolean; m
     ...s,
     careDays: newCareDays,
     lastWateredOn: today,
+    wateredMonth: thisMonth,
     wateredMonthDays: newWateredDays,
     milestonesHit: [...s.milestonesHit, ...(milestoneHit ? [milestoneHit] : [])],
     bloomedOn: milestoneHit === 100 ? today : s.bloomedOn,

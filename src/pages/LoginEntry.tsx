@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router";
 import { Delete, LockKeyhole, RotateCcw } from "lucide-react";
 import { Logo } from "@/components/Logo";
@@ -11,13 +11,22 @@ import {
   KV_USER_TYPE,
   KV_USER_EMAIL,
   KV_USER_NAME,
-  setKv,
   wipeAll,
   useTable,
   useHydrated,
   type KVPair,
 } from "@/lib/db";
 import { hashPasscode, randomSalt } from "@/lib/passcode";
+import {
+  loadSpaces,
+  spaceFromActiveIdentity,
+  spaceLabel,
+  spaceFace,
+  findSpaceByIdentifier,
+  upsertSpace,
+  activateSpace,
+  type SavedSpace,
+} from "@/lib/spaces";
 import { todayDateKey } from "@/lib/moods";
 import { safeSetItem } from "@/lib/safe-storage";
 import { cn } from "@/lib/utils";
@@ -26,8 +35,11 @@ import { cn } from "@/lib/utils";
  * Entry flow — screens 3 through 10, all in one file.
  *
  * Fresh user:  3 (choose) → 4 or 5 → 6 (create) → 7 (confirm) → 8 (welcome) → 9 (checkin) → /dashboard
- * Returning:   R (unlock) → /dashboard
+ * Returning:   3 → "Already have a space? Log in 💜" → space list → keypad for that space → /dashboard
  * No splash here — splash lives on Landing only.
+ *
+ * Spaces are strictly matched: identifiers are trimmed and compared
+ * case-insensitively; passcodes are salted hashes compared exactly.
  */
 
 type Step =
@@ -36,7 +48,8 @@ type Step =
   | "email-setup"  // SCREEN 5
   | "passcode"     // SCREEN 6 — create passcode (guest or email)
   | "confirm"      // SCREEN 7 — confirm passcode
-  | "unlock"       // SCREEN R — returning user
+  | "space-list"   // SCREEN L — pick a saved space on this device
+  | "unlock"       // SCREEN R — keypad for the chosen space
   | "unlock-switch"// "use a different space" confirmation
   | "forgot"       // forgot passcode
   | "welcome"      // SCREEN 8
@@ -48,7 +61,6 @@ const DAY_MOODS = [
   { id: "happy", label: "Happy", emoji: "😊" },
   { id: "sad", label: "Sad", emoji: "😢" },
   { id: "angry", label: "Angry", emoji: "😠" },
-  { id: "nervous", label: "Nervous", emoji: "😰" },
 ];
 
 const CHECKIN_KEY = "venting-checkin";
@@ -72,35 +84,55 @@ export default function LoginEntry() {
   const [shakeKey, setShakeKey] = useState(0);
   const [busy, setBusy] = useState(false);
   const [checkinPicked, setCheckinPicked] = useState<string | null>(null);
+  const [dupNotice, setDupNotice] = useState<"guest" | "email" | null>(null);
 
-  // Read stored identity
+  // ─── Saved spaces on this device ─────────────────────────────────
+  // Reading kv rows keeps this memo reactive: spaces live in the kv store.
+  const spaces = useMemo(() => {
+    void kv;
+    return hydrated ? loadSpaces() : [];
+  }, [hydrated, kv]);
+
+  // Read stored identity (legacy single-space support)
   const storedHash = kv.find((k) => k.key === KV_PASSCODE_HASH)?.value ?? null;
   const storedSalt = kv.find((k) => k.key === KV_PASSCODE_SALT)?.value ?? null;
   const userType = kv.find((k) => k.key === KV_USER_TYPE)?.value ?? null;
   const userEmail = kv.find((k) => k.key === KV_USER_EMAIL)?.value ?? null;
   const userName = kv.find((k) => k.key === KV_USER_NAME)?.value ?? null;
-  const hasReturningUser = hydrated && storedHash && storedSalt && userType;
 
-  // No auto-jump — returning users see the entry choice screen first,
-  // with an "Already have a space? Log in" link at the bottom.
+  // Older devices stored one space directly in the identity keys —
+  // surface it in the login list so existing users keep working.
+  const legacySpace = useMemo(
+    () =>
+      spaceFromActiveIdentity(userType, userName, userEmail, storedHash, storedSalt),
+    [userType, userName, userEmail, storedHash, storedSalt],
+  );
+
+  const visibleSpaces: SavedSpace[] = useMemo(() => {
+    const merged = [...spaces];
+    if (legacySpace && !spaces.some((s) => s.id === legacySpace.id)) {
+      merged.push(legacySpace);
+    }
+    return merged;
+  }, [spaces, legacySpace]);
+
+  const [activeSpace, setActiveSpace] = useState<SavedSpace | null>(null);
 
   // ─── Passcode handling ────────────────────────────────────────────
   const finishCode = useCallback(
     async (code: string) => {
-      // SCREEN R: unlock returning user
-      if (step === "unlock") {
-        if (!storedHash || !storedSalt) return;
+      // SCREEN R: unlock the chosen saved space — strict match required
+      if (step === "unlock" && activeSpace) {
         setBusy(true);
         try {
-          const hash = await hashPasscode(code, storedSalt);
-          if (hash === storedHash) {
+          const hash = await hashPasscode(code, activeSpace.salt);
+          if (hash === activeSpace.hash) {
             setDigits("");
-            // Signal to Dashboard that the user just authenticated —
-            // it must skip its own lock screen and go straight to Home.
+            await activateSpace(activeSpace);
             sessionStorage.setItem("venting-just-onboarded", "1");
             navigate("/dashboard");
           } else {
-            setError("that code didn't match. your space stays sealed.");
+            setError("that code didn't match this space. try again.");
             setShakeKey((k) => k + 1);
             setDigits("");
           }
@@ -124,30 +156,36 @@ export default function LoginEntry() {
       // SCREEN 7: confirm passcode
       if (step === "confirm") {
         if (code !== tempCode) {
-          // Mismatch → STAY on screen 7, shake, clear, show error
           setError("those two didn't match — try once more.");
           setShakeKey((k) => k + 1);
           setDigits("");
           setTempCode("");
           return;
         }
-        // Match! Save passcode + identity, then go to SCREEN 8
         setBusy(true);
         try {
           const salt = randomSalt();
           const hash = await hashPasscode(code, salt);
-          await setKv(KV_PASSCODE_HASH, hash);
-          await setKv(KV_PASSCODE_SALT, salt);
-          if (path === "email") {
-            await setKv(KV_USER_TYPE, "email");
-            await setKv(KV_USER_EMAIL, email.trim());
+          const trimmedName = username.trim();
+          const trimmedEmail = email.trim();
+          const space: SavedSpace = {
+            id: crypto.randomUUID(),
+            type: path,
+            name: path === "guest" ? trimmedName : undefined,
+            email: path === "email" ? trimmedEmail : undefined,
+            hash,
+            salt,
+          };
+          // Strict duplicate checks against spaces already on this device
+          const existing = findSpaceByIdentifier(loadSpaces(), path, path === "guest" ? trimmedName : trimmedEmail);
+          if (existing) {
+            // Same space being re-created with a new passcode — replace it
+            await upsertSpace(space);
           } else {
-            await setKv(KV_USER_TYPE, "guest");
-            await setKv(KV_USER_NAME, username.trim());
+            await upsertSpace(space);
           }
+          await activateSpace(space);
           setDigits("");
-          // Mark that we JUST completed onboarding this session so
-          // Dashboard skips its own lock screen (user just typed the code).
           sessionStorage.setItem("venting-just-onboarded", "1");
           setStep("welcome"); // SCREEN 8
         } catch {
@@ -158,7 +196,7 @@ export default function LoginEntry() {
         }
       }
     },
-    [step, storedHash, storedSalt, tempCode, path, email, username, navigate],
+    [step, activeSpace, tempCode, path, email, username, navigate],
   );
 
   // Auto-trigger on 4 digits
@@ -187,6 +225,34 @@ export default function LoginEntry() {
     setDigits((prev) => prev.slice(0, -1));
   };
 
+  // ─── Duplicate checks before entering passcode creation ─────────
+  const proceedGuest = useTapGuard(() => {
+    const name = username.trim();
+    if (!name) return;
+    const dup = findSpaceByIdentifier(loadSpaces(), "guest", name);
+    if (dup) {
+      setDupNotice("guest");
+      return;
+    }
+    setError(null);
+    setStep("passcode");
+  }, 350);
+
+  const proceedEmail = useTapGuard(() => {
+    const value = email.trim();
+    if (!value || !value.includes("@")) {
+      setError("hmm, that email doesn't look right");
+      return;
+    }
+    const dup = findSpaceByIdentifier(loadSpaces(), "email", value);
+    if (dup) {
+      setDupNotice("email");
+      return;
+    }
+    setError(null);
+    setStep("passcode");
+  }, 350);
+
   // ─── SCREEN 9: check-in finish ──────────────────────────────────
   const finishCheckin = useTapGuard((moodId: string | null) => {
     safeSetItem(CHECKIN_KEY, JSON.stringify({ date: todayDateKey(), mood: moodId }));
@@ -201,12 +267,14 @@ export default function LoginEntry() {
     setEmail("");
     setUsername("");
     setTempCode("");
+    setActiveSpace(null);
+    setDupNotice(null);
   }, 600);
 
   // ─── Which label for passcode screens ──────────────────────────
   const passcodeLabel = path === "email"
-    ? (email || "your email")
-    : (username || "your space");
+    ? (email.trim() || "your email")
+    : (username.trim() || "your space");
 
   // ─── RENDER ────────────────────────────────────────────────────────
   return (
@@ -233,10 +301,10 @@ export default function LoginEntry() {
         <div aria-hidden className="pointer-events-none absolute -top-14 -right-14 h-36 w-36 rounded-full bg-lavender-100/70 blur-2xl" />
         <div aria-hidden className="pointer-events-none absolute -bottom-14 -left-14 h-36 w-36 rounded-full bg-blush-100/60 blur-2xl" />
 
-        {/* Logo — shown on screens 3–7, R, forgot, unlock-switch. NOT on 8–9. */}
+        {/* Logo — shown on screens 3–7, L, R, forgot, unlock-switch. NOT on 8–9. */}
         {(step === "choose" || step === "guest-setup" || step === "email-setup" ||
-          step === "passcode" || step === "confirm" || step === "unlock" ||
-          step === "unlock-switch" || step === "forgot") && (
+          step === "passcode" || step === "confirm" || step === "space-list" ||
+          step === "unlock" || step === "unlock-switch" || step === "forgot") && (
           <motion.div
             initial={{ scale: 0.7, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -256,7 +324,7 @@ export default function LoginEntry() {
                 Open your safe room
               </h1>
               <p className="mt-2 text-sm font-medium text-ink-soft">
-                No account needed. Your feelings stay right here.
+                Your feelings stay right here.
               </p>
               <div className="mt-6 flex flex-col gap-3">
                 <button type="button" onClick={() => { setPath("email"); setStep("email-setup"); }}
@@ -268,15 +336,10 @@ export default function LoginEntry() {
                   Continue as guest
                 </button>
               </div>
-              {hasReturningUser && (
-                <button type="button" onClick={() => setStep("unlock")}
-                  className="mt-5 text-xs font-bold text-[#5F6DBE] underline-offset-4 hover:underline">
-                  Already have a space? Log in 💜
-                </button>
-              )}
-              <p className="mt-4 text-[11px] font-semibold text-ink-soft">
-                🔒 Nothing is uploaded. Ever.
-              </p>
+              <button type="button" onClick={() => setStep("space-list")}
+                className="mt-5 text-xs font-bold text-[#5F6DBE] underline-offset-4 hover:underline">
+                Already have a space? Log in 💜
+              </button>
             </motion.div>
           )}
 
@@ -292,18 +355,40 @@ export default function LoginEntry() {
               <div className="mt-5 space-y-3">
                 <input
                   type="text" value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => { setUsername(e.target.value); setDupNotice(null); }}
                   placeholder="your name" maxLength={30}
                   autoCorrect="off" autoCapitalize="words" spellCheck={false}
-                  onKeyDown={(e) => { if (e.key === "Enter" && username.trim()) setStep("passcode"); }}
+                  onKeyDown={(e) => { if (e.key === "Enter" && username.trim()) proceedGuest(); }}
                   className="w-full rounded-2xl border-0 bg-[#FDF5E6]/70 px-4 py-3.5 text-sm text-ink-deep shadow-[inset_0_2px_6px_rgba(99,82,150,0.08)] placeholder:text-ink-soft/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8C9AD6]"
                 />
-                <button type="button" onClick={() => { if (username.trim()) setStep("passcode"); }}
+                {dupNotice === "guest" && (
+                  <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl bg-lavender-100/70 px-4 py-3">
+                    <p className="text-xs font-semibold text-ink-deep">
+                      a space with this name already lives here — log in or pick another name
+                    </p>
+                    <div className="mt-2 flex justify-center gap-2">
+                      <button type="button"
+                        onClick={() => {
+                          const name = username.trim();
+                          const dup = findSpaceByIdentifier(loadSpaces(), "guest", name);
+                          if (dup) { setActiveSpace(dup); setDigits(""); setError(null); setDupNotice(null); setStep("unlock"); }
+                        }}
+                        className="clay-btn rounded-full px-4 py-2 text-[11px] font-bold text-white">
+                        log in
+                      </button>
+                      <button type="button" onClick={() => { setDupNotice(null); setUsername(""); }}
+                        className="clay-chip rounded-full px-4 py-2 text-[11px] font-bold text-ink-deep">
+                        new name
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+                <button type="button" onClick={proceedGuest}
                   disabled={!username.trim()}
                   className="clay-btn w-full rounded-2xl px-5 py-3.5 text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed">
                   Continue
                 </button>
-                <button type="button" onClick={() => setStep("choose")}
+                <button type="button" onClick={() => { setStep("choose"); setDupNotice(null); }}
                   className="w-full text-xs font-bold text-ink-soft underline-offset-4 hover:text-ink-deep hover:underline">
                   ← back
                 </button>
@@ -320,28 +405,34 @@ export default function LoginEntry() {
               <div className="mt-5 space-y-3">
                 <input
                   type="email" value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); setDupNotice(null); }}
                   placeholder="name@example.com"
                   autoCorrect="off" autoCapitalize="none" spellCheck={false}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && email.trim()) {
-                      if (email.includes("@")) { setError(null); setStep("passcode"); }
-                      else setError("hmm, that email doesn't look right");
-                    }
-                  }}
+                  onKeyDown={(e) => { if (e.key === "Enter") proceedEmail(); }}
                   className="w-full rounded-2xl border-0 bg-[#FDF5E6]/70 px-4 py-3.5 text-sm text-ink-deep shadow-[inset_0_2px_6px_rgba(99,82,150,0.08)] placeholder:text-ink-soft/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8C9AD6]"
                 />
                 {error && <p className="text-xs font-semibold text-[#C48B9E]">{error}</p>}
-                <button type="button"
-                  onClick={() => {
-                    if (email.trim() && email.includes("@")) { setError(null); setStep("passcode"); }
-                    else setError("hmm, that email doesn't look right");
-                  }}
+                {dupNotice === "email" && (
+                  <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl bg-blush-100/60 px-4 py-3">
+                    <p className="text-xs font-semibold text-ink-deep">
+                      this email already has a space — welcome back!
+                    </p>
+                    <button type="button"
+                      onClick={() => {
+                        const dup = findSpaceByIdentifier(loadSpaces(), "email", email.trim());
+                        if (dup) { setActiveSpace(dup); setDigits(""); setError(null); setDupNotice(null); setStep("unlock"); }
+                      }}
+                      className="clay-btn mt-2 w-full rounded-full px-4 py-2 text-[11px] font-bold text-white">
+                      go to login
+                    </button>
+                  </motion.div>
+                )}
+                <button type="button" onClick={proceedEmail}
                   disabled={!email.trim()}
                   className="clay-btn w-full rounded-2xl px-5 py-3.5 text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed">
                   Continue
                 </button>
-                <button type="button" onClick={() => { setStep("choose"); setError(null); }}
+                <button type="button" onClick={() => { setStep("choose"); setError(null); setDupNotice(null); }}
                   className="w-full text-xs font-bold text-ink-soft underline-offset-4 hover:text-ink-deep hover:underline">
                   ← back
                 </button>
@@ -390,6 +481,143 @@ export default function LoginEntry() {
                 className="mt-5 text-xs font-bold text-ink-soft underline-offset-4 hover:text-ink-deep hover:underline">
                 ← back
               </button>
+            </motion.div>
+          )}
+
+          {/* ═══════ SCREEN L — SAVED SPACES LIST ═══════ */}
+          {step === "space-list" && (
+            <motion.div key="spaces" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
+              <h1 className="mt-4 text-xl font-bold tracking-tight text-ink-deep">
+                Pick your space
+              </h1>
+              <p className="mt-2 text-sm text-ink-soft">
+                spaces living on this device
+              </p>
+              <div className="mt-5 space-y-2">
+                {visibleSpaces.length === 0 && (
+                  <div className="rounded-2xl bg-[#FDF5E6]/70 px-4 py-6">
+                    <p className="text-sm font-semibold text-ink-soft">
+                      no spaces on this device yet
+                    </p>
+                    <button type="button" onClick={() => setStep("choose")}
+                      className="clay-btn mt-3 w-full rounded-2xl px-5 py-3 text-sm font-bold text-white">
+                      create a new space
+                    </button>
+                  </div>
+                )}
+                {visibleSpaces.map((s) => (
+                  <button key={s.id} type="button"
+                    onClick={() => { setActiveSpace(s); setDigits(""); setError(null); setStep("unlock"); }}
+                    className="flex w-full items-center gap-3 rounded-2xl border border-white/60 bg-white/50 px-4 py-3 text-left transition-transform hover:scale-[1.02] active:scale-95">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-lavender-100 text-xl" aria-hidden>
+                      {spaceFace(s)}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-bold text-ink-deep">
+                        {spaceLabel(s)}
+                      </span>
+                    </span>
+                    <span className={cn(
+                      "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold",
+                      s.type === "guest" ? "bg-lavender-200/70 text-lavender-600" : "bg-blush-100/80 text-blush-500",
+                    )}>
+                      {s.type === "guest" ? "guest" : "email"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              {visibleSpaces.length > 0 && (
+                <button type="button" onClick={() => setStep("choose")}
+                  className="mt-4 text-xs font-bold text-ink-soft underline-offset-4 hover:text-ink-deep hover:underline">
+                  not your space? create a new one
+                </button>
+              )}
+              <button type="button" onClick={() => setStep("choose")}
+                className="mt-4 block w-full text-xs font-bold text-ink-soft underline-offset-4 hover:text-ink-deep hover:underline">
+                ← back
+              </button>
+            </motion.div>
+          )}
+
+          {/* ═══════ SCREEN R — UNLOCK (chosen space) ═══════ */}
+          {step === "unlock" && activeSpace && (
+            <motion.div key="unlock" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
+              <div className="mx-auto mt-2 flex h-16 w-16 items-center justify-center rounded-full bg-lavender-100 text-3xl" aria-hidden>
+                {spaceFace(activeSpace)}
+              </div>
+              <h1 className="font-script mt-4 text-2xl font-bold tracking-tight text-ink-deep">
+                Welcome back, {spaceLabel(activeSpace)} 💜
+              </h1>
+              <p className="mt-2 text-sm text-ink-soft">
+                Only you can access your feelings.
+              </p>
+              <p className="mt-1 text-[11px] font-semibold text-[#5F6DBE]">
+                Private and safe. Only you can see this.
+              </p>
+              <PasscodeUI digits={digits} error={error} busy={busy} shakeKey={shakeKey}
+                onDigit={pressDigit} onBackspace={backspace} mode="unlock" />
+              <div className="mt-5 flex flex-col items-center gap-2">
+                <button type="button" onClick={() => setStep("forgot")}
+                  className="text-xs font-bold text-ink-soft underline-offset-4 hover:text-ink-deep hover:underline">
+                  forgot?
+                </button>
+                <button type="button"
+                  onClick={() => { setActiveSpace(null); setStep("space-list"); setError(null); setDigits(""); }}
+                  className="text-xs font-bold text-[#5F6DBE] underline-offset-4 hover:underline">
+                  ← different space
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ═══════ UNLOCK-SWITCH ═══════ */}
+          {step === "unlock-switch" && (
+            <motion.div key="switch" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
+              <h1 className="mt-4 text-xl font-bold tracking-tight text-ink-deep">
+                Start a new space
+              </h1>
+              <p className="mt-2 text-sm text-ink-soft">
+                This will set up a fresh space with its own passcode.
+              </p>
+              <div className="mt-6 flex flex-col gap-3">
+                <button type="button" onClick={() => { setStep("choose"); setError(null); }}
+                  className="clay-btn w-full rounded-2xl px-5 py-3.5 text-sm font-bold text-white">
+                  Continue
+                </button>
+                <button type="button"
+                  onClick={() => { setStep("space-list"); setError(null); setDigits(""); }}
+                  className="w-full text-xs font-bold text-ink-soft underline-offset-4 hover:text-ink-deep hover:underline">
+                  ← actually, go back
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ═══════ FORGOT ═══════ */}
+          {step === "forgot" && (
+            <motion.div key="forgot" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
+              <div className="mx-auto mt-2 flex h-16 w-16 items-center justify-center rounded-full bg-[#EDEBF6]">
+                <LockKeyhole className="size-8 text-[#5F6DBE]" />
+              </div>
+              <h1 className="mt-4 text-lg font-bold tracking-tight text-ink-deep">
+                we can't recover it
+              </h1>
+              <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+                your passcode never leaves your device, so we can't recover it.
+                you can start a fresh space, which gently erases this one.
+              </p>
+              <div className="mt-6 flex flex-col gap-3">
+                <button type="button" onClick={handleStartFresh}
+                  className="clay-btn-blush flex items-center justify-center gap-2 w-full rounded-2xl px-5 py-3.5 text-sm font-bold text-white">
+                  <RotateCcw className="size-4" />
+                  start fresh
+                </button>
+                <button type="button"
+                  onClick={() => { setStep(activeSpace ? "unlock" : "space-list"); setError(null); setDigits(""); }}
+                  className="w-full text-xs font-bold text-ink-soft underline-offset-4 hover:text-ink-deep hover:underline">
+                  ← actually, I remember
+                </button>
+              </div>
             </motion.div>
           )}
 
@@ -453,85 +681,6 @@ export default function LoginEntry() {
               <p className="mt-4 text-center text-[11px] font-semibold text-ink-soft">
                 🔒 Private and safe. Only you can see this.
               </p>
-            </motion.div>
-          )}
-
-          {/* ═══════ SCREEN R — UNLOCK (returning user) ═══════ */}
-          {step === "unlock" && (
-            <motion.div key="unlock" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
-              <h1 className="font-script mt-4 text-2xl font-bold tracking-tight text-ink-deep">
-                Welcome back{userType === "guest" && userName ? `, ${userName}` : userEmail ? `, ${userEmail}` : ""} 💜
-              </h1>
-              <p className="mt-2 text-sm text-ink-soft">
-                Only you can access your feelings.
-              </p>
-              <p className="mt-1 text-[11px] font-semibold text-[#5F6DBE]">
-                Private and safe. Only you can see this.
-              </p>
-              <PasscodeUI digits={digits} error={error} busy={busy} shakeKey={shakeKey}
-                onDigit={pressDigit} onBackspace={backspace} mode="unlock" />
-              <div className="mt-5 flex flex-col items-center gap-2">
-                <button type="button" onClick={() => setStep("forgot")}
-                  className="text-xs font-bold text-ink-soft underline-offset-4 hover:text-ink-deep hover:underline">
-                  forgot?
-                </button>
-                <button type="button"
-                  onClick={() => { setStep("unlock-switch"); setError(null); setDigits(""); }}
-                  className="text-xs font-bold text-[#5F6DBE] underline-offset-4 hover:underline">
-                  use a different space / new user
-                </button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* ═══════ UNLOCK-SWITCH ═══════ */}
-          {step === "unlock-switch" && (
-            <motion.div key="switch" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
-              <h1 className="mt-4 text-xl font-bold tracking-tight text-ink-deep">
-                Start a new space
-              </h1>
-              <p className="mt-2 text-sm text-ink-soft">
-                This will set up a fresh space with its own passcode.
-              </p>
-              <div className="mt-6 flex flex-col gap-3">
-                <button type="button" onClick={() => { setStep("choose"); setError(null); }}
-                  className="clay-btn w-full rounded-2xl px-5 py-3.5 text-sm font-bold text-white">
-                  Continue
-                </button>
-                <button type="button"
-                  onClick={() => { setStep("unlock"); setError(null); setDigits(""); }}
-                  className="w-full text-xs font-bold text-ink-soft underline-offset-4 hover:text-ink-deep hover:underline">
-                  ← actually, go back
-                </button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* ═══════ FORGOT ═══════ */}
-          {step === "forgot" && (
-            <motion.div key="forgot" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
-              <div className="mx-auto mt-2 flex h-16 w-16 items-center justify-center rounded-full bg-[#EDEBF6]">
-                <LockKeyhole className="size-8 text-[#5F6DBE]" />
-              </div>
-              <h1 className="mt-4 text-lg font-bold tracking-tight text-ink-deep">
-                we can't recover it
-              </h1>
-              <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-                your passcode never leaves your device, so we can't recover it.
-                you can start a fresh space, which gently erases this one.
-              </p>
-              <div className="mt-6 flex flex-col gap-3">
-                <button type="button" onClick={handleStartFresh}
-                  className="clay-btn-blush flex items-center justify-center gap-2 w-full rounded-2xl px-5 py-3.5 text-sm font-bold text-white">
-                  <RotateCcw className="size-4" />
-                  start fresh
-                </button>
-                <button type="button"
-                  onClick={() => { setStep("unlock"); setError(null); setDigits(""); }}
-                  className="w-full text-xs font-bold text-ink-soft underline-offset-4 hover:text-ink-deep hover:underline">
-                  ← actually, I remember
-                </button>
-              </div>
             </motion.div>
           )}
 

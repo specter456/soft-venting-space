@@ -88,6 +88,24 @@ export function newSpaceId(): string {
     : `sp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/**
+ * Add a space to the saved list (dedupes by type + identifier).
+ * New wins over old, so re-creating a space with the same name/email
+ * replaces the old passcode instead of stacking a broken duplicate.
+ */
+export async function upsertSpace(space: SavedSpace): Promise<void> {
+  const list = loadSpaces();
+  const filtered = list.filter(
+    (s) => !(s.type === space.type && spaceIdentifier(s) === spaceIdentifier(space)),
+  );
+  await saveSpaces([...filtered, space]);
+}
+
+/** Remove a space from the saved list by id. */
+export async function removeSpace(id: string): Promise<void> {
+  await saveSpaces(loadSpaces().filter((s) => s.id !== id));
+}
+
 /** Make a space the active identity for the whole app (lock + profile keys). */
 export async function activateSpace(space: SavedSpace): Promise<void> {
   await setKv(KV_PASSCODE_HASH, space.hash);
@@ -119,8 +137,8 @@ export function spaceFromActiveIdentity(
   return {
     id: newSpaceId(),
     type,
-    name: type === "guest" ? name : undefined,
-    email: type === "email" ? email : undefined,
+    name: type === "guest" ? (name ?? undefined) : undefined,
+    email: type === "email" ? (email ?? undefined) : undefined,
     hash,
     salt,
   };

@@ -118,14 +118,16 @@ function PlantVisual({
   extraSip: boolean;
 }) {
   const isGlowing = stage >= 28;
+  const hasStem = stage >= 3;
+  const bouquetCount = stage >= 14 ? 3 : 1;
 
   return (
     <motion.div
       className="relative flex h-48 w-48 items-end justify-center"
-      animate={wiggle ? { rotate: [0, -4, 4, -2, 0] } : { rotate: [0] }}
+      animate={wiggle ? { rotate: [0, -4, 4, -2, 0] } : { rotate: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
-      {/* sky/gradient behind */}
+      {/* soft glow behind the bouquet (28+ days) */}
       <div
         className="absolute inset-0 rounded-full"
         style={{
@@ -134,133 +136,140 @@ function PlantVisual({
             : "transparent",
         }}
       />
-      {/* stem */}
-      {stage >= 3 && (
+      {/* stem — explicitly centered so framer's scaleY never shifts it */}
+      {hasStem && (
         <motion.div
-          className="absolute bottom-10 h-16 w-2 rounded-full"
+          className="absolute bottom-10 left-1/2 w-2 rounded-full"
           style={{
+            height: 64,
+            x: "-50%",
             background: "linear-gradient(180deg,#5E9E6C,#3E7A4E)",
-            transformOrigin: "bottom",
+            transformOrigin: "bottom center",
           }}
           initial={{ scaleY: 0.3 }}
           animate={{ scaleY: 1 }}
           transition={{ type: "spring", stiffness: 160, damping: 14 }}
         />
       )}
-      {/* leaves */}
-      {stage >= 3 && (
+      {/* leaves (stage 3+) */}
+      {hasStem && (
         <>
           <motion.div
-            className="absolute rounded-full"
+            className="absolute"
             style={{
-              bottom: 18,
-              left: "22%",
-              width: 18,
-              height: 12,
+              bottom: 26,
+              left: 34,
+              width: 20,
+              height: 13,
+              borderRadius: "9999px 0 9999px 9999px",
               background: "linear-gradient(135deg,#8CC084,#5E9E6C)",
-              rotate: "-30deg",
-              transformOrigin: "bottom",
             }}
-            animate={wiggle ? { rotate: [-30, -35, -25, -30] } : {}}
-            transition={{ duration: 0.4 }}
+            animate={wiggle ? { rotate: [-28, -34, -24, -28] } : { rotate: -28 }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
           />
           <motion.div
-            className="absolute rounded-full"
+            className="absolute"
             style={{
-              bottom: 20,
-              right: "20%",
-              width: 18,
-              height: 12,
-              background: "linear-gradient(135deg,#8CC084,#5E9E6C)",
-              rotate: "30deg",
-              transformOrigin: "bottom",
+              bottom: 32,
+              right: 34,
+              width: 20,
+              height: 13,
+              borderRadius: "0 9999px 9999px 9999px",
+              background: "linear-gradient(45deg,#8CC084,#5E9E6C)",
             }}
-            animate={wiggle ? { rotate: [30, 35, 25, 30] } : {}}
-            transition={{ duration: 0.4 }}
+            animate={wiggle ? { rotate: [28, 34, 24, 28] } : { rotate: 28 }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
           />
         </>
       )}
-      {/* flowers / bouquet */}
+      {/* bouquet layer — fixed box above the pot, each bloom positioned inside */}
       {stage >= 7 && (
-        <div className="absolute bottom-0 left-1/2 h-0 w-0 -translate-x-1/2">
+        <div
+          className="absolute left-1/2"
+          style={{ bottom: 70, width: 168, height: 96, transform: "translateX(-50%)" }}
+        >
           {stage < 14 ? (
-            /* small bouquet */
+            /* a single first flower */
             <motion.div
-              className="relative -translate-x-1/2"
-              style={{ bottom: 26, transform: "translateY(0)" }}
-              animate={isGlowing ? { y: [0, -3, 0] } : {}}
-              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute left-1/2"
+              style={{ bottom: 0, x: "-50%" }}
+              animate={{ y: [0, -2, 0] }}
+              transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
             >
-              <BloomFlowerSvg pal={pal} size={42} petalCount={4} />
-              <span className="absolute -top-1 left-1/2 h-5 w-5 -translate-x-1/2 text-xl" aria-hidden>🌿</span>
+              <BloomFlowerSvg pal={pal} size={44} petalCount={5} />
             </motion.div>
           ) : (
-            /* lush vibrant multi-flower bouquet */
-            <div className="relative -translate-x-1/2" style={{ bottom: 22 }}>
+            /* small bouquet (14–27) → lush multi-color bouquet (28+) */
+            <>
               <motion.div
-                className="absolute -translate-x-1/2"
-                style={{ bottom: 0, left: "50%", filter: `drop-shadow(0 0 8px ${pal.glow})` }}
-                animate={isGlowing ? { scale: [1, 1.08, 1], rotate: [0, -2, 0] } : { scale: [1], rotate: [0] }}
-                transition={{ duration: isGlowing ? 3.5 : 0.4, repeat: isGlowing ? Infinity : 0, ease: "easeInOut" }}
+                className="absolute left-1/2"
+                style={{ bottom: 4, x: "-50%", filter: `drop-shadow(0 0 8px ${pal.glow})` }}
+                animate={isGlowing
+                  ? { scale: [1, 1.06, 1], rotate: [0, -2, 0], y: [0, -3, 0] }
+                  : { scale: 1, rotate: 0 }}
+                transition={{ duration: isGlowing ? 3.5 : 0.3, repeat: isGlowing ? Infinity : 0, ease: "easeInOut" }}
               >
-                <BloomFlowerSvg pal={pal} size={52} petalCount={6} />
+                <BloomFlowerSvg pal={pal} size={isGlowing ? 56 : 46} petalCount={6} />
               </motion.div>
-              {/* companion flowers in accent shades */}
-              <motion.div
-                className="absolute -translate-x-1/2"
-                style={{ bottom: 8, left: "30%", filter: "drop-shadow(0 0 4px rgba(240,180,41,0.5))" }}
-                animate={isGlowing ? { rotate: [0, -4, 0] } : {}}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <BloomFlowerSvg pal={SEED_PALETTES["sun-gold"]} size={28} petalCount={5} />
-              </motion.div>
-              <motion.div
-                className="absolute -translate-x-1/2"
-                style={{ bottom: 6, right: "28%", filter: "drop-shadow(0 0 4px rgba(143,217,196,0.5))" }}
-                animate={isGlowing ? { rotate: [0, 4, 0] } : {}}
-                transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <BloomFlowerSvg pal={SEED_PALETTES.mint} size={26} petalCount={5} />
-              </motion.div>
-              <motion.div
-                className="absolute -translate-x-1/2"
-                style={{ bottom: 10, left: "10%", filter: "drop-shadow(0 0 4px rgba(243,184,201,0.5))" }}
-                animate={isGlowing ? { rotate: [0, -3, 0] } : {}}
-                transition={{ duration: 3.8, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <BloomFlowerSvg pal={SEED_PALETTES.rose} size={24} petalCount={4} />
-              </motion.div>
-              {/* sparkles around */}
-              {isGlowing && (
+              {bouquetCount >= 3 && (
                 <>
-                  {[0, 1, 2, 3, 4].map((i) => (
-                    <motion.span
-                      key={i}
-                      className="absolute text-xs"
-                      style={{
-                        left: `${50 + Math.cos((i / 5) * 6.28 - 0.4) * 72}%`,
-                        top: `${50 + Math.sin((i / 5) * 6.28 - 0.4) * 62}%`,
-                      }}
-                      animate={{ opacity: [0, 1, 0], scale: [0.6, 1.4, 0.6] }}
-                      transition={{ duration: 2.6, repeat: Infinity, delay: i * 0.5 }}
-                      aria-hidden
-                    >
-                      ✨
-                    </motion.span>
-                  ))}
+                  <motion.div
+                    className="absolute"
+                    style={{ bottom: 10, left: 18, filter: "drop-shadow(0 0 4px rgba(240,180,41,0.5))" }}
+                    animate={isGlowing ? { rotate: [0, -4, 0] } : { rotate: -6 }}
+                    transition={{ duration: isGlowing ? 4 : 0.3, repeat: isGlowing ? Infinity : 0, ease: "easeInOut" }}
+                  >
+                    <BloomFlowerSvg pal={SEED_PALETTES["sun-gold"]} size={isGlowing ? 30 : 26} petalCount={5} />
+                  </motion.div>
+                  <motion.div
+                    className="absolute"
+                    style={{ bottom: 6, right: 20, filter: "drop-shadow(0 0 4px rgba(143,217,196,0.5))" }}
+                    animate={isGlowing ? { rotate: [0, 4, 0] } : { rotate: 6 }}
+                    transition={{ duration: isGlowing ? 4.5 : 0.3, repeat: isGlowing ? Infinity : 0, ease: "easeInOut" }}
+                  >
+                    <BloomFlowerSvg pal={SEED_PALETTES.mint} size={isGlowing ? 28 : 24} petalCount={5} />
+                  </motion.div>
                 </>
               )}
-            </div>
+              {isGlowing && (
+                <motion.div
+                  className="absolute"
+                  style={{ bottom: 2, left: 52, filter: "drop-shadow(0 0 4px rgba(243,184,201,0.5))" }}
+                  animate={{ rotate: [0, -3, 0] }}
+                  transition={{ duration: 3.8, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <BloomFlowerSvg pal={SEED_PALETTES.rose} size={24} petalCount={4} />
+                </motion.div>
+              )}
+              {/* sparkles only when fully glowing */}
+              {isGlowing &&
+                [0, 1, 2, 3, 4].map((i) => (
+                  <motion.span
+                    key={i}
+                    className="absolute text-xs"
+                    style={{
+                      left: `${50 + Math.cos((i / 5) * 6.28 - 0.4) * 42}%`,
+                      top: `${50 + Math.sin((i / 5) * 6.28 - 0.4) * 38}%`,
+                    }}
+                    animate={{ opacity: [0, 1, 0], scale: [0.6, 1.4, 0.6] }}
+                    transition={{ duration: 2.6, repeat: Infinity, delay: i * 0.5 }}
+                    aria-hidden
+                  >
+                    ✨
+                  </motion.span>
+                ))}
+            </>
           )}
         </div>
       )}
-      {/* sprout (stage 1-2) */}
-      {stage >= 1 && stage < 7 && (
+      {/* sprout (stage 1–2 only — stem takes over at 3) */}
+      {stage >= 1 && stage < 3 && (
         <span
-          className="absolute bottom-10 text-3xl"
+          className="absolute bottom-10 left-1/2 -translate-x-1/2 text-3xl"
           style={{ filter: "drop-shadow(0 2px 4px rgba(90,140,100,0.3))" }}
+          aria-hidden
         >
-          {stage < 3 ? "🌱" : "🌿"}
+          🌱
         </span>
       )}
       {/* seed (stage 0) */}
@@ -268,7 +277,7 @@ function PlantVisual({
         <motion.span
           animate={{ y: [0, -2, 0] }}
           transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-10 text-3xl"
+          className="absolute bottom-10 left-1/2 -translate-x-1/2 text-3xl"
           aria-hidden
         >
           🫘
@@ -277,10 +286,10 @@ function PlantVisual({
       {/* extra sip wiggle overlay */}
       {extraSip && (
         <motion.span
-          initial={{ scale: 0.6, opacity: 1 }}
-          animate={{ scale: 1.3, opacity: 0 }}
+          initial={{ x: "-50%", scale: 0.6, opacity: 1 }}
+          animate={{ x: "-50%", scale: 1.3, opacity: 0 }}
           transition={{ duration: 0.5 }}
-          className="absolute top-6 left-1/2 -translate-x-1/2 text-lg"
+          className="absolute top-6 left-1/2 text-lg"
           aria-hidden
         >
           💧
@@ -291,9 +300,11 @@ function PlantVisual({
 }
 
 function WateredDots({ days }: { days: number[] }) {
-  const slots = Array.from({ length: 28 }, (_, i) => i + 1);
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const slots = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   return (
-    <div className="flex gap-1.5">
+    <div className="flex flex-wrap justify-center gap-1.5" style={{ maxWidth: 216 }}>
       {slots.map((d) => (
         <span
           key={d}
@@ -343,14 +354,16 @@ export default function MyLittlePlant() {
   }, 400);
 
   const plantNewSeed = useCallback((color: SeedColor) => {
+    const today = plantDateKey(0);
     const fresh: PlantState = {
       seed: color,
-      plantedOn: plantDateKey(0),
+      plantedOn: today,
       careDays: 0,
       lastWateredOn: "",
       milestonesHit: [],
       dayOffset: 0,
       wateredMonthDays: [],
+      wateredMonth: today.slice(0, 7),
     };
     savePlantState(fresh);
     setState(fresh);
@@ -504,10 +517,19 @@ export default function MyLittlePlant() {
           </div>
           <div className="h-8 w-px bg-white/50" aria-hidden />
           <div className="text-center">
-            <p className="text-lg font-bold tracking-tight" style={{ color: pal.accent }}>
-              {daysUntil}
-            </p>
-            <p className="text-[11px] font-semibold text-ink-soft">next bloom at {nextM} days</p>
+            {nextM !== null ? (
+              <>
+                <p className="text-lg font-bold tracking-tight" style={{ color: pal.accent }}>
+                  {daysUntil}
+                </p>
+                <p className="text-[11px] font-semibold text-ink-soft">next bloom at {nextM} days</p>
+              </>
+            ) : (
+              <>
+                <p className="text-lg font-bold tracking-tight" style={{ color: pal.accent }}>🌷</p>
+                <p className="text-[11px] font-semibold text-ink-soft">in full bloom 💮</p>
+              </>
+            )}
           </div>
         </div>
       )}
