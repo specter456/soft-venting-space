@@ -85,8 +85,16 @@ export function StarterRow({ onApply, current }: { onApply: (preset: Partial<Cus
   );
 }
 
-function makeDefaultConfig(): CustomGameConfig {
-  const t: FloatingThing[] = ["stars" as FloatingThing];
+const NAME_PLACEHOLDERS: Record<World, string> = {
+  sky: "my soft sky",
+  sunset: "my golden hour",
+  starry: "my starry night",
+  garden: "my petal garden",
+  sea: "my bubble sea",
+  cozy: "my cozy corner",
+};
+
+function makeDefaultConfig(): CustomGameConfig {  const t: FloatingThing[] = ["stars" as FloatingThing];
   const w: World = "sky";
   const tc: TouchAction = "catch" as TouchAction;
   const ss: SparkleStyle = "sparkles" as SparkleStyle;
@@ -120,28 +128,38 @@ export function BuilderShell({
   const [worldPhoto, setWorldPhoto] = useState<string | undefined>(initial?.worldPhoto);
   const [myDoodle, setMyDoodle] = useState<string | undefined>(initial?.myDoodle);
   const [showDoodleCanvas, setShowDoodleCanvas] = useState(false);
+  const [whisper, setWhisper] = useState(initial?.whisper ?? "");
+  const worldPhotoRef = useRef<HTMLInputElement>(null);
 
   const lastConfig = useMemo<CustomGameConfig | null>(() => {
-    if (!name && !worldPhoto && !myDoodle && (friends?.length ?? 0) === (initial?.things?.length ?? 0)) {
+    if (!name && !whisper && !worldPhoto && !myDoodle && (friends?.length ?? 0) === (initial?.things?.length ?? 0)) {
       return initial ?? null;
     }
-    const now = Date.now();
     return {
-      id: initial?.id ?? `custom-${now}`,
+      id: initial?.id ?? "",
       name: (name.trim() || initial?.name) ?? "",
       world,
       things: friends,
       touch,
       sparkleStyle,
       objectSize,
-      whisper: initial?.whisper ?? "",
+      whisper: whisper.trim() || initial?.whisper || "",
       sound,
       pace,
       worldPhoto,
       myDoodle,
-      createdAt: initial?.createdAt ?? now,
+      createdAt: initial?.createdAt ?? 0,
     };
-  }, [name, world, friends, touch, sparkleStyle, objectSize, sound, pace, worldPhoto, myDoodle, initial]);
+  }, [name, whisper, world, friends, touch, sparkleStyle, objectSize, sound, pace, worldPhoto, myDoodle, initial]);
+
+  /** Stamp id/createdAt at save/play time — never during render. */
+  const finalize = useCallback(
+    (cfg: CustomGameConfig): CustomGameConfig => {
+      const now = Date.now();
+      return { ...cfg, id: cfg.id || `custom-${now}`, createdAt: cfg.createdAt || now };
+    },
+    [],
+  );
 
   const handleApply = useCallback((preset: Partial<CustomGameConfig>) => {
     if (preset.world) setWorld(preset.world as World);
@@ -163,8 +181,9 @@ export function BuilderShell({
       <BuilderGuide phase={1} phaseId={world} />
       <WorldPickerTile
         world={world}
+        worldPhoto={worldPhoto}
         onPhotoSelect={(e) => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = () => setWorldPhoto(r.result as string); r.readAsDataURL(f); }}
-        fileRef={useRef<HTMLInputElement>(null) as React.RefObject<HTMLInputElement | null>}
+        fileRef={worldPhotoRef}
         onClear={() => setWorldPhoto(undefined)}
       />
 
@@ -189,16 +208,36 @@ export function BuilderShell({
         setPace={setPace}
       />
 
-      <StarterRow onApply={handleApply} current={lastConfig ?? undefined} />        <div className="flex gap-3">
+      <StarterRow onApply={handleApply} current={lastConfig ?? undefined} />
+
+      {/* name + optional whisper line */}
+      <div className="space-y-2">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={NAME_PLACEHOLDERS[world]}
+          className="w-full rounded-2xl border border-white/60 bg-white/60 px-4 py-3 text-sm font-bold text-ink-deep shadow-sm outline-none placeholder:font-medium placeholder:text-ink-soft/70 focus:border-[var(--theme-accent,#5F6DBE)]/40"
+        />
+        <input
+          type="text"
+          value={whisper}
+          onChange={(e) => setWhisper(e.target.value)}
+          placeholder="a whisper line (optional) 💭"
+          className="w-full rounded-2xl border border-white/60 bg-white/60 px-4 py-2.5 text-xs font-semibold text-ink-deep outline-none placeholder:font-medium placeholder:text-ink-soft/70 focus:border-[var(--theme-accent,#5F6DBE)]/40"
+        />
+      </div>
+
+      <div className="flex gap-3">
         <button
           type="button"
-          onClick={() => onCreate(makeDefaultConfig())}
+          onClick={() => onCreate(finalize(lastConfig ?? makeDefaultConfig()))}
           className="clay-btn flex-1 rounded-2xl px-5 py-3 text-sm font-bold text-white">
           save to my games
         </button>
         <button
           type="button"
-          onClick={() => onCreate(makeDefaultConfig())}
+          onClick={() => onPlay(finalize(lastConfig ?? makeDefaultConfig()))}
           className="clay-btn-soft flex-1 rounded-2xl px-5 py-3 text-sm font-bold text-ink-deep">
           play it ✨
         </button>

@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { TouchAction, SparkleStyle, GameSound, GamePace } from "@/pages/app/GamesScreen";
 
@@ -108,7 +107,6 @@ export function MagicPickerTile({
 }
 
 function TouchChip({
-  id,
   label,
   emoji,
   active,

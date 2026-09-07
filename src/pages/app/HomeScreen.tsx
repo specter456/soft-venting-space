@@ -1,5 +1,5 @@
 import { useState, Component, type ReactNode } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 
 import { MoodBubble } from "@/components/MoodBubble";
 import { removeItem, saveCheckin, useTable, getKvFromCache, type MoodCheckin } from "@/lib/db";
@@ -14,16 +14,11 @@ import GoodnightWindDown from "@/components/GoodnightWindDown";
 import TinyTales from "@/components/TinyTales";
 import PolaroidWallSection from "@/components/PolaroidWall";
 import { PlantHomeCard } from "@/components/MyLittlePlant";
-import { BuilderShell } from "@/components/BuilderShell";
-import { useRef } from "react";
-import type { World, FloatingThing, TouchAction, SparkleStyle, ObjectSize, GameSound, GamePace } from "@/pages/app/GamesScreen";
-import type { CustomGameConfig } from "@/pages/app/GamesScreen";
-import { TinyGameEngine } from "@/pages/app/GamesScreen";
 
 /** Per-section error boundary: if one card crashes, the rest of Home still shows. */
 class SectionBoundary extends Component<{ name: string; children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
-  static getDerivedStateFromError(_: Error) { return { hasError: true }; }
+  static getDerivedStateFromError() { return { hasError: true }; }
   componentDidCatch(err: Error) {
     console.error(`[home] ${this.props.name} crashed:`, err?.message, err);
   }
@@ -123,7 +118,6 @@ function greeting(): { text: string; emoji: string } {
 }
 
 function HomeScreenInner() {
-  const navigate = useNavigate();
   const checkins = useTable<MoodCheckin>("moodCheckins");
   const dateKey = todayDateKey();
   const today = (checkins ?? []).find((c) => c?.dateKey === dateKey);

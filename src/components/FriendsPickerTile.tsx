@@ -1,3 +1,5 @@
+import { useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { FloatingThing } from "@/pages/app/GamesScreen";
@@ -169,18 +171,91 @@ function FriendPreview({ emoji }: { emoji: FloatingThing }) {
   );
 }
 
-export function DoodleMicroCanvas() {
+export function DoodleMicroCanvas({
+  onChange,
+}: {
+  value: string | undefined;
+  onChange: (dataUrl: string | undefined) => void;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const drawing = useRef(false);
+  const [color, setColor] = useState("#8f7bd4");
+
+  const strokePos = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+    const c = canvasRef.current!;
+    const r = c.getBoundingClientRect();
+    return {
+      x: ((e.clientX - r.left) / r.width) * c.width,
+      y: ((e.clientY - r.top) / r.height) * c.height,
+    };
+  };
+
   return (
-    <div className="clay-card inset-0 mx-auto mt-2 rounded-xl overflow-hidden" style={{ width: 200, height: 72 }}>
-      <div className="flex items-center justify-between px-2 pb-1">
+    <div className="clay-card mx-auto mt-2 rounded-xl overflow-hidden" style={{ width: 200 }}>
+      <div className="flex items-center justify-between px-2 pt-2">
         <span className="text-[9px] text-ink-soft">pick a color</span>
-        <div className="flex gap-1 text-xs">
+        <div className="flex gap-1">
           {["#8f7bd4", "#e88aa5", "#7fb8e8", "#7fc4a4", "#f2b26b", "#5a5470"].map((c) => (
-            <span key={c} className="inline-block h-3 w-3 rounded-full" style={{ background: c }} aria-hidden />
+            <button
+              key={c}
+              type="button"
+              onClick={() => setColor(c)}
+              className={cn(
+                "h-3.5 w-3.5 rounded-full border transition-transform hover:scale-110",
+                color === c ? "border-ink-deep" : "border-white/60",
+              )}
+              style={{ background: c }}
+              aria-label={`doodle color ${c}`}
+            />
           ))}
         </div>
       </div>
-      <p className="text-[9px] text-ink-soft text-center mt-1">draw a little doodle for your game ✨</p>
+      <canvas
+        ref={canvasRef}
+        width={184}
+        height={72}
+        className="mx-auto mt-1.5 block cursor-crosshair touch-none rounded-lg bg-white/80"
+        onPointerDown={(e) => {
+          drawing.current = true;
+          const ctx = canvasRef.current!.getContext("2d")!;
+          const p = strokePos(e);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 3;
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+        }}
+        onPointerMove={(e) => {
+          if (!drawing.current) return;
+          const ctx = canvasRef.current!.getContext("2d")!;
+          const p = strokePos(e);
+          ctx.lineTo(p.x, p.y);
+          ctx.stroke();
+        }}
+        onPointerUp={() => { drawing.current = false; }}
+        onPointerLeave={() => { drawing.current = false; }}
+      />
+      <p className="text-[9px] text-ink-soft text-center mt-0.5">draw a little doodle for your game ✨</p>
+      <div className="flex items-center justify-between px-2 pb-1.5">
+        <button
+          type="button"
+          onClick={() => {
+            const c = canvasRef.current!;
+            c.getContext("2d")!.clearRect(0, 0, c.width, c.height);
+            onChange(undefined);
+          }}
+          className="text-[9px] font-bold text-ink-soft hover:text-ink-deep"
+        >
+          clear
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange(canvasRef.current!.toDataURL("image/png"))}
+          className="text-[9px] font-bold text-[#C48B9E] hover:opacity-80"
+        >
+          save doodle ✓
+        </button>
+      </div>
     </div>
   );
 }

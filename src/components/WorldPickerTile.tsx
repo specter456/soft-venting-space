@@ -1,4 +1,5 @@
 import { motion, useAnimate } from "framer-motion";
+import type { ChangeEvent, RefObject } from "react";
 import type { World } from "@/pages/app/GamesScreen";
 
 const WORLDS: {
@@ -61,11 +62,16 @@ const WORLDS: {
 
 export function WorldPickerTile({
   world,
+  worldPhoto,
   onPhotoSelect,
   fileRef,
   onClear,
 }: {
   world: World;
+  worldPhoto?: string;
+  onPhotoSelect: (e: ChangeEvent<HTMLInputElement>) => void;
+  fileRef: RefObject<HTMLInputElement | null>;
+  onClear: () => void;
 }) {
   const [scope, animate] = useAnimate();
 
@@ -203,7 +209,7 @@ export function WorldPickerTile({
           </div>
         )}
         <span className="text-[11px] font-medium text-ink-soft">{worldLabel(world)}</span>
-        <label className="pointer-events-auto self-start cursor-pointer rounded-full bg-white/70 px-3 py-1.5 text-[11px] font-bold text-ink-deep today">
+        <label className="pointer-events-auto self-start cursor-pointer rounded-full bg-white/70 px-3 py-1.5 text-[11px] font-bold text-ink-deep">
           📷 my photo
           <input ref={fileRef} type="file" accept="image/*" className="sr-only" onChange={onPhotoSelect} />
         </label>
