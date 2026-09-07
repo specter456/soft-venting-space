@@ -1,5 +1,5 @@
 import { useState, Component, type ReactNode } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 
 import { MoodBubble } from "@/components/MoodBubble";
 import { removeItem, saveCheckin, useTable, getKvFromCache, type MoodCheckin } from "@/lib/db";
