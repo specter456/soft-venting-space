@@ -29,15 +29,12 @@ function guideLine(id: string | null): string {
     hearts: "hearts, always hearts 💜",
     fish: "little fish darting about 🐟",
     pop: "pop them gently",
-    catch: "catch them with your fingers",
-    note: "a tiny music note",
-    blow: "blow them gently away",
     soothe: "soothe them until calm",
     sparkles: "twinkly sparkles",
     ripples: "soft ripples",
-    hearts: "tiny hearts float up",
     notes: "music notes drift by",
-  };      return map[id as keyof typeof map] ?? "";
+  };
+  return map[id as keyof typeof map] ?? "";
 }
 
 export function BuilderGuide({ phase, phaseId }: { phase: 1 | 2 | 3; phaseId: string | null }) {
@@ -111,11 +108,6 @@ export function BuilderShell({
   onCreate,
   onCancel,
   onPlay = () => {},
-}: BuilderShellProps) {{
-  initial,
-  onCreate,
-  onCancel,
-  onPlay = () => {},
 }: BuilderShellProps) {
   const [name, setName] = useState(initial?.name ?? "");
   const [world, setWorld] = useState<World>(initial?.world ?? "sky");
@@ -135,7 +127,7 @@ export function BuilderShell({
     }
     return {
       id: initial?.id ?? `custom-${Date.now()}`,
-      name: name.trim() || initial?.name ?? "",
+      name: (name.trim() || initial?.name) ?? "",
       world,
       things: friends,
       touch,
@@ -183,6 +175,7 @@ export function BuilderShell({
         friends={friends}
         setFriends={setFriends}
         myDoodle={myDoodle}
+        showDoodleCanvas={showDoodleCanvas}
         setShowDoodleCanvas={setShowDoodleCanvas}
         onDoodleChange={setMyDoodle}
       />
@@ -192,7 +185,7 @@ export function BuilderShell({
         setTouch={setTouch}
         sparkleStyle={sparkleStyle}
         setSparkleStyle={setSparkleStyle}
-        objectSize="medium"
+        objectSize={"medium" as const}
         sound={sound}
         setSound={setSound}
         pace={pace}
@@ -282,7 +275,8 @@ export function SavedGameCards({
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold text-ink-deep">{g.name || "my little game"}</p>
                       <p className="truncate text-[11px] text-ink-soft">{meta}</p>
-                    </div>                      <button
+                    </div>
+                    <button
                       type="button"
                       onClick={() => onPlay(g)}
                       className="shrink-0 clay-chip rounded-full px-3 py-1 text-[10px] font-bold text-ink-deep hover:scale-105"

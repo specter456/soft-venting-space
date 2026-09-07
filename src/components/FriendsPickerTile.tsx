@@ -28,16 +28,14 @@ export function FriendsPickerTile({
   friends: FloatingThing[];
   setFriends: (f: FloatingThing[]) => void;
   myDoodle: string | undefined;
+  showDoodleCanvas: boolean;
   setShowDoodleCanvas: (v: boolean) => void;
   onDoodleChange: (dataUrl: string | undefined) => void;
 }) {
   const toggled = (t: FloatingThing) => {
-    setFriends((prev: FloatingThing[]): FloatingThing[] => {
-      const p: FloatingThing[] = prev !== undefined ? prev : friends;
-      if (p.includes(t)) return p.filter((x: FloatingThing) => x !== t);
-      if (p.length >= 3) return p;
-      return [...p, t];
-    });
+    const prev = friends ?? [];
+    if (prev.includes(t)) setFriends(prev.filter((x: FloatingThing) => x !== t));
+    else if (prev.length < 3) setFriends([...prev, t]);
   };
 
   return (

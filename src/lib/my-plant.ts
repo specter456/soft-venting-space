@@ -46,9 +46,8 @@ export interface PlantState {
   plantedOn: string; // YYYY-MM-DD
   careDays: number; // total unique days watered
   lastWateredOn: string; // "" = never
-  streak: number;
+  milestonesHit: number[]; // e.g. [7, 14]
   bloomedOn?: string;
-  milestonesHit: number[];
   /** Dev-only day offset for testing. */
   dayOffset: number;
   /** Which days of the current month were watered (1..31). */
@@ -98,17 +97,6 @@ export function plantDateKey(offset = 0): string {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
-}
-
-export function daysBetween(fromKey: string, toKey: string): number {
-  try {
-    const a = new Date(fromKey + "T00:00:00").getTime();
-    const b = new Date(toKey + "T00:00:00").getTime();
-    if (!Number.isFinite(a) || !Number.isFinite(b)) return 0;
-    return Math.round((b - a) / 86_400_000);
-  } catch {
-    return 0;
-  }
 }
 
 export function currentMonthDaysWatered(s: PlantState): number[] {

@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import MyLittlePlant from "@/components/MyLittlePlant";
 import { BuilderShell } from "@/components/BuilderShell";
@@ -506,7 +506,6 @@ const BUILT_IN_GAMES: {
   { id: "nimbus", emoji: "☁️", name: "Nimbus Friend", line: "a little cloud friend who loves your company", tile: "tile-mint" },
   { id: "garden", emoji: "🌱", name: "Memory Garden", line: "match the feelings, grow a little garden", tile: "tile-lavender" },
   { id: "coloring", emoji: "🎨", name: "Soft Coloring", line: "fill the lines with your favorite calm", tile: "tile-lavender" },
-  { id: "bloom", emoji: "🌱", name: "Bloom Garden", line: "water it daily — watch it bloom over real days.", tile: "tile-mint" },
   { id: "pond", emoji: "🎣", name: "Pond Pals", line: "cast a line into the calm pond, meet little friends", tile: "tile-sky" },
   { id: "clouds", emoji: "☁️", name: "Cloud Stack", line: "stack soft clouds into a cozy tower", tile: "tile-mint" },
   { id: "jelly", emoji: "🍮", name: "Jelly Bounce", line: "boing the jelly to the clouds", tile: "tile-blush" },
