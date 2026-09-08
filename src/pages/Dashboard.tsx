@@ -48,16 +48,6 @@ const TABS = [
   { to: "/dashboard/settings", label: "Settings", emoji: "⚙️" },
 ];
 
-/** Main screens that show the soft bottom taskbar. */
-const BAR_ROUTES = [
-  "/dashboard",
-  "/dashboard/record",
-  "/dashboard/create",
-  "/dashboard/diary",
-  "/dashboard/games",
-  "/dashboard/calendar",
-  "/dashboard/settings",
-];
 
 /**
  * The app shell. Every room lives inside this mobile-width column behind the
@@ -121,7 +111,7 @@ export default function Dashboard() {
 
   const isHome = location.pathname === "/dashboard";
   const title = TITLES[location.pathname] ?? "Venting";
-  const showBar = BAR_ROUTES.includes(location.pathname) || location.pathname.startsWith("/dashboard/calendar/");
+  const showBar = location.pathname === "/dashboard" || location.pathname.startsWith("/dashboard/");
 
   // Set document title for the private dashboard
   useEffect(() => {
