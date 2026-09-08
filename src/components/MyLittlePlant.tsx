@@ -123,7 +123,7 @@ function PlantVisual({
 
   return (
     <motion.div
-      className="relative flex h-auto w-48 items-end justify-center"
+      className="relative flex h-[190px] w-48 items-end justify-center"
       animate={wiggle ? { rotate: [0, -4, 4, -2, 0] } : { rotate: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
