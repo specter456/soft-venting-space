@@ -123,7 +123,7 @@ function PlantVisual({
 
   return (
     <motion.div
-      className="relative flex h-48 w-48 items-end justify-center"
+      className="relative flex h-auto w-48 items-end justify-center"
       animate={wiggle ? { rotate: [0, -4, 4, -2, 0] } : { rotate: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
     >
@@ -139,7 +139,7 @@ function PlantVisual({
       {/* stem — explicitly centered so framer's scaleY never shifts it */}
       {hasStem && (
         <motion.div
-          className="absolute bottom-10 left-1/2 w-2 rounded-full"
+          className="absolute bottom-0 left-1/2 w-2 rounded-full"
           style={{
             height: 80,
             x: "-50%",
@@ -157,7 +157,7 @@ function PlantVisual({
           <motion.div
             className="absolute"
             style={{
-              bottom: 26,
+              bottom: 16,
               left: 34,
               width: 20,
               height: 13,
@@ -170,7 +170,7 @@ function PlantVisual({
           <motion.div
             className="absolute"
             style={{
-              bottom: 32,
+              bottom: 22,
               right: 34,
               width: 20,
               height: 13,
@@ -186,7 +186,7 @@ function PlantVisual({
       {stage >= 7 && (
         <div
           className="absolute left-1/2"
-          style={{ bottom: 70, width: 168, height: 96, transform: "translateX(-50%)" }}
+          style={{ bottom: 82, width: 168, height: 96, transform: "translateX(-50%)" }}
         >
           {stage < 14 ? (
             /* a single first flower */
@@ -423,7 +423,7 @@ export default function MyLittlePlant() {
         {/* plant + pot anchored as one unit */}
         <div className="relative z-10 flex flex-col items-center">
           {state ? (
-            <div className="-mb-3">
+            <div className="-mb-5">
               <PlantVisual stage={state.careDays} pal={pal} wiggle={wiggle} extraSip={extraSip} />
             </div>
           ) : (
