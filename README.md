@@ -55,14 +55,13 @@ Passcodes are stored only as salted hashes on-device. Notes, photos, recordings 
 - Native wrappers (Android / iOS) + home-screen widgets
 - More languages and more soundscapes
 
+##  App Screenshots
 
-## 📸 App Screenshots
+![Venting Home Screen](Venting_home.png)
 
-![Venting Landing Page](Venting_home.jpg)
+![Venting Dashboard](Venting_dashboard.png)
 
-![Venting Dashboard](Venting_dashboard.jpg)
-
-![Venting Settings](Venting_settings.jpg)
+![Venting Settings](Venting_settings.png)
 
 ## 🎥 Demo
 [Your video link here]
