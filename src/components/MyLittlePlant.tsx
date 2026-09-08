@@ -141,7 +141,7 @@ function PlantVisual({
         <motion.div
           className="absolute bottom-10 left-1/2 w-2 rounded-full"
           style={{
-            height: 64,
+            height: 80,
             x: "-50%",
             background: "linear-gradient(180deg,#5E9E6C,#3E7A4E)",
             transformOrigin: "bottom center",
@@ -408,10 +408,11 @@ export default function MyLittlePlant() {
 
       {/* cozy sky room */}
       <div
-        className="relative overflow-hidden rounded-3xl border border-white/50 px-4 pb-6 pt-6"
+        className="relative flex flex-col items-center overflow-hidden rounded-3xl border border-white/50 px-4 pb-5 pt-6"
         style={{
           background: "linear-gradient(180deg,#BFE0F7 0%,#DCEFFA 55%,#F3E9D8 100%)",
           boxShadow: "0 10px 30px -12px rgba(120,150,190,0.35)",
+          minHeight: 320,
         }}
       >
         {/* decorative sky bits */}
@@ -419,19 +420,17 @@ export default function MyLittlePlant() {
         <motion.span aria-hidden className="absolute top-10 right-8 text-2xl opacity-60" animate={{ x: [0, -10, 0] }} transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}>☁️</motion.span>
         <motion.span aria-hidden className="absolute top-2 left-1/3 text-2xl" animate={{ scale: [1, 1.08, 1] }} transition={{ duration: 4, repeat: Infinity }}>☀️</motion.span>
 
-        {/* plant visual */}
-        <div className="relative z-10 flex justify-center">
+        {/* plant + pot anchored as one unit */}
+        <div className="relative z-10 flex flex-col items-center">
           {state ? (
-            <PlantVisual stage={state.careDays} pal={pal} wiggle={wiggle} extraSip={extraSip} />
+            <div className="-mb-3">
+              <PlantVisual stage={state.careDays} pal={pal} wiggle={wiggle} extraSip={extraSip} />
+            </div>
           ) : (
             <div className="flex h-48 w-48 items-end justify-center">
               <span className="mb-14 text-5xl opacity-60">🪴</span>
             </div>
           )}
-        </div>
-
-        {/* pot with smiley face */}
-        <div className="relative z-10 mx-auto mt-1">
           <PotWithFace wiggle={wiggle} />
         </div>
 
