@@ -34,7 +34,7 @@ import { cn } from "@/lib/utils";
 /**
  * Entry flow — screens 3 through 10, all in one file.
  *
- * Fresh user:  3 (choose) → 4 or 5 → 6 (create) → 7 (confirm) → 8 (welcome) → 9 (checkin) → /dashboard
+ * Fresh user:  3 (choose) → 4 or 5 → 6 (create) → 7 (confirm) → 8 (checkin) → /dashboard
  * Returning:   3 → "Already have a space? Log in 💜" → space list → keypad for that space → /dashboard
  * No splash here — splash lives on Landing only.
  *
@@ -52,8 +52,7 @@ type Step =
   | "unlock"       // SCREEN R — keypad for the chosen space
   | "unlock-switch"// "use a different space" confirmation
   | "forgot"       // forgot passcode
-  | "welcome"      // SCREEN 8
-  | "checkin";     // SCREEN 9
+  | "checkin";     // SCREEN 8
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
@@ -187,7 +186,7 @@ export default function LoginEntry() {
           await activateSpace(space);
           setDigits("");
           sessionStorage.setItem("venting-just-onboarded", "1");
-          setStep("welcome"); // SCREEN 8
+          setStep("checkin"); // SCREEN 8
         } catch {
           setError("couldn't save your passcode — try again.");
           setDigits("");
@@ -621,34 +620,7 @@ export default function LoginEntry() {
             </motion.div>
           )}
 
-          {/* ═══════ SCREEN 8 — WELCOME POPUP ═══════ */}
-          {step === "welcome" && (
-            <motion.div key="welcome" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
-              <motion.div initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: "spring", stiffness: 220, damping: 14, delay: 0.1 }} className="mx-auto w-fit">
-                <Logo className="h-16 w-16" />
-              </motion.div>
-              <h1 className="font-script mt-4 text-3xl font-bold tracking-tight text-ink-deep">
-                Welcome!
-              </h1>
-              <p className="mt-2 text-[15px] leading-relaxed font-medium text-ink">
-                Hope you had a nice day.
-              </p>
-              <p className="mt-1 text-[15px] leading-relaxed font-medium text-ink">
-                Keep smiling. ✨
-              </p>
-              <div className="mx-auto mt-6 h-px w-24 bg-lavender-200" aria-hidden />
-              <button type="button" onClick={() => setStep("checkin")}
-                className="clay-btn mt-7 inline-flex items-center gap-2 px-7 py-3 text-sm font-bold text-white">
-                Continue
-              </button>
-              <p className="mt-4 text-center text-[11px] font-semibold text-ink-soft">
-                🔒 Private and safe. Only you can see this.
-              </p>
-            </motion.div>
-          )}
-
-          {/* ═══════ SCREEN 9 — CHECK-IN ═══════ */}
+          {/* ═══════ SCREEN 8 — CHECK-IN ═══════ */}
           {step === "checkin" && (
             <motion.div key="checkin" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.3 }}>
               <motion.div initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
