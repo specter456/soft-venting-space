@@ -15,8 +15,8 @@ const Landing = React.lazy(() => import("./pages/Landing"));
 const LoginEntry = React.lazy(() => import("./pages/LoginEntry"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 
-// Dashboard shell — lazy-loaded (only needed after auth)
-const Dashboard = React.lazy(() => import("./pages/Dashboard"));
+// Dashboard shell — eagerly imported (has render-time setState, cannot be lazy)
+import Dashboard from "./pages/Dashboard";
 
 // Dashboard screens — lazy-loaded for smaller initial bundle
 const HomeScreen = React.lazy(() => import("./pages/app/HomeScreen"));
@@ -191,9 +191,7 @@ createRoot(rootEl).render(
             path="/dashboard"
             element={
               <RouteShell>
-                <React.Suspense fallback={<SplashLoader />}>
-                  <Dashboard />
-                </React.Suspense>
+                <Dashboard />
               </RouteShell>
             }
           >
