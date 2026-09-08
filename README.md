@@ -64,6 +64,6 @@ Passcodes are stored only as salted hashes on-device. Notes, photos, recordings 
 ![Venting Settings](Venting_settings.png)
 
 ## 🎥 Demo
-[Your video link here]
+[https://drive.google.com/file/d/1jPp4PLlMogtn9jdroQ6UJ1XH5aX9aXha/view?usp=sharing]
 
 *made with softness · private by design · feelings welcome*
