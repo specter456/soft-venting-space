@@ -32,11 +32,11 @@ Venting is a journaling + calming-games app for hard days:
 -  **In progress:** stabilizing the in-app AI helper, richer streak-plant art, more soundscapes.
 
 ##  Tools & Stack
-
-- React · TypeScript · Vite · TailwindCSS
-- Web Audio API (all sounds & music generated in-browser — no audio files)
-- IndexedDB / localStorage (100% local data) · JSZip for backups
-- Built with an AI coding agent (Freebuff) from recipe-style prompts
+## 🛠️ Tech Stack & Development Process
+* **Core Technologies:** HTML5, CSS3, JavaScript (Vanilla)
+* **Development Method:** AI-Assisted Development (Built collaboratively using Freebuff as a coding agent)
+* **Data Storage:** Browser LocalStorage / IndexedDB (Ensuring 100% local, private data storage)
+* **Hosting:** Freebuff.dev
 
 ##  How Privacy Works
 
