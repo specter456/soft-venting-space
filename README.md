@@ -31,8 +31,7 @@ Venting is a journaling + calming-games app for hard days:
 -  **Working:** onboarding (guest/email + passcode spaces), check-ins, all creation tools, diary, decorated calendar, games + creator, music system, themes, wind-down, gratitude jar, tiny tales, polaroid wall, ZIP backup/restore, PWA + full SEO checklist.
 -  **In progress:** stabilizing the in-app AI helper, richer streak-plant art, more soundscapes.
 
-##  Tools & Stack
-## 🛠️ Tech Stack & Development Process
+##  Tech Stack & Development Process
 * **Core Technologies:** HTML5, CSS3, JavaScript (Vanilla)
 * **Development Method:** AI-Assisted Development (Built collaboratively using Freebuff as a coding agent)
 * **Data Storage:** Browser LocalStorage / IndexedDB (Ensuring 100% local, private data storage)
