@@ -66,6 +66,5 @@ Passcodes are stored only as salted hashes on-device. Notes, photos, recordings 
 
 ## 🎥 Demo
 [Your video link here]
----
 
 *made with softness · private by design · feelings welcome*
