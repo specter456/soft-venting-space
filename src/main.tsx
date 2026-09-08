@@ -13,7 +13,6 @@ import "./index.css";
 // Public routes — eagerly imported (small, visible immediately)
 import Landing from "./pages/Landing";
 import LoginEntry from "./pages/LoginEntry";
-import WelcomeCheckin from "./pages/WelcomeCheckin";
 import NotFound from "./pages/NotFound";
 
 // Dashboard shell — eagerly imported (thin wrapper)
@@ -167,14 +166,7 @@ createRoot(rootEl).render(
               </RouteShell>
             }
           />
-          <Route
-            path="/welcome"
-            element={
-              <RouteShell>
-                <WelcomeCheckin />
-              </RouteShell>
-            }
-          />
+
           <Route
             path="/dashboard"
             element={
