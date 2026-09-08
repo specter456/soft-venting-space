@@ -10,13 +10,13 @@ import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import { ThemeProvider } from "@/lib/themes";
 import "./index.css";
 
-// Public routes — eagerly imported (small, visible immediately)
-import Landing from "./pages/Landing";
-import LoginEntry from "./pages/LoginEntry";
-import NotFound from "./pages/NotFound";
+// Public routes — lazy-loaded so the initial bundle stays tiny
+const Landing = React.lazy(() => import("./pages/Landing"));
+const LoginEntry = React.lazy(() => import("./pages/LoginEntry"));
+const NotFound = React.lazy(() => import("./pages/NotFound"));
 
-// Dashboard shell — eagerly imported (thin wrapper)
-import Dashboard from "./pages/Dashboard";
+// Dashboard shell — lazy-loaded (only needed after auth)
+const Dashboard = React.lazy(() => import("./pages/Dashboard"));
 
 // Dashboard screens — lazy-loaded for smaller initial bundle
 const HomeScreen = React.lazy(() => import("./pages/app/HomeScreen"));
@@ -50,11 +50,27 @@ function Lazy({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<ScreenLoader />}>{children}</Suspense>;
 }
 
-// Kick off local-storage hydration immediately — everything Venting needs
+/** Inline splash loader for top-level lazy routes — shows instantly */
+function SplashLoader() {
+  return (
+    <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#EDEBF6]">
+      <div className="text-5xl animate-floaty-slow">💜</div>
+      <p className="mt-4 text-sm font-semibold text-ink-soft">warming up…</p>
+    </div>
+  );
+}
+
+// Kick off local-storage hydration after first paint — everything Venting needs
 // lives on this device, so no async auth gate is required.
-// Wrapped in try/catch so corrupted storage never prevents startup.
-hydrate().catch(() => {
-  console.warn("[venting] hydration failed — starting with empty data");
+// Using requestIdleCallback + setTimeout fallback so hydration never blocks
+// the splash screen or first meaningful paint.
+const deferHydration = typeof requestIdleCallback === "function"
+  ? requestIdleCallback
+  : (cb: () => void) => setTimeout(cb, 0);
+deferHydration(() => {
+  hydrate().catch(() => {
+    console.warn("[venting] hydration failed — starting with empty data");
+  });
 });
 
 /** Guard so runtime errors never leave the app as a blank page. */
@@ -154,7 +170,9 @@ createRoot(rootEl).render(
             path="/"
             element={
               <RouteShell>
-                <Landing />
+                <React.Suspense fallback={<SplashLoader />}>
+                  <Landing />
+                </React.Suspense>
               </RouteShell>
             }
           />
@@ -162,7 +180,9 @@ createRoot(rootEl).render(
             path="/login"
             element={
               <RouteShell>
-                <LoginEntry />
+                <React.Suspense fallback={<SplashLoader />}>
+                  <LoginEntry />
+                </React.Suspense>
               </RouteShell>
             }
           />
@@ -171,7 +191,9 @@ createRoot(rootEl).render(
             path="/dashboard"
             element={
               <RouteShell>
-                <Dashboard />
+                <React.Suspense fallback={<SplashLoader />}>
+                  <Dashboard />
+                </React.Suspense>
               </RouteShell>
             }
           >
@@ -191,7 +213,7 @@ createRoot(rootEl).render(
             <Route path="diary" element={<InnerRoute><DiaryScreen /></InnerRoute>} />
             <Route path="polaroid-wall" element={<InnerRoute><PolaroidWallScreen /></InnerRoute>} />
           </Route>
-          <Route path="*" element={<RouteShell><NotFound title="Page not found" /></RouteShell>} />
+          <Route path="*" element={<RouteShell><React.Suspense fallback={<SplashLoader />}><NotFound title="Page not found" /></React.Suspense></RouteShell>} />
         </Routes>
       </BrowserRouter>
       </ThemeProvider>

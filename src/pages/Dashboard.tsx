@@ -1,15 +1,17 @@
 import { Lock } from "lucide-react";
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { QuietBoundary } from "@/components/AppErrorBoundary";
 import { Link, Outlet, useLocation, useNavigate } from "react-router";
 import { useUnsavedGuard } from "@/lib/useUnsavedGuard";
 import { UnsavedDialog } from "@/components/UnsavedDialog";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
-import MusicWidget from "@/components/MusicWidget";
-import BreathingMinute from "@/components/BreathingMinute";
 import SeasonalParticles from "@/components/SeasonalParticles";
-import GentleReminder from "@/components/GentleReminder";
+
+// Defer non-critical dashboard widgets — they only run after the shell is visible
+const MusicWidget = React.lazy(() => import("@/components/MusicWidget"));
+const BreathingMinute = React.lazy(() => import("@/components/BreathingMinute"));
+const GentleReminder = React.lazy(() => import("@/components/GentleReminder"));
 import { getKvFromCache } from "@/lib/db";
 import { LockScreen } from "@/components/LockScreen";
 import {
@@ -248,7 +250,9 @@ export default function Dashboard() {
         {/* ─── Current room ───────────────────────────────────────── */}
         <main className={cn("px-5", showBar ? "pb-32" : "pb-14")}>
           <QuietBoundary name="MusicWidget">
-          <MusicWidget />
+          <React.Suspense fallback={null}>
+            <MusicWidget />
+          </React.Suspense>
         </QuietBoundary>
           {hydrated ? (
             <Outlet />
@@ -266,12 +270,16 @@ export default function Dashboard() {
 
         {/* ─── Gentle daily reminder (one toast per day) ────────── */}
         <QuietBoundary name="GentleReminder">
-          <GentleReminder />
+          <React.Suspense fallback={null}>
+            <GentleReminder />
+          </React.Suspense>
         </QuietBoundary>
 
         {/* ─── "I need a minute" breathing bubble — ONLY after unlock ──── */}
         <QuietBoundary name="BreathingMinute">
-          <BreathingMinute />
+          <React.Suspense fallback={null}>
+            <BreathingMinute />
+          </React.Suspense>
         </QuietBoundary>
 
         {/* ─── Bottom taskbar — Home | Games | Calendar | Settings ───── */}
