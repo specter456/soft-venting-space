@@ -545,7 +545,7 @@ export default function LoginEntry() {
                 {spaceFace(activeSpace)}
               </div>
               <h1 className="font-script mt-4 text-2xl font-bold tracking-tight text-ink-deep">
-                Welcome back, {spaceLabel(activeSpace)} 💜
+                {spaceLabel(activeSpace)}
               </h1>
               <p className="mt-2 text-sm text-ink-soft">
                 Only you can access your feelings.

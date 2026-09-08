@@ -59,7 +59,7 @@ export function LockScreen({
       ? phase === "enter"
         ? "Create your passcode"
         : "Confirm your passcode"
-      : "Welcome back");
+      : "Enter your passcode");
 
   const sub =
     subtitle ??
@@ -210,7 +210,7 @@ export function LockScreen({
             )}
           </div>
 
-          {mode === "unlock" && heading === "Welcome back" && (
+          {mode === "unlock" && heading === "Enter your passcode" && (
             <div className="mx-auto mt-4">
               <LockAvatar />
             </div>
