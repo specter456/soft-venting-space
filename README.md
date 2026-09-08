@@ -1,43 +1,64 @@
-# 💜 Venting
+# 💜 Venting — a tiny safe room in your phone
 
-> *A tiny safe room in your phone — your feelings have a home here.*
+> *your feelings have a home here.*
 
-**Venting** is a private emotional-wellness web app: check in with your mood, vent through voice, notes, scribbles, stickers and GIFs, play gentle score-free games, keep a diary and a thought calendar — **all stored only on your device. Nothing is uploaded. Ever.**
+A private emotional-wellness web app that I designed from paper sketches and built together with an AI coding agent (Freebuff) — as a student, with no prior coding experience. Everything you write, record, or draw stays **on your device. Nothing is uploaded. Ever.**
 
-🔗 **Live app:** [your-link-here]
+ **Live app:** 
 
 ---
 
-## ✨ Features
+##  Project Overview
 
-- 🔒 **Private by design** — local-only storage, 4-digit passcode, double-locked vault, one-tap ZIP backup
-- 🫧 **Gentle check-ins** — one tap, one mood, one soft affirmation
-- 🎙 **Vent your way** — Recording, Notes, Scribble, Photo Doodle, Stickers, GIF Studio
-- 📖 **Diary** — page-turning book with stickers, photos, fonts & colors
-- 📅 **Thought calendar** — important / thought-dump / normal entries, wallpapers & decorations
-- 🎮 **14+ calming games** — no scores, no timers — plus a *create-your-own-game* studio
-- 🎵 **Living soundtrack** — ambient music + soundscapes + your own uploads, one spinning CD
-- 🌙 **Day & night care** — “I need a minute”, goodnight wind-down, gratitude jar, tiny tales
-- ☁️ **Open Sky theme** — cloud-floating UI, plus 4 more themes
+Venting is a journaling + calming-games app for hard days:
+- One-tap mood check-ins with gentle affirmations
+- Voice recording, notes, scribbles, photo doodles, stickers, and a GIF studio
+- A page-turning diary and a “thought calendar” you can decorate with stickers & wallpapers
+- 14 score-free calming games + a “create your own game” studio
+- A daily streak plant: a smiley-faced pot that grows a glowing bouquet over real days
+- Nostalgic “reminiscence-style” piano music behind one little spinning CD
+- Passcode-protected, local-only, exportable-as-ZIP privacy
 
-## 📸 Screenshots
+##  Design Evolution (my thoughts, in order)
 
-<!-- drop 3–5 images into docs/screenshots and link them here -->
+1. **It began on paper.** The first “UI” was a notebook sketch: a heart logo and a Notes page with a ribbon bow tied to its corner. That bow became a rule: *decorations must hang half-off the page, tilted, like real scrapbook stickers.*
+2. **The color journey.** Washed-out pastels → too-white → candy-bright → and finally home: **Old Lace & Wisteria**, then the **Open Sky** theme — pale sky, drifting clouds, and buttons that float up-and-down like clouds.
+3. **UX order matters.** The app kept saying “Welcome back” before “Hello.” I learned the door order: splash → landing → choose → (log in or sign up) → welcome → home. We killed the double lock screen three separate times.
+4. **Games grew feelings.** Boring taps became 14 gentle games (bubble pop, moonlight glide, chime plinko, jelly bounce, firework sky, a cloud pet that echoes your voice) plus a build-your-own-game studio with one-tap recipes.
 
-## 🔐 Privacy Model
+##  Current Status
 
-| Data | Where it lives |
-|------|----------------|
-| Notes, diary, photos, GIFs | This device only |
-| Passcode | Salted hash, this device only |
-| Analytics / tracking | None. Doesn't exist. |
+-  **Working:** onboarding (guest/email + passcode spaces), check-ins, all creation tools, diary, decorated calendar, games + creator, music system, themes, wind-down, gratitude jar, tiny tales, polaroid wall, ZIP backup/restore, PWA + full SEO checklist.
+-  **In progress:** stabilizing the in-app AI helper, richer streak-plant art, more soundscapes.
 
-## 🛠️ Tech Stack
+##  Tools & Stack
 
-React · TypeScript · Vite · TailwindCSS · Web Audio API · IndexedDB/localStorage · JSZip · PWA-ready
+- React · TypeScript · Vite · TailwindCSS
+- Web Audio API (all sounds & music generated in-browser — no audio files)
+- IndexedDB / localStorage (100% local data) · JSZip for backups
+- Built with an AI coding agent (Freebuff) from recipe-style prompts
 
-## 🚀 Getting Started
+##  How Privacy Works
 
-```bash
-bun install
-bun run dev
+Passcodes are stored only as salted hashes on-device. Notes, photos, recordings and diary pages never leave the phone. “Download my whole space” hands you everything as one ZIP. There is no analytics code at all — it doesn’t exist.
+
+##  What I Learned
+
+- **Design for feelings, not features.** A calming app can’t have stressful UI: no timers, no scores, no guilt, no red badges.
+- **Vague prompts → vague apps.** I learned to “spoon-feed” the AI: exact screens, exact button text, exact flow, exact “never do this” rules. The app only got good when my instructions did.
+- **Test on real screens.** Filming my laptop screen caught bugs (ghost text, egg shapes, silent crashes) that the editor preview hid.
+- **Privacy is a promise, not a setting.** Local-only was rule #1 and it never bent.
+
+##  Next Steps
+
+- Fix and stabilize the in-app AI companion
+- Native wrappers (Android / iOS) + home-screen widgets
+- More languages and more soundscapes
+
+##  Demo
+
+[paste your video / Drive link here]
+
+---
+
+*made with softness · private by design · feelings welcome*
