@@ -4,7 +4,7 @@
 
 A private emotional-wellness web app that I designed from paper sketches and built together with an AI coding agent (Freebuff) — as a student, with no prior coding experience. Everything you write, record, or draw stays **on your device. Nothing is uploaded. Ever.**
 
- **Live app:** 
+ **Live app:** https://venting.freebuff.app/
 
 ---
 
