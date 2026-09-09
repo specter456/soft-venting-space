@@ -27,7 +27,7 @@ import {
   type SeedPalette,
   type ShelfFlower,
 } from "@/lib/my-plant";
-import { sfxWater, sfxArpeggio } from "@/pages/app/GamesScreen";
+import { sfxWater, sfxArpeggio } from "@/lib/sfx";
 import { useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
 

@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import MyLittlePlant from "@/components/MyLittlePlant";
+import { sfxWater, sfxArpeggio } from "@/lib/sfx";
 import { BuilderShell } from "@/components/BuilderShell";
 import { WORRY_BUBBLES } from "@/lib/art";
 import { music, type BuiltinTrackId } from "@/lib/music";
@@ -235,18 +236,8 @@ function sfxThock() {
   } catch { /* */ }
 }
 
-/** Soft water pour — exported for the plant component */
-export function sfxWater() {
-  try { const c = sCtx(); const t = c.currentTime;
-    [0, 0.06, 0.12].forEach((delay) => {
-      const o = c.createOscillator(); const g = c.createGain();
-      o.type = "sine"; o.frequency.value = 600 + Math.random() * 400;
-      g.gain.setValueAtTime(0.15, t + delay);
-      g.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.12);
-      o.connect(g); g.connect(c.destination); o.start(t + delay); o.stop(t + delay + 0.12);
-    });
-  } catch { /* */ }
-}
+// sfxWater re-exported from shared module to avoid circular dependency
+export { sfxWater } from "@/lib/sfx";
 
 /** Soft fill / drip — for coloring regions */
 function sfxFill() {
@@ -293,38 +284,8 @@ function sfxSplash() {
     const g = c.createGain(); g.gain.value = 0.18;
     src.connect(filter); filter.connect(g); g.connect(c.destination); src.start(c.currentTime);
   } catch { /* */ }
-}
-
-/** Soft melodic arpeggio (game completion / special moments; exported). */
-export function sfxArpeggio() {
-  try {
-    const c = sCtx();
-    const t = c.currentTime;
-    const base = Math.min(262, c.sampleRate / 40);
-    [0, 0.12, 0.24, 0.36].forEach((delay, i) => {
-      const f = base * (1 << (i / 2));
-      const o = c.createOscillator();
-      const o2 = c.createOscillator();
-      const g = c.createGain();
-      o.type = "sine";
-      o.frequency.value = f;
-      o2.type = "triangle";
-      o2.frequency.value = f * 2.01;
-      const g2 = c.createGain();
-      g2.gain.value = 0.08;
-      g.gain.setValueAtTime(0.18, t + delay);
-      g.gain.exponentialRampToValueAtTime(0.001, t + delay + 0.5);
-      o.connect(g);
-      o2.connect(g2);
-      g2.connect(g);
-      g.connect(c.destination);
-      o.start(t + delay);
-      o.stop(t + delay + 0.5);
-      o2.start(t + delay);
-      o2.stop(t + delay + 0.4);
-    });
-  } catch { /* */ }
-}
+}// sfxArpeggio re-exported from shared module to avoid circular dependency
+export { sfxArpeggio } from "@/lib/sfx";
 
 /* ─── Game registry ───────────────────────────────────────────────── */
 
