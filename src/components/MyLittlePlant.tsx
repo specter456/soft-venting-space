@@ -61,46 +61,39 @@ function BloomFlowerSvg({ pal, size, petalCount }: { pal: SeedPalette; size: num
 function PotWithFace({ wiggle }: { wiggle: boolean }) {
   return (
     <motion.div
-      animate={wiggle ? { rotate: [0, -2.5, 2.5, -1.5, 0] } : { rotate: [0] }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-      className="mx-auto relative flex h-16 w-28 items-end justify-center"
+      animate={wiggle ? { rotate: [0, -3, 3, -1.5, 0] } : { rotate: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className="relative z-10 mx-auto flex w-[120px] flex-col items-center"
       style={{ transformOrigin: "center bottom" }}
     >
-      {/* soil */}
+      {/* pot body — trapezoid via clip-path */}
       <div
-        className="absolute bottom-1 left-1/2 h-2 w-20 -translate-x-1/2 rounded-full"
-        style={{ background: "linear-gradient(180deg,#6B4A2E,#4A321E)" }}
-      />
-      {/* pot body */}
-      <div
-        className="relative z-10 mx-auto h-12 w-24 rounded-b-[1.6rem] rounded-t-xl border-2 border-[#7A4E2C]/50"
-        style={{ background: "linear-gradient(180deg,#E8A87C 0%,#D88A5E 50%,#B86A3E 100%)" }}
+        className="relative h-[72px] w-full"
+        style={{
+          clipPath: "polygon(8% 0%, 92% 0%, 100% 100%, 0% 100%)",
+          background: "linear-gradient(180deg, #E8A87C 0%, #D88A5E 40%, #C47A4A 100%)",
+        }}
       >
         {/* rim */}
-        <div className="absolute top-0 left-1/2 h-1.5 w-24 -translate-x-1/2 rounded-full bg-[#F0C098]/80" />
+        <div
+          className="absolute -top-[5px] left-0 h-[10px] w-full rounded-sm"
+          style={{ background: "linear-gradient(180deg, #F0C098, #E8A87C)" }}
+        />
+        {/* soil surface */}
+        <div
+          className="absolute top-[5px] left-[6px] right-[6px] h-[6px] rounded-full"
+          style={{ background: "linear-gradient(180deg, #6B4A2E, #4A321E)" }}
+        />
         {/* eyes */}
-        <span
-          className="absolute top-[8px] left-[17%] h-2 w-2 rounded-full bg-[#3A2010]"
-          aria-hidden
-        />
-        <span
-          className="absolute top-[8px] right-[17%] h-2 w-2 rounded-full bg-[#3A2010]"
-          aria-hidden
-        />
+        <span className="absolute top-[26px] left-[30px] h-[7px] w-[7px] rounded-full bg-[#3A2010]" aria-hidden />
+        <span className="absolute top-[26px] right-[30px] h-[7px] w-[7px] rounded-full bg-[#3A2010]" aria-hidden />
         {/* blush cheeks */}
-        <span
-          className="absolute top-4 left-[12%] h-2 w-2 rounded-full bg-[#E89AA0]/70"
-          aria-hidden
-        />
-        <span
-          className="absolute top-4 right-[12%] h-2 w-2 rounded-full bg-[#E89AA0]/70"
-          aria-hidden
-        />
-        {/* smile */}
-        <span
-          className="absolute top-4 left-1/2 h-1.5 w-4 -translate-x-1/2 rounded-full bg-[#3A2010]/70"
-          aria-hidden
-        />
+        <span className="absolute top-[36px] left-[20px] h-[8px] w-[10px] rounded-full bg-[#E89AA0]/60" aria-hidden />
+        <span className="absolute top-[36px] right-[20px] h-[8px] w-[10px] rounded-full bg-[#E89AA0]/60" aria-hidden />
+        {/* smile — small arc */}
+        <svg className="absolute top-[36px] left-1/2 -translate-x-1/2" width="18" height="10" viewBox="0 0 18 10" aria-hidden>
+          <path d="M2 2 Q9 10 16 2" fill="none" stroke="#3A2010" strokeWidth="2" strokeLinecap="round" opacity="0.7" />
+        </svg>
       </div>
     </motion.div>
   );
@@ -408,30 +401,34 @@ export default function MyLittlePlant() {
 
       {/* cozy sky room */}
       <div
-        className="relative flex flex-col items-center overflow-hidden rounded-3xl border border-white/50 px-4 pb-5 pt-6"
+        className="relative flex flex-col justify-end overflow-hidden rounded-3xl border border-white/50 px-4 pb-5 pt-6"
         style={{
           background: "linear-gradient(180deg,#BFE0F7 0%,#DCEFFA 55%,#F3E9D8 100%)",
           boxShadow: "0 10px 30px -12px rgba(120,150,190,0.35)",
           minHeight: 320,
         }}
       >
-        {/* decorative sky bits */}
+        {/* decorative sky bits — stay at top, absolutely positioned */}
         <motion.span aria-hidden className="absolute top-4 left-6 text-3xl opacity-70" animate={{ x: [0, 12, 0] }} transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}>☁️</motion.span>
         <motion.span aria-hidden className="absolute top-10 right-8 text-2xl opacity-60" animate={{ x: [0, -10, 0] }} transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}>☁️</motion.span>
         <motion.span aria-hidden className="absolute top-2 left-1/3 text-2xl" animate={{ scale: [1, 1.08, 1] }} transition={{ duration: 4, repeat: Infinity }}>☀️</motion.span>
 
-        {/* plant + pot anchored as one unit */}
-        <div className="relative z-10 flex flex-col items-center">
+        {/* plant + pot = ONE centered unit at bottom of sky card */}
+        <div className="relative z-10 mx-auto flex flex-col items-center">
           {state ? (
-            <div className="-mb-5">
-              <PlantVisual stage={state.careDays} pal={pal} wiggle={wiggle} extraSip={extraSip} />
-            </div>
+            <>
+              {/* plant-visual: bottom overlaps pot top by 12px */}
+              <div className="relative" style={{ marginBottom: -12 }}>
+                <PlantVisual stage={state.careDays} pal={pal} wiggle={wiggle} extraSip={extraSip} />
+              </div>
+              {/* pot — same flex column, never moved separately */}
+              <PotWithFace wiggle={wiggle} />
+            </>
           ) : (
             <div className="flex h-48 w-48 items-end justify-center">
               <span className="mb-14 text-5xl opacity-60">🪴</span>
             </div>
           )}
-          <PotWithFace wiggle={wiggle} />
         </div>
 
         {/* missed-days note */}
