@@ -1,4 +1,4 @@
-import { useState, Component, type ReactNode } from "react";
+import React, { Suspense, useState, Component, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router";
 
 import { MoodBubble } from "@/components/MoodBubble";
@@ -7,13 +7,15 @@ import { type MoodId, moodById, todayDateKey } from "@/lib/moods";
 import { useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
 import { useSeasonEmoji } from "@/components/SeasonalParticles";
-import FutureNoteSection from "@/components/FutureNoteSection";
-import MonthlyWeather from "@/components/MonthlyWeather";
-import GratitudeJar from "@/components/GratitudeJar";
-import GoodnightWindDown from "@/components/GoodnightWindDown";
-import TinyTales from "@/components/TinyTales";
-import PolaroidWallSection from "@/components/PolaroidWall";
-import { PlantHomeCard } from "@/components/MyLittlePlant";
+// Lazy-load heavy child components — each pulls in framer-motion; loading
+// them all at once made the home screen slow to appear.
+const FutureNoteSection = React.lazy(() => import("@/components/FutureNoteSection"));
+const MonthlyWeather = React.lazy(() => import("@/components/MonthlyWeather"));
+const GratitudeJar = React.lazy(() => import("@/components/GratitudeJar"));
+const GoodnightWindDown = React.lazy(() => import("@/components/GoodnightWindDown"));
+const TinyTales = React.lazy(() => import("@/components/TinyTales"));
+const PolaroidWallSection = React.lazy(() => import("@/components/PolaroidWall"));
+const PlantHomeCard = React.lazy(() => import("@/components/MyLittlePlant").then(m => ({ default: m.PlantHomeCard })));
 
 /** Per-section error boundary: if one card crashes, the rest of Home still shows. */
 class SectionBoundary extends Component<{ name: string; children: ReactNode }, { hasError: boolean }> {
@@ -249,25 +251,25 @@ function HomeScreenInner() {
       </SoftSection>
 
       {/* ─── 4 · My Little Plant — full width ─────────────────── */}
-      <SoftSection name="MyLittlePlant"><PlantHomeCard /></SoftSection>
+      <SoftSection name="MyLittlePlant"><Suspense fallback={null}><PlantHomeCard /></Suspense></SoftSection>
 
       {/* ─── 5 · Row: gratitude jar + tiny tales (equal, aligned) ── */}
       <div className="grid grid-cols-2 items-stretch gap-4 [&>button]:h-full [&>button]:w-full">
-        <SoftSection name="GratitudeJar"><GratitudeJar /></SoftSection>
-        <SoftSection name="TinyTales"><TinyTales /></SoftSection>
+        <SoftSection name="GratitudeJar"><Suspense fallback={null}><GratitudeJar /></Suspense></SoftSection>
+        <SoftSection name="TinyTales"><Suspense fallback={null}><TinyTales /></Suspense></SoftSection>
       </div>
 
       {/* ─── 6 · Row: month's weather + wind-down (equal, aligned) ─ */}
       <div className="grid grid-cols-2 items-stretch gap-4 [&>button]:h-full [&>button]:w-full">
-        <SoftSection name="MonthlyWeather"><MonthlyWeather /></SoftSection>
-        <SoftSection name="WindDown"><GoodnightWindDown /></SoftSection>
+        <SoftSection name="MonthlyWeather"><Suspense fallback={null}><MonthlyWeather /></Suspense></SoftSection>
+        <SoftSection name="WindDown"><Suspense fallback={null}><GoodnightWindDown /></Suspense></SoftSection>
       </div>
 
       {/* ─── 7 · A Note for Future You — full width ─────────────── */}
-      <SoftSection name="FutureNote"><FutureNoteSection /></SoftSection>
+      <SoftSection name="FutureNote"><Suspense fallback={null}><FutureNoteSection /></Suspense></SoftSection>
 
       {/* ─── Polaroid Wall ──────────────────────────────────────── */}
-      <SoftSection name="PolaroidWall"><PolaroidWallSection /></SoftSection>
+      <SoftSection name="PolaroidWall"><Suspense fallback={null}><PolaroidWallSection /></Suspense></SoftSection>
 
       {/* ─── Feature grid — exactly two per row ───────────────────── */}
       <SoftSection name="FeatureGrid">
