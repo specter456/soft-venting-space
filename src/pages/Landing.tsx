@@ -74,19 +74,19 @@ export default function Landing() {
       {/* dreamy background blobs — new palette colors at 35% */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-[#AAB6E3]/30 blur-2xl"
+        className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-[#AAB6E3]/30 blur-lg"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute top-40 -right-32 h-[28rem] w-[28rem] rounded-full bg-[#F3E7C9]/30 blur-2xl"
+        className="pointer-events-none absolute top-40 -right-32 h-[28rem] w-[28rem] rounded-full bg-[#F3E7C9]/30 blur-lg"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute top-[52rem] -left-40 h-96 w-96 rounded-full bg-[#C4CBE8]/30 blur-2xl"
+        className="pointer-events-none absolute top-[52rem] -left-40 h-96 w-96 rounded-full bg-[#C4CBE8]/30 blur-lg"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[#EDEBF6]/30 blur-2xl"
+        className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[#EDEBF6]/30 blur-lg"
       />
 
 
@@ -199,11 +199,11 @@ export default function Landing() {
             >
               <div
                 aria-hidden
-                className="pointer-events-none absolute -top-14 -right-14 h-36 w-36 rounded-full bg-[#AAB6E3]/40 blur-2xl"
+                className="pointer-events-none absolute -top-14 -right-14 h-36 w-36 rounded-full bg-[#AAB6E3]/40 blur-lg"
               />
               <div
                 aria-hidden
-                className="pointer-events-none absolute -bottom-14 -left-14 h-36 w-36 rounded-full bg-[#F3E7C9]/40 blur-2xl"
+                className="pointer-events-none absolute -bottom-14 -left-14 h-36 w-36 rounded-full bg-[#F3E7C9]/40 blur-lg"
               />
 
               <p className="relative text-sm font-bold tracking-wide text-[#5F6DBE] uppercase">

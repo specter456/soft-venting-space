@@ -68,12 +68,12 @@ export default function SeasonalParticles() {
   });
   const season = getSeason(new Date().getMonth());
 
-  // Spawn a new particle every ~12 seconds (max 4 on screen)
+  // Spawn a new particle every ~12 seconds (max 3 on screen for perf)
   useEffect(() => {
     const timer = setInterval(() => {
       setParticles((prev) => {
         const next = [...prev, spawnParticle(season)];
-        return next.length > 4 ? next.slice(-4) : next;
+        return next.length > 3 ? next.slice(-3) : next;
       });
     }, 12000);
     return () => clearInterval(timer);

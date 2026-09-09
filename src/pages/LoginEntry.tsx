@@ -284,9 +284,9 @@ export default function LoginEntry() {
         canonical="/login"
       />
       {/* background blobs */}
-      <div aria-hidden className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full bg-[#AAB6E3]/30 blur-2xl" />
-      <div aria-hidden className="pointer-events-none fixed top-72 -right-24 h-80 w-80 rounded-full bg-[#F3E7C9]/30 blur-2xl" />
-      <div aria-hidden className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full bg-[#C4CBE8]/30 blur-2xl" />
+      <div aria-hidden className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full bg-[#AAB6E3]/30 blur-lg" />
+      <div aria-hidden className="pointer-events-none fixed top-72 -right-24 h-80 w-80 rounded-full bg-[#F3E7C9]/30 blur-lg" />
+      <div aria-hidden className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full bg-[#C4CBE8]/30 blur-lg" />
       {/* drifting sky clouds */}
       <div className="sky-cloud sky-cloud-1" aria-hidden />
       <div className="sky-cloud sky-cloud-2" aria-hidden />
@@ -297,8 +297,8 @@ export default function LoginEntry() {
         transition={{ type: "spring", stiffness: 210, damping: 20 }}
         className="clay-card relative w-full max-w-[440px] overflow-hidden px-6 py-9 text-center"
       >
-        <div aria-hidden className="pointer-events-none absolute -top-14 -right-14 h-36 w-36 rounded-full bg-lavender-100/70 blur-2xl" />
-        <div aria-hidden className="pointer-events-none absolute -bottom-14 -left-14 h-36 w-36 rounded-full bg-blush-100/60 blur-2xl" />
+        <div aria-hidden className="pointer-events-none absolute -top-14 -right-14 h-36 w-36 rounded-full bg-lavender-100/70 blur-lg" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-14 -left-14 h-36 w-36 rounded-full bg-blush-100/60 blur-lg" />
 
         {/* Logo — shown on screens 3–7, L, R, forgot, unlock-switch. NOT on 8–9. */}
         {(step === "choose" || step === "guest-setup" || step === "email-setup" ||

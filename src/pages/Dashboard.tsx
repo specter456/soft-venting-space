@@ -173,17 +173,17 @@ export default function Dashboard() {
       {/* dreamy background blobs — full viewport, theme colors */}
       <div
         aria-hidden
-        className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full blur-2xl"
+        className="pointer-events-none fixed -top-24 -left-20 h-72 w-72 rounded-full blur-lg"
         style={{ background: "var(--theme-blob-1, rgba(180,210,240,0.3))" }}
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed top-72 -right-24 h-80 w-80 rounded-full blur-2xl"
+        className="pointer-events-none fixed top-72 -right-24 h-80 w-80 rounded-full blur-lg"
         style={{ background: "var(--theme-blob-2, rgba(255,255,255,0.4))" }}
       />
       <div
         aria-hidden
-        className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full blur-2xl"
+        className="pointer-events-none fixed bottom-20 -left-24 h-72 w-72 rounded-full blur-lg"
         style={{ background: "var(--theme-blob-3, rgba(200,225,250,0.3))" }}
       />
 

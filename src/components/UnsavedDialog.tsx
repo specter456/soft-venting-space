@@ -6,8 +6,8 @@ export function UnsavedDialog({ onSave, onLeave }: { onSave: () => void; onLeave
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/20 px-5">
       <div className="clay-card relative w-full max-w-sm overflow-hidden px-6 py-8 text-center">
-        <div aria-hidden className="pointer-events-none absolute -top-14 -right-14 h-36 w-36 rounded-full bg-lavender-100/70 blur-2xl" />
-        <div aria-hidden className="pointer-events-none absolute -bottom-14 -left-14 h-36 w-36 rounded-full bg-blush-100/60 blur-2xl" />
+        <div aria-hidden className="pointer-events-none absolute -top-14 -right-14 h-36 w-36 rounded-full bg-lavender-100/70 blur-lg" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-14 -left-14 h-36 w-36 rounded-full bg-blush-100/60 blur-lg" />
 
         <span className="text-3xl" aria-hidden>💭</span>
         <h2 className="mt-3 text-lg font-bold tracking-tight text-ink-deep">

@@ -196,11 +196,11 @@ export default function RecordScreen() {
       >
         <div
           aria-hidden
-          className="pointer-events-none absolute -top-14 -right-14 h-40 w-40 rounded-full bg-lavender-100/60 blur-2xl"
+          className="pointer-events-none absolute -top-14 -right-14 h-40 w-40 rounded-full bg-lavender-100/60 blur-lg"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -bottom-14 -left-14 h-40 w-40 rounded-full bg-blush-100/60 blur-2xl"
+          className="pointer-events-none absolute -bottom-14 -left-14 h-40 w-40 rounded-full bg-blush-100/60 blur-lg"
         />
 
         <AnimatePresence mode="wait">

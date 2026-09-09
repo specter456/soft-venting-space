@@ -18,11 +18,11 @@ export function SplashScreen({ visible }: { visible: boolean }) {
           {/* soft background blobs */}
           <div
             aria-hidden
-        className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-[#AAB6E3]/30 blur-2xl"
+        className="pointer-events-none absolute -top-32 -left-24 h-96 w-96 rounded-full bg-[#AAB6E3]/30 blur-lg"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[#F3E7C9]/30 blur-2xl"
+        className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[#F3E7C9]/30 blur-lg"
           />
 
           {/* heart icon */}

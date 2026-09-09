@@ -22,11 +22,11 @@ export default function NotFound({ title }: NotFoundProps) {
       {/* dreamy blobs */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-24 -left-20 h-72 w-72 rounded-full bg-[#AAB6E3]/30 blur-2xl"
+        className="pointer-events-none absolute -top-24 -left-20 h-72 w-72 rounded-full bg-[#AAB6E3]/30 blur-lg"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[#F3E7C9]/30 blur-2xl"
+        className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[#F3E7C9]/30 blur-lg"
       />
 
       <motion.div
@@ -38,11 +38,11 @@ export default function NotFound({ title }: NotFoundProps) {
         {/* soft blobs inside card */}
         <div
           aria-hidden
-          className="pointer-events-none absolute -top-14 -right-14 h-36 w-36 rounded-full bg-[#AAB6E3]/40 blur-2xl"
+          className="pointer-events-none absolute -top-14 -right-14 h-36 w-36 rounded-full bg-[#AAB6E3]/40 blur-lg"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -bottom-14 -left-14 h-36 w-36 rounded-full bg-[#F3E7C9]/40 blur-2xl"
+          className="pointer-events-none absolute -bottom-14 -left-14 h-36 w-36 rounded-full bg-[#F3E7C9]/40 blur-lg"
         />
 
         <Logo className="relative h-16 w-16" />

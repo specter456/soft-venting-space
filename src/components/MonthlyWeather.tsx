@@ -136,8 +136,8 @@ export default function MonthlyWeather() {
               onClick={(e) => e.stopPropagation()}
               className="clay-card relative w-full max-w-sm overflow-hidden px-6 py-8 text-center"
             >
-              <div aria-hidden className="pointer-events-none absolute -top-14 -right-14 h-36 w-36 rounded-full bg-[#AAB6E3]/30 blur-2xl" />
-              <div aria-hidden className="pointer-events-none absolute -bottom-14 -left-14 h-36 w-36 rounded-full bg-[#F3E7C9]/30 blur-2xl" />
+              <div aria-hidden className="pointer-events-none absolute -top-14 -right-14 h-36 w-36 rounded-full bg-[#AAB6E3]/30 blur-lg" />
+              <div aria-hidden className="pointer-events-none absolute -bottom-14 -left-14 h-36 w-36 rounded-full bg-[#F3E7C9]/30 blur-lg" />
 
               {/* Month navigation */}
               <div className="flex items-center justify-between">
