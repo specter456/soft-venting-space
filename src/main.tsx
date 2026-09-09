@@ -1,10 +1,12 @@
 import '@vly-ai/integrations';
-import { Toaster } from "@/components/ui/sonner";
+// Toaster lazy — pulls in sonner + lucide-react + next-themes, not needed for first paint
+const Toaster = React.lazy(() => import("@/components/ui/sonner").then(m => ({ default: m.Toaster })));
 // VlyToolbar lazy-loaded — it imports framer-motion + @zumer/snapdom which
 // are heavy; only needed on dev deployments (.vly.sh), so defer entirely.
 const VlyToolbar = React.lazy(() => import("../vly-toolbar-readonly.tsx").then(m => ({ default: m.VlyToolbar })));
 import { AppErrorBoundary, ScreenBoundary, installGlobalErrorHandlers } from "@/components/AppErrorBoundary";
-import { OfflineNotice } from "@/components/Friendly";
+// OfflineNotice lazy — pulls in sonner, not needed for first paint
+const OfflineNotice = React.lazy(() => import("@/components/Friendly").then(m => ({ default: m.OfflineNotice })));
 import { hydrate } from "@/lib/db";
 import React, { Suspense } from "react";
 import { createRoot } from "react-dom/client";
@@ -140,7 +142,9 @@ installGlobalErrorHandlers();
 function GlobalNotice() {
   return (
     <div className="pointer-events-none fixed inset-x-0 top-2 z-[60] flex justify-center px-4">
-      <OfflineNotice />
+      <Suspense fallback={null}>
+        <OfflineNotice />
+      </Suspense>
     </div>
   );
 }
@@ -219,7 +223,9 @@ createRoot(rootEl).render(
         </Routes>
       </BrowserRouter>
       </ThemeProvider>
-      <Toaster />
+      <Suspense fallback={null}>
+        <Toaster />
+      </Suspense>
     </AppErrorBoundary>
   </React.StrictMode>,
 );

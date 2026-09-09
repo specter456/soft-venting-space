@@ -6,14 +6,15 @@ import { useUnsavedGuard } from "@/lib/useUnsavedGuard";
 import { UnsavedDialog } from "@/components/UnsavedDialog";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
-const SeasonalParticles = React.lazy(() => import("@/components/SeasonalParticles"));;
+const SeasonalParticles = React.lazy(() => import("@/components/SeasonalParticles"));
 
 // Defer non-critical dashboard widgets — they only run after the shell is visible
 const MusicWidget = React.lazy(() => import("@/components/MusicWidget"));
 const BreathingMinute = React.lazy(() => import("@/components/BreathingMinute"));
 const GentleReminder = React.lazy(() => import("@/components/GentleReminder"));
+// LockScreen lazy — imports framer-motion + sonner + lucide-react, only needed when lock is active
+const LockScreen = React.lazy(() => import("@/components/LockScreen").then(m => ({ default: m.LockScreen })));
 import { getKvFromCache } from "@/lib/db";
-import { LockScreen } from "@/components/LockScreen";
 import {
   KV_PASSCODE_HASH,
   KV_PASSCODE_SALT,
@@ -124,17 +125,19 @@ export default function Dashboard() {
 
   if (lock === "setup") {
     return (
-      <LockScreen
-        mode="setup"
-        title="Lock your space"
-        subtitle="A four-digit passcode keeps your feelings safe behind a soft lock."
-        closeLabel="Maybe later"
-        onComplete={() => setUserUnlocked(true)}
-        onClose={() => {
-          safeSessionSetItem(LOCK_DISMISSED_KEY, "1");
-          setUserUnlocked(true);
-        }}
-      />
+      <React.Suspense fallback={null}>
+        <LockScreen
+          mode="setup"
+          title="Lock your space"
+          subtitle="A four-digit passcode keeps your feelings safe behind a soft lock."
+          closeLabel="Maybe later"
+          onComplete={() => setUserUnlocked(true)}
+          onClose={() => {
+            safeSessionSetItem(LOCK_DISMISSED_KEY, "1");
+            setUserUnlocked(true);
+          }}
+        />
+      </React.Suspense>
     );
   }
 
@@ -154,12 +157,14 @@ export default function Dashboard() {
       );
     }
     return (
-      <LockScreen
-        mode="unlock"
-        storedHash={passcodeHash}
-        storedSalt={passcodeSalt}
-        onUnlock={() => setUserUnlocked(true)}
-      />
+      <React.Suspense fallback={null}>
+        <LockScreen
+          mode="unlock"
+          storedHash={passcodeHash}
+          storedSalt={passcodeSalt}
+          onUnlock={() => setUserUnlocked(true)}
+        />
+      </React.Suspense>
     );
   }
 
