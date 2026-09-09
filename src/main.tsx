@@ -1,6 +1,8 @@
 import '@vly-ai/integrations';
 import { Toaster } from "@/components/ui/sonner";
-import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
+// VlyToolbar lazy-loaded — it imports framer-motion + @zumer/snapdom which
+// are heavy; only needed on dev deployments (.vly.sh), so defer entirely.
+const VlyToolbar = React.lazy(() => import("../vly-toolbar-readonly.tsx").then(m => ({ default: m.VlyToolbar })));
 import { AppErrorBoundary, ScreenBoundary, installGlobalErrorHandlers } from "@/components/AppErrorBoundary";
 import { OfflineNotice } from "@/components/Friendly";
 import { hydrate } from "@/lib/db";
@@ -159,7 +161,9 @@ createRoot(rootEl).render(
   <React.StrictMode>
     <AppErrorBoundary onContinue={() => (window.location.href = "/")}>
       <ToolbarErrorBoundary>
-        <VlyToolbar />
+        <Suspense fallback={null}>
+          <VlyToolbar />
+        </Suspense>
       </ToolbarErrorBoundary>
       <ThemeProvider>
       <BrowserRouter>

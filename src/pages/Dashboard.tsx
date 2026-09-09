@@ -6,7 +6,7 @@ import { useUnsavedGuard } from "@/lib/useUnsavedGuard";
 import { UnsavedDialog } from "@/components/UnsavedDialog";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
-import SeasonalParticles from "@/components/SeasonalParticles";
+const SeasonalParticles = React.lazy(() => import("@/components/SeasonalParticles"));;
 
 // Defer non-critical dashboard widgets — they only run after the shell is visible
 const MusicWidget = React.lazy(() => import("@/components/MusicWidget"));
@@ -189,7 +189,9 @@ export default function Dashboard() {
       <div className="sky-cloud sky-cloud-4" aria-hidden />
 
       <QuietBoundary name="SeasonalParticles">
-        <SeasonalParticles />
+        <React.Suspense fallback={null}>
+          <SeasonalParticles />
+        </React.Suspense>
       </QuietBoundary>
       <div className="relative mx-auto flex w-full max-w-[600px] flex-col">
         {/* ─── Header ─────────────────────────────────────────────── */}

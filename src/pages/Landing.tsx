@@ -1,10 +1,10 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight } from "lucide-react";
-import { useState, useEffect } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Logo } from "@/components/Logo";
 import { QuietBoundary } from "@/components/AppErrorBoundary";
-import SeasonalParticles from "@/components/SeasonalParticles";
+const SeasonalParticles = lazy(() => import("@/components/SeasonalParticles"));
 import { SplashScreen } from "@/components/SplashScreen";
 import { DocumentHead } from "@/components/DocumentHead";
 
@@ -45,7 +45,9 @@ export default function Landing() {
   return (
     <div className="relative min-h-screen text-ink" role="landing">
       <QuietBoundary name="SeasonalParticles">
-        <SeasonalParticles />
+        <Suspense fallback={null}>
+          <SeasonalParticles />
+        </Suspense>
       </QuietBoundary>
       <DocumentHead
         title="Venting — a tiny safe room in your phone"
