@@ -29,7 +29,7 @@ Venting is a journaling + calming-games app for hard days:
 ##  Current Status
 
 -  **Working:** onboarding (guest/email + passcode spaces), check-ins, all creation tools, diary, decorated calendar, games + creator, music system, themes, wind-down, gratitude jar, tiny tales, polaroid wall, ZIP backup/restore, PWA + full SEO checklist.
--  **In progress:** stabilizing the in-app AI helper, richer streak-plant art, more soundscapes.
+-  **In progress:** richer streak-plant art, more soundscapes.
 
 ##  Tech Stack & Development Process
 * **Core Technologies:** HTML5, CSS3, JavaScript (Vanilla)
@@ -62,7 +62,7 @@ Passcodes are stored only as salted hashes on-device. Notes, photos, recordings 
 
 ![Venting Settings](Venting_settings.png)
 
-## 🎥 Demo
+##  Demo
 [https://drive.google.com/file/d/1jPp4PLlMogtn9jdroQ6UJ1XH5aX9aXha/view?usp=sharing]
 
 *made with softness · private by design · feelings welcome*
