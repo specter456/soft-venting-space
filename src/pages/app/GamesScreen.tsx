@@ -1940,61 +1940,278 @@ function ChimePlinko() {
 /* ─── 13. Animal Band ───────────────────────────────────────────── */
 
 const BAND_ANIMALS = [
-  { emoji: "🐱", name: "Cat", freq: 330 },
-  { emoji: "🐦", name: "Bird", freq: 523 },
-  { emoji: "🐸", name: "Frog", freq: 220 },
-  { emoji: "🐻", name: "Bear", freq: 165 },
-  { emoji: "🐭", name: "Mouse", freq: 784 },
-  { emoji: "🦆", name: "Duck", freq: 294 },
+  { emoji: "🐱", name: "Cat", instrument: "🎸", dance: "spin" as const, freq: 330 },
+  { emoji: "🐦", name: "Bird", instrument: "🪈", dance: "hop" as const, freq: 523 },
+  { emoji: "🐸", name: "Frog", instrument: "🪇", dance: "sway" as const, freq: 220 },
+  { emoji: "🐻", name: "Bear", instrument: "🥁", dance: "bob" as const, freq: 165 },
+  { emoji: "🐭", name: "Mouse", instrument: "🔔", dance: "tremble" as const, freq: 784 },
+  { emoji: "🦆", name: "Duck", instrument: "🎷", dance: "wiggle" as const, freq: 294 },
 ];
+
+const DANCE_VARIANTS: Record<string, { idle: object; active: object }> = {
+  spin:    { idle: { y: [0, -3, 0] },                              active: { rotate: [0, 360], y: [0, -10, 0] } },
+  hop:     { idle: { y: [0, -3, 0] },                              active: { y: [0, -20, 0], scale: [1, 1.15, 1] } },
+  sway:    { idle: { y: [0, -3, 0] },                              active: { rotate: [-12, 12, -12], y: [0, -5, 0] } },
+  bob:     { idle: { y: [0, -3, 0] },                              active: { scale: [1, 1.2, 1], y: [0, -4, 0] } },
+  tremble: { idle: { y: [0, -3, 0] },                              active: { x: [-4, 4, -4, 4, 0], y: [0, -3, 0] } },
+  wiggle:  { idle: { y: [0, -3, 0] },                              active: { rotate: [-6, 6, -6, 6, 0], y: [0, -5, 0] } },
+};
+
+/** Per-animal instrument sound — each has a distinct timbre. */
+function playAnimalSound(idx: number) {
+  try {
+    const c = sCtx(); const t = c.currentTime; const f = BAND_ANIMALS[idx].freq;
+    if (idx === 0) { // Cat — plucked string
+      const o = c.createOscillator(); const g = c.createGain();
+      o.type = "triangle"; o.frequency.value = f;
+      g.gain.setValueAtTime(0.3, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+      o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + 0.4);
+    } else if (idx === 1) { // Bird — flute vibrato
+      const o = c.createOscillator(); const g = c.createGain();
+      const lfo = c.createOscillator(); const lg = c.createGain();
+      o.type = "sine"; o.frequency.value = f;
+      lfo.type = "sine"; lfo.frequency.value = 6; lg.gain.value = 15;
+      lfo.connect(lg); lg.connect(o.frequency);
+      g.gain.setValueAtTime(0.2, t); g.gain.linearRampToValueAtTime(0.2, t + 0.3);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+      o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + 0.5); lfo.start(t); lfo.stop(t + 0.5);
+    } else if (idx === 2) { // Frog — maraca shake
+      const buf = c.createBuffer(1, Math.floor(c.sampleRate * 0.15), c.sampleRate);
+      const d = buf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * 0.5;
+      const src = c.createBufferSource(); src.buffer = buf;
+      const bp = c.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 4000; bp.Q.value = 1.5;
+      const g = c.createGain(); g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+      src.connect(bp); bp.connect(g); g.connect(c.destination); src.start(t);
+    } else if (idx === 3) { // Bear — drum thud
+      const o = c.createOscillator(); const g = c.createGain();
+      o.type = "sine"; o.frequency.setValueAtTime(f * 1.5, t); o.frequency.exponentialRampToValueAtTime(f * 0.5, t + 0.12);
+      g.gain.setValueAtTime(0.4, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+      o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + 0.25);
+    } else if (idx === 4) { // Mouse — bell ping
+      const o = c.createOscillator(); const o2 = c.createOscillator(); const g = c.createGain();
+      o.type = "sine"; o.frequency.value = f; o2.type = "sine"; o2.frequency.value = f * 2.76;
+      const g2 = c.createGain(); g2.gain.value = 0.08;
+      g.gain.setValueAtTime(0.25, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+      o.connect(g); o2.connect(g2); g2.connect(g); g.connect(c.destination);
+      o.start(t); o.stop(t + 0.8); o2.start(t); o2.stop(t + 0.6);
+    } else { // Duck — sax reedy
+      const o = c.createOscillator(); const lp = c.createBiquadFilter(); const g = c.createGain();
+      o.type = "sawtooth"; o.frequency.value = f;
+      lp.type = "lowpass"; lp.frequency.value = 1200; lp.Q.value = 2;
+      g.gain.setValueAtTime(0.15, t); g.gain.linearRampToValueAtTime(0.15, t + 0.2);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+      o.connect(lp); lp.connect(g); g.connect(c.destination); o.start(t); o.stop(t + 0.4);
+    }
+  } catch { /* audio unavailable */ }
+}
+
+const BAND_SONGS_KEY = "venting-band-songs";
+interface BandSong { id: number; name: string; taps: { animal: number; time: number }[] }
+function loadBandSongs(): BandSong[] { try { const r = scopedGetItem(BAND_SONGS_KEY); return r ? JSON.parse(r) : []; } catch { return []; } }
+function persistBandSongs(s: BandSong[]) { scopedSetItem(BAND_SONGS_KEY, JSON.stringify(s)); }
 
 function AnimalBand() {
   const [dancing, setDancing] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
+  const [spotlight, setSpotlight] = useState<number | null>(null);
+  const [recording, setRecording] = useState(false);
+  const [recordStart, setRecordStart] = useState(0);
+  const [recordedTaps, setRecordedTaps] = useState<{ animal: number; time: number }[]>([]);
+  const [replaying, setReplaying] = useState(false);
+  const [savedSongs, setSavedSongs] = useState<BandSong[]>(loadBandSongs);
+  const [duetPair, setDuetPair] = useState<[number, number] | null>(null);
+  const [dueting, setDuet] = useState(false);
+  const [hue, setHue] = useState(280);
   const danceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  const playAnimal = (idx: number) => {
-    const a = BAND_ANIMALS[idx];
-    sfxChime(a.freq);
-    setDancing(idx);
+  const clearAll = () => { timers.current.forEach(clearTimeout); timers.current = [];
+    clearTimeout(danceTimer.current); };
+
+  // Background hue shift while music plays
+  useEffect(() => {
+    if (!playing && !dueting && !replaying) return;
+    const iv = setInterval(() => setHue((h) => (h + 1) % 360), 80);
+    return () => clearInterval(iv);
+  }, [playing, dueting, replaying]);
+
+  const triggerDance = (idx: number, ms = 500) => {
+    setDancing(idx); setSpotlight(idx);
     clearTimeout(danceTimer.current);
-    danceTimer.current = setTimeout(() => setDancing(null), 600);
+    danceTimer.current = setTimeout(() => { setDancing(null); setSpotlight(null); }, ms);
+  };
+  const playAnimal = (idx: number, ms = 500) => { playAnimalSound(idx); triggerDance(idx, ms); };
+
+  // Tap handler
+  const onTap = (idx: number) => {
+    if (playing || replaying || dueting) return;
+    if (recording) {
+      playAnimal(idx);
+      setRecordedTaps((p) => [...p, { animal: idx, time: Date.now() - recordStart }]);
+      return;
+    }
+    // Duet selection
+    if (duetPair === null) { setDuetPair([idx, -1]); playAnimal(idx); return; }
+    if (duetPair[1] === -1) {
+      if (idx === duetPair[0]) { setDuetPair(null); return; }
+      setDuetPair([duetPair[0], idx]); playAnimal(idx); return;
+    }
+    // Both selected — tapping clears
+    setDuetPair(null);
   };
 
-  const playTogether = useTapGuard(() => {
-    if (playing) return;
-    setPlaying(true);
-    const melody = [0, 3, 1, 4, 2, 5, 0, 2];
-    melody.forEach((animalIdx, i) => {
-      setTimeout(() => playAnimal(animalIdx), i * 300);
+  // Record
+  const toggleRecord = useTapGuard(() => {
+    if (recording) { setRecording(false); }
+    else { setRecordedTaps([]); setRecordStart(Date.now()); setRecording(true); }
+  }, 300);
+
+  const playRecorded = useTapGuard(() => {
+    if (replaying || recordedTaps.length === 0) return;
+    setReplaying(true); clearAll();
+    recordedTaps.forEach((tap) => {
+      timers.current.push(setTimeout(() => playAnimal(tap.animal, 400), tap.time));
     });
-    setTimeout(() => setPlaying(false), melody.length * 300 + 600);
+    timers.current.push(setTimeout(() => setReplaying(false), recordedTaps[recordedTaps.length - 1].time + 600));
+  }, 300);
+
+  const saveSong = useTapGuard(() => {
+    if (recordedTaps.length === 0) return;
+    const song: BandSong = { id: Date.now(), name: `my song ${savedSongs.length + 1}`, taps: recordedTaps };
+    const next = [...savedSongs, song].slice(-3);
+    setSavedSongs(next); persistBandSongs(next); setRecordedTaps([]);
+  }, 300);
+
+  const playSaved = (song: BandSong) => {
+    if (replaying) return;
+    setReplaying(true); clearAll();
+    song.taps.forEach((tap) => {
+      timers.current.push(setTimeout(() => playAnimal(tap.animal, 400), tap.time));
+    });
+    timers.current.push(setTimeout(() => setReplaying(false), song.taps[song.taps.length - 1].time + 600));
+  };
+  const deleteSong = (id: number) => { const n = savedSongs.filter((s) => s.id !== id); setSavedSongs(n); persistBandSongs(n); };
+
+  // Duet
+  const startDuet = useTapGuard(() => {
+    if (!duetPair || duetPair[1] === -1 || dueting) return;
+    setDuet(true); clearAll();
+    const notes = [duetPair[0], duetPair[1], duetPair[0], duetPair[1], duetPair[0], duetPair[1]];
+    notes.forEach((a, i) => { timers.current.push(setTimeout(() => playAnimal(a, 350), i * 350)); });
+    timers.current.push(setTimeout(() => { setDuet(false); setDuetPair(null); }, notes.length * 350 + 500));
+  }, 300);
+
+  // Play Together
+  const playTogether = useTapGuard(() => {
+    if (playing || dueting || replaying) return;
+    setPlaying(true); clearAll();
+    const melody = [0, 1, 2, 3, 4, 5, 0, 2];
+    melody.forEach((a, i) => { timers.current.push(setTimeout(() => playAnimal(a, 350), i * 350)); });
+    timers.current.push(setTimeout(() => setPlaying(false), melody.length * 350 + 500));
   }, 200);
 
-  useEffect(() => () => clearTimeout(danceTimer.current), []);
+  useEffect(() => () => clearAll(), []);
+
+  const busy = playing || dueting || replaying;
+  const spotBg = spotlight !== null
+    ? `radial-gradient(circle at ${30 + spotlight * 12}% 55%, rgba(255,235,190,0.35) 0%, transparent 55%)`
+    : "none";
 
   return (
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="clay-card relative overflow-hidden px-5 py-7">
-      <span className="pointer-events-none absolute top-6 left-8 text-sm text-mint-200 animate-twinkle" aria-hidden>✦</span>
-      <GameIntro emoji="🐾" title="Animal Band" sub="tap each friend to hear their voice — or let them play together" />
-      <div className="mt-6 flex flex-wrap justify-center gap-3">
-        {BAND_ANIMALS.map((a, i) => (
-          <motion.button key={i} type="button" onClick={() => playAnimal(i)}
-            animate={dancing === i ? { rotate: [0, -8, 8, -4, 4, 0], y: [0, -6, 0] } : { y: [0, -3, 0] }}
-            transition={dancing === i ? { duration: 0.5 } : { duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            className="flex h-20 w-20 flex-col items-center justify-center rounded-2xl bg-white/60 shadow-[0_4px_12px_rgba(180,200,220,0.3)] transition-transform hover:scale-105 active:scale-95">
-            <span className="text-3xl">{a.emoji}</span>
-            <span className="mt-0.5 text-[9px] font-bold text-ink-soft">{a.name}</span>
-          </motion.button>
-        ))}
+      {/* Stage */}
+      <div className="relative rounded-2xl overflow-hidden" style={{ background: `linear-gradient(180deg, hsl(${hue},40%,92%) 0%, hsl(${(hue+30)%360},35%,95%) 100%)` }}>
+        <div className="h-6 w-full rounded-t-2xl" style={{ background: "linear-gradient(180deg, #E8D5F0 0%, #F0E4F6 60%, transparent 100%)" }} />
+        <div className="absolute top-0 left-0 right-0 h-6 flex justify-center gap-8 pointer-events-none" aria-hidden>
+          {["✦","♪","✦","♪","✦"].map((n, i) => (
+            <span key={i} className="text-xs text-lavender-300/60 mt-1 animate-twinkle" style={{ animationDelay: `${i*0.7}s` }}>{n}</span>
+          ))}
+        </div>
+        <div className="absolute inset-0 pointer-events-none transition-all duration-500" style={{ background: spotBg }} />
+        <AnimatePresence>
+          {busy && [0,1,2,3,4].map((i) => (
+            <motion.span key={`bn-${i}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: [0,0.6,0], y: [-10,-50], x: [0, i%2===0?15:-15] }}
+              transition={{ duration: 2, repeat: Infinity, delay: i*0.4 }}
+              className="absolute text-sm pointer-events-none" style={{ left: `${15+i*17}%`, top: "30%" }} aria-hidden>
+              {['♪','♫','♩','♬','♪'][i]}
+            </motion.span>
+          ))}
+        </AnimatePresence>
+        <div className="relative z-10 px-3 pt-4 pb-5">
+          <div className="grid grid-cols-3 gap-3">
+            {BAND_ANIMALS.map((a, i) => {
+              const dv = DANCE_VARIANTS[a.dance];
+              const isDancing = dancing === i;
+              const isDuetT = duetPair && (duetPair[0]===i || duetPair[1]===i);
+              return (
+                <motion.button key={i} type="button" onClick={() => onTap(i)}
+                  animate={(isDancing ? dv.active : dv.idle) as never}
+                  transition={isDancing ? { duration: 0.45, ease: "easeOut" } : { duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                  className={cn("flex flex-col items-center justify-center rounded-2xl py-3 transition-all",
+                    "shadow-[0_4px_12px_rgba(180,200,220,0.25)]",
+                    isDuetT ? "bg-lavender-200/70 ring-2 ring-lavender-400" : "bg-white/50",
+                    spotlight===i && "ring-2 ring-amber-300/70 shadow-[0_0_16px_rgba(255,220,150,0.4)]",
+                  )} disabled={busy}>
+                  <span className="text-3xl">{a.emoji}</span>
+                  <span className="mt-0.5 text-lg" aria-hidden>{a.instrument}</span>
+                  <span className="text-[8px] font-bold text-ink-soft">{a.name}</span>
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="h-3 w-full rounded-b-2xl" style={{ background: "linear-gradient(180deg, rgba(200,180,220,0.2) 0%, rgba(200,180,220,0.35) 100%)" }} />
       </div>
-      <div className="mt-5 flex justify-center">
-        <button type="button" onClick={playTogether} disabled={playing}
-          className="clay-btn px-6 py-2.5 text-sm font-bold text-white disabled:opacity-60">
-          {playing ? "🎶 playing…" : "🎶 play together"}
-        </button>
+      <GameIntro emoji="🐾" title="Animal Band" sub="tap each friend to hear their instrument — the stage is theirs" />
+      {/* Controls */}
+      <div className="mt-4 space-y-3">
+        <div className="flex items-center justify-center gap-2 flex-wrap">
+          <button type="button" onClick={toggleRecord}
+            className={cn("rounded-full px-4 py-2 text-xs font-bold transition-all",
+              recording ? "bg-blush-400 text-white animate-pulse" : "clay-chip text-ink-deep")}>
+            {recording ? "⏹ stop recording" : "🔴 record my song"}
+          </button>
+          {recordedTaps.length > 0 && !recording && (
+            <>
+              <button type="button" onClick={playRecorded} disabled={replaying}
+                className="rounded-full bg-lavender-100 px-4 py-2 text-xs font-bold text-lavender-700 disabled:opacity-50">▶ play my song</button>
+              <button type="button" onClick={saveSong}
+                className="rounded-full bg-mint-100 px-4 py-2 text-xs font-bold text-mint-700">💾 save</button>
+            </>
+          )}
+        </div>
+        <div className="flex items-center justify-center gap-2 flex-wrap">
+          {duetPair && duetPair[1] !== -1 && !dueting && (
+            <button type="button" onClick={startDuet}
+              className="rounded-full bg-[#EDEBF6] px-5 py-2 text-xs font-bold text-[#5F6DBE] transition-all hover:scale-105">duet 💫</button>
+          )}
+          {duetPair && duetPair[1] === -1 && !dueting && (
+            <p className="text-[10px] font-bold text-lavender-500">tap a second animal for duet…</p>
+          )}
+          <button type="button" onClick={playTogether} disabled={busy}
+            className="clay-btn px-5 py-2.5 text-xs font-bold text-white disabled:opacity-60">
+            {playing ? "🎶 playing…" : "🎶 play together"}
+          </button>
+        </div>
+        {savedSongs.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-bold text-ink-soft">🎞 my songs</p>
+            <div className="flex flex-wrap gap-2">
+              {savedSongs.map((song) => (
+                <div key={song.id} className="flex items-center gap-1.5 rounded-xl bg-[#FDF5E6]/70 px-3 py-1.5">
+                  <button type="button" onClick={() => playSaved(song)} disabled={replaying}
+                    className="text-[10px] font-bold text-ink-deep disabled:opacity-50">▶ {song.name}</button>
+                  <button type="button" onClick={() => deleteSong(song.id)}
+                    className="text-[10px] text-blush-400 hover:text-blush-500">✕</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
-      <p className="mt-3 text-center text-xs font-medium text-ink-soft">tap each animal · or let them all play a gentle song</p>
+      <p className="mt-3 text-center text-[10px] font-medium text-ink-soft">
+        {recording ? "🔴 recording — tap animals to record" : duetPair && duetPair[1]===-1 ? "tap a second animal for the duet" : "tap each animal · record a song · or let them play together"}
+      </p>
     </motion.div>
   );
 }
