@@ -92,7 +92,7 @@ export function MoodCheckinDialog({
         <span
           key={s}
           className={cn(
-            "h-1.5 rounded-full transition-all duration-300",
+            "h-1.5 rounded-full transition-transform duration-300",
             stage === s
               ? "w-6 bg-lavender-400"
               : "w-1.5 bg-lavender-200",
@@ -202,7 +202,7 @@ export function MoodCheckinDialog({
                     >
                       <span
                         className={cn(
-                          "flex items-center justify-center rounded-full font-bold text-ink-deep transition-all duration-200",
+                          "flex items-center justify-center rounded-full font-bold text-ink-deep transition-transform duration-200",
                           n === 1 && "h-10 w-10 text-sm",
                           n === 2 && "h-11 w-11 text-sm",
                           n === 3 && "h-12 w-12 text-base",

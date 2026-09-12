@@ -192,7 +192,7 @@ export default function TinyTales() {
                       key={s.id}
                       type="button"
                       onClick={() => selectStory(s)}
-                      className="flex w-full items-center gap-3 rounded-2xl bg-[#FDF5E6]/50 px-4 py-3 text-left transition-all hover:bg-[#FDF5E6]/80 hover:scale-[1.01]"
+                      className="flex w-full items-center gap-3 rounded-2xl bg-[#FDF5E6]/50 px-4 py-3 text-left transition-transform hover:bg-[#FDF5E6]/80 hover:scale-[1.01]"
                     >
                       <span className="text-2xl">{s.emoji}</span>
                       <div>
@@ -251,14 +251,14 @@ export default function TinyTales() {
                             <button
                               type="button"
                               onClick={anotherTale}
-                              className="flex-1 rounded-full border border-lavender-200 bg-lavender-50 px-4 py-2.5 text-xs font-bold text-lavender-700 transition-all hover:scale-105"
+                              className="flex-1 rounded-full border border-lavender-200 bg-lavender-50 px-4 py-2.5 text-xs font-bold text-lavender-700 transition-transform hover:scale-105"
                             >
                               another tale
                             </button>
                             <button
                               type="button"
                               onClick={tuckToDiary}
-                              className="flex-1 rounded-full bg-lavender-500 px-4 py-2.5 text-xs font-bold text-white transition-all hover:scale-105"
+                              className="flex-1 rounded-full bg-lavender-500 px-4 py-2.5 text-xs font-bold text-white transition-transform hover:scale-105"
                             >
                               tuck into diary 📖
                             </button>
@@ -272,7 +272,7 @@ export default function TinyTales() {
                               key={i}
                               type="button"
                               onClick={nextPage}
-                              className="w-full rounded-full border border-lavender-200 bg-lavender-50/60 px-4 py-2.5 text-xs font-bold text-ink-deep transition-all hover:bg-lavender-100/80 hover:scale-[1.01]"
+                              className="w-full rounded-full border border-lavender-200 bg-lavender-50/60 px-4 py-2.5 text-xs font-bold text-ink-deep transition-transform hover:bg-lavender-100/80 hover:scale-[1.01]"
                             >
                               {c}
                             </button>
@@ -283,7 +283,7 @@ export default function TinyTales() {
                           <button
                             type="button"
                             onClick={nextPage}
-                            className="rounded-full bg-lavender-500 px-6 py-2.5 text-xs font-bold text-white transition-all hover:scale-105"
+                            className="rounded-full bg-lavender-500 px-6 py-2.5 text-xs font-bold text-white transition-transform hover:scale-105"
                           >
                             next →
                           </button>

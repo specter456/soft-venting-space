@@ -215,7 +215,7 @@ export default function CalendarScreen() {
         </div>
         <div className="flex items-center gap-1.5">
           <button type="button" onClick={() => setDecorating((v) => !v)}
-            className={cn("clay-chip flex h-8 items-center gap-1 rounded-full px-3 text-[11px] font-bold transition-all",
+            className={cn("clay-chip flex h-8 items-center gap-1 rounded-full px-3 text-[11px] font-bold transition-transform",
               decorating ? "bg-[#5F6DBE] text-white" : "text-ink-deep hover:scale-105")}>
             ✨ {decorating ? "done" : "customize"}
           </button>
@@ -233,11 +233,11 @@ export default function CalendarScreen() {
             <div className="clay-card rounded-2xl p-4 space-y-3">
               <div className="flex flex-wrap gap-2">
                 <button type="button" onClick={() => setDecorPanel(decorPanel === "sticker" ? "none" : "sticker")}
-                  className={cn("rounded-full px-3 py-1.5 text-xs font-bold transition-all", decorPanel === "sticker" ? "bg-[#5F6DBE] text-white" : "clay-chip text-ink-deep")}>🎨 add sticker</button>
+                  className={cn("rounded-full px-3 py-1.5 text-xs font-bold transition-transform", decorPanel === "sticker" ? "bg-[#5F6DBE] text-white" : "clay-chip text-ink-deep")}>🎨 add sticker</button>
                 <button type="button" onClick={() => setDecorPanel(decorPanel === "gif" ? "none" : "gif")}
-                  className={cn("rounded-full px-3 py-1.5 text-xs font-bold transition-all", decorPanel === "gif" ? "bg-[#5F6DBE] text-white" : "clay-chip text-ink-deep")}>🎞 add GIF</button>
+                  className={cn("rounded-full px-3 py-1.5 text-xs font-bold transition-transform", decorPanel === "gif" ? "bg-[#5F6DBE] text-white" : "clay-chip text-ink-deep")}>🎞 add GIF</button>
                 <button type="button" onClick={() => setDecorPanel(decorPanel === "wallpaper" ? "none" : "wallpaper")}
-                  className={cn("rounded-full px-3 py-1.5 text-xs font-bold transition-all", decorPanel === "wallpaper" ? "bg-[#5F6DBE] text-white" : "clay-chip text-ink-deep")}>🖼 set wallpaper</button>
+                  className={cn("rounded-full px-3 py-1.5 text-xs font-bold transition-transform", decorPanel === "wallpaper" ? "bg-[#5F6DBE] text-white" : "clay-chip text-ink-deep")}>🖼 set wallpaper</button>
               </div>
 
               {/* Sticker panel */}
@@ -297,7 +297,7 @@ export default function CalendarScreen() {
                   <div className="grid grid-cols-4 gap-2">
                     {BUILT_IN_WALLPAPERS.map((wp) => (
                       <button key={wp.id} type="button" onClick={() => setWallpaperBuiltin(wp.id)}
-                        className={cn("h-12 rounded-xl transition-all", wp.style,
+                        className={cn("h-12 rounded-xl transition-transform", wp.style,
                           decor.wallpaper === wp.id ? "ring-2 ring-[#5F6DBE] scale-105" : "hover:scale-105")} />
                     ))}
                   </div>

@@ -110,7 +110,7 @@ export default function NoteEditor() {
               type="button"
               onClick={() => setMood((prev) => (prev === m.id ? null : m.id))}
               className={cn(
-                "rounded-full px-3 py-1.5 text-xs font-bold transition-all",
+                "rounded-full px-3 py-1.5 text-xs font-bold transition-transform",
                 mood === m.id
                   ? "bg-lavender-500 text-cream-soft shadow-[0_6px_12px_-6px_rgba(118,90,190,0.6)]"
                   : "clay-chip text-ink hover:-translate-y-0.5",
@@ -141,7 +141,7 @@ export default function NoteEditor() {
                   type="button"
                   onClick={() => setRecordingId(active ? null : rec._id)}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition-all",
+                    "flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left transition-transform",
                     active
                       ? "bg-lavender-500/15 ring-2 ring-lavender-400"
                       : "clay-chip",

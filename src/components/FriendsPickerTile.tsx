@@ -56,7 +56,7 @@ export function FriendsPickerTile({
               type="button"
               onClick={() => toggled(t.id)}
               className={cn(
-                "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-all",
+                "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-transform",
                 chosen
                   ? "bg-[var(--theme-accent, #5F6DBE)] text-white shadow-md"
                   : "bg-white/60 text-ink-deep hover:bg-white hover:scale-[1.02] active:scale-95",

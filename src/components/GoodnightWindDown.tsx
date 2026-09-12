@@ -134,14 +134,14 @@ export default function GoodnightWindDown() {
                     <button
                       type="button"
                       onClick={saveGratitude}
-                      className="flex-1 rounded-full bg-white/15 px-5 py-3 text-sm font-bold text-white/90 transition-all hover:bg-white/20"
+                      className="flex-1 rounded-full bg-white/15 px-5 py-3 text-sm font-bold text-white/90 transition-transform hover:bg-white/20"
                     >
                       tuck it in
                     </button>
                     <button
                       type="button"
                       onClick={skipGratitude}
-                      className="flex-1 rounded-full border border-white/15 px-5 py-3 text-sm font-bold text-white/50 transition-all hover:text-white/70"
+                      className="flex-1 rounded-full border border-white/15 px-5 py-3 text-sm font-bold text-white/50 transition-transform hover:text-white/70"
                     >
                       skip
                     </button>
@@ -186,7 +186,7 @@ export default function GoodnightWindDown() {
                         key={s}
                         type="button"
                         onClick={() => setStep(3)}
-                        className="rounded-full border border-white/15 bg-white/8 px-5 py-3 text-sm font-bold text-white/80 transition-all hover:bg-white/15"
+                        className="rounded-full border border-white/15 bg-white/8 px-5 py-3 text-sm font-bold text-white/80 transition-transform hover:bg-white/15"
                       >
                         {s}
                       </button>
@@ -218,7 +218,7 @@ export default function GoodnightWindDown() {
                   <button
                     type="button"
                     onClick={finish}
-                    className="mx-auto rounded-full bg-white/15 px-8 py-3 text-sm font-bold text-white/90 transition-all hover:bg-white/20"
+                    className="mx-auto rounded-full bg-white/15 px-8 py-3 text-sm font-bold text-white/90 transition-transform hover:bg-white/20"
                   >
                     done
                   </button>

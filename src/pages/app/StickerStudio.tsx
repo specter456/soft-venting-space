@@ -104,7 +104,7 @@ export default function StickerStudio() {
               type="button"
               onClick={() => applyExpression(e.id)}
               className={cn(
-                "shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-all",
+                "shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-transform",
                 expression.id === e.id
                   ? "bg-lavender-500 text-cream-soft shadow-[0_6px_12px_-6px_rgba(118,90,190,0.6)]"
                   : "clay-chip text-ink hover:-translate-y-0.5",
@@ -149,7 +149,7 @@ export default function StickerStudio() {
               type="button"
               onClick={() => setEyes(e)}
               className={cn(
-                "shrink-0 rounded-2xl px-3 py-2 text-xs font-bold transition-all",
+                "shrink-0 rounded-2xl px-3 py-2 text-xs font-bold transition-transform",
                 eyes.id === e.id
                   ? "bg-lavender-500 text-cream-soft"
                   : "clay-chip text-ink hover:-translate-y-0.5",
@@ -170,7 +170,7 @@ export default function StickerStudio() {
               type="button"
               onClick={() => setMouth(m)}
               className={cn(
-                "shrink-0 rounded-2xl px-3 py-2 text-xs font-bold transition-all",
+                "shrink-0 rounded-2xl px-3 py-2 text-xs font-bold transition-transform",
                 mouth.id === m.id
                   ? "bg-lavender-500 text-cream-soft"
                   : "clay-chip text-ink hover:-translate-y-0.5",
@@ -188,7 +188,7 @@ export default function StickerStudio() {
           type="button"
           onClick={() => setBlush((b) => !b)}
           className={cn(
-            "flex-1 rounded-2xl px-4 py-3 text-xs font-bold transition-all",
+            "flex-1 rounded-2xl px-4 py-3 text-xs font-bold transition-transform",
             blush ? "bg-blush-200/80 text-ink-deep" : "clay-chip text-ink-soft",
           )}
         >
@@ -198,7 +198,7 @@ export default function StickerStudio() {
           type="button"
           onClick={() => setTear((t) => !t)}
           className={cn(
-            "flex-1 rounded-2xl px-4 py-3 text-xs font-bold transition-all",
+            "flex-1 rounded-2xl px-4 py-3 text-xs font-bold transition-transform",
             tear ? "bg-mist-100 text-ink-deep" : "clay-chip text-ink-soft",
           )}
         >

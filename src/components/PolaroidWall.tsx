@@ -402,7 +402,7 @@ function VaultPhotoPicker({
                 type="button"
                 onClick={() => onSelect(item._id, item.art)}
                 className={cn(
-                  "aspect-square overflow-hidden rounded-xl border-2 border-transparent transition-all hover:border-lavender-400 hover:scale-105",
+                  "aspect-square overflow-hidden rounded-xl border-2 border-transparent transition-transform hover:border-lavender-400 hover:scale-105",
                   !isImageArt(item.art) && "tile-lavender flex items-center justify-center",
                 )}
               >

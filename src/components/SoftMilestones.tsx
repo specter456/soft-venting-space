@@ -144,7 +144,7 @@ export default function SoftMilestones() {
           <div
             key={m.id}
             className={cn(
-              "flex flex-col items-center gap-1 rounded-2xl px-3 py-3 text-center transition-all",
+              "flex flex-col items-center gap-1 rounded-2xl px-3 py-3 text-center transition-transform",
               isEarned
                 ? "bg-mint-100/60 shadow-[0_0_12px_-4px_rgba(134,200,160,0.5)]"
                 : "bg-lavender-50/40 opacity-50",

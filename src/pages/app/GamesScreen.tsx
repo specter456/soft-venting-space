@@ -642,7 +642,7 @@ export default function GamesScreen() {
                     return (
                       <motion.button type="button" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}
                         onClick={openBuilder}
-                        className={cn("flex flex-col items-center gap-2 rounded-[1.8rem] border-2 border-dashed border-[#8C9AD6]/50 bg-[#E4E8F8]/30 px-4 py-5 sm:py-6 text-center transition-all hover:-translate-y-0.5 hover:border-[#8C9AD6] hover:bg-[#E4E8F8]/50 h-full",
+                        className={cn("flex flex-col items-center gap-2 rounded-[1.8rem] border-2 border-dashed border-[#8C9AD6]/50 bg-[#E4E8F8]/30 px-4 py-5 sm:py-6 text-center transition-transform hover:-translate-y-0.5 hover:border-[#8C9AD6] hover:bg-[#E4E8F8]/50 h-full",
                           isOdd && "col-span-2 justify-self-center w-[calc(50%-0.375rem)]")}>
                         <span className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl text-2xl sm:text-3xl">
                           <span aria-hidden className="drop-shadow-sm">✨</span>
@@ -1055,16 +1055,16 @@ function MoonlightGlide() {
         )}
       </div>
 
-      <div className={cn("relative mt-6 h-64 overflow-hidden rounded-2xl bg-gradient-to-b transition-all duration-[3000ms]", SKY_GRADIENTS[sky])}>
+      <div className={cn("relative mt-6 h-64 overflow-hidden rounded-2xl bg-gradient-to-b transition-transform duration-[3000ms]", SKY_GRADIENTS[sky])}>
         {sky === "starry" && Array.from({ length: 12 }).map((_, i) => (
           <span key={i} className="absolute text-xs text-white/70 animate-twinkle" style={{ left: `${10 + (i * 17) % 80}%`, top: `${5 + (i * 13) % 50}%`, animationDelay: `${i * 0.3}s` }} aria-hidden>✦</span>
         ))}
         <button type="button" onClick={() => setLane((l) => Math.max(0, l - 1))} className="absolute inset-y-0 left-0 w-1/3 opacity-0" aria-label="Move left" />
         <button type="button" onClick={() => setLane((l) => Math.min(2, l + 1))} className="absolute inset-y-0 right-0 w-1/3 opacity-0" aria-label="Move right" />
         {items.map((it) => (
-          <span key={it.id} className="absolute text-2xl transition-all duration-100" style={{ left: `${16.67 + it.lane * 33.33}%`, top: `${it.y}%`, transform: "translateX(-50%)" }}>{it.emoji}</span>
+          <span key={it.id} className="absolute text-2xl transition-transform duration-100" style={{ left: `${16.67 + it.lane * 33.33}%`, top: `${it.y}%`, transform: "translateX(-50%)" }}>{it.emoji}</span>
         ))}
-        <div className="absolute bottom-4 text-4xl transition-all duration-300 ease-out" style={{ left: `${16.67 + lane * 33.33}%`, transform: "translateX(-50%)" }}>🧸</div>
+        <div className="absolute bottom-4 text-4xl transition-transform duration-300 ease-out" style={{ left: `${16.67 + lane * 33.33}%`, transform: "translateX(-50%)" }}>🧸</div>
       </div>
       <p className="mt-4 text-center text-sm font-bold text-ink-deep">⭐ {caught} caught</p>
       <p className="mt-2 text-center text-xs font-medium text-ink-soft">{sky === "meadow" ? "a gentle morning meadow" : sky === "sunset" ? "the sky is turning warm" : "the stars are out tonight"}</p>
@@ -1099,7 +1099,7 @@ function HoneycombPop() {
       <div className="mt-6 grid grid-cols-5 gap-2 justify-items-center">
         {cells.map((cell) => (
           <motion.button key={cell.id} type="button" animate={neighbors.has(cell.id) ? { scale: [1, 0.92, 1.04, 1] } : { scale: 1 }} transition={{ duration: 0.3 }} disabled={cell.popped} onClick={() => popCell(cell.id)}
-            className={cn("h-14 w-14 rounded-xl transition-all duration-200 flex items-center justify-center", cell.popped ? "bg-transparent" : "bg-gradient-to-br from-[#F0D080] to-[#D4A840] shadow-[inset_0_2px_4px_rgba(255,255,255,0.5),0_3px_8px_rgba(200,160,60,0.3)] hover:scale-105 active:scale-95 cursor-pointer")}>
+            className={cn("h-14 w-14 rounded-xl transition-transform duration-200 flex items-center justify-center", cell.popped ? "bg-transparent" : "bg-gradient-to-br from-[#F0D080] to-[#D4A840] shadow-[inset_0_2px_4px_rgba(255,255,255,0.5),0_3px_8px_rgba(200,160,60,0.3)] hover:scale-105 active:scale-95 cursor-pointer")}>
             {cell.popped ? <motion.span initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-lg">💧</motion.span> : <span className="text-sm font-bold text-[#8B6820]">🍯</span>}
           </motion.button>
         ))}
@@ -1378,7 +1378,7 @@ function NimbusFriend() {
             className="absolute top-10 right-0 flex gap-1.5 rounded-2xl bg-[#FDF5E6]/95 p-2 shadow-lg border border-[#C4CBE8]/40">
             {NIMBUS_COLORS.map((c) => (
               <button key={c.id} type="button" onClick={() => { setColor(c.id); setShowPalette(false); }}
-                className={`h-7 w-7 rounded-full border-2 transition-all ${color === c.id ? "border-[#5F6DBE] scale-110" : "border-white/70 hover:scale-105"} ${c.bg}`}
+                className={`h-7 w-7 rounded-full border-2 transition-transform ${color === c.id ? "border-[#5F6DBE] scale-110" : "border-white/70 hover:scale-105"} ${c.bg}`}
                 title={c.label} />
             ))}
           </motion.div>
@@ -1500,7 +1500,7 @@ function MemoryGarden() {
         {cards.map((card) => (
           <motion.button key={card.id} type="button" onClick={() => selectCard(card.id)} disabled={card.matched}
             whileHover={!card.matched ? { scale: 1.05 } : undefined} whileTap={!card.matched ? { scale: 0.93 } : undefined}
-            className={cn("aspect-square flex items-center justify-center rounded-xl text-2xl transition-all duration-200",
+            className={cn("aspect-square flex items-center justify-center rounded-xl text-2xl transition-transform duration-200",
               card.matched ? "bg-[#B4E0D0]/60 shadow-inner" : card.flipped ? "bg-white/80 shadow-[0_2px_8px_rgba(180,200,220,0.3)]" : "bg-[#E8E0F0]/60 shadow-[0_2px_8px_rgba(180,180,220,0.2)] cursor-pointer hover:bg-[#E0D8EC]/80")}>
             {card.matched ? <motion.span initial={{ scale: 0, rotate: -30 }} animate={{ scale: 1, rotate: 0 }} className="text-xl">🌸</motion.span>
               : card.flipped ? <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 15 }}>{card.sticker.emoji}</motion.span>
@@ -2127,7 +2127,7 @@ function AnimalBand() {
             <span key={i} className="text-xs text-lavender-300/60 mt-1 animate-twinkle" style={{ animationDelay: `${i*0.7}s` }}>{n}</span>
           ))}
         </div>
-        <div className="absolute inset-0 pointer-events-none transition-all duration-500" style={{ background: spotBg }} />
+        <div className="absolute inset-0 pointer-events-none transition-transform duration-500" style={{ background: spotBg }} />
         <AnimatePresence>
           {busy && [0,1,2,3,4].map((i) => (
             <motion.span key={`bn-${i}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: [0,0.6,0], y: [-10,-50], x: [0, i%2===0?15:-15] }}
@@ -2147,7 +2147,7 @@ function AnimalBand() {
                 <motion.button key={i} type="button" onClick={() => onTap(i)}
                   animate={(isDancing ? dv.active : dv.idle) as never}
                   transition={isDancing ? { duration: 0.45, ease: "easeOut" } : { duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-                  className={cn("flex flex-col items-center justify-center rounded-2xl py-3 transition-all",
+                  className={cn("flex flex-col items-center justify-center rounded-2xl py-3 transition-transform",
                     "shadow-[0_4px_12px_rgba(180,200,220,0.25)]",
                     isDuetT ? "bg-lavender-200/70 ring-2 ring-lavender-400" : "bg-white/50",
                     spotlight===i && "ring-2 ring-amber-300/70 shadow-[0_0_16px_rgba(255,220,150,0.4)]",
@@ -2167,7 +2167,7 @@ function AnimalBand() {
       <div className="mt-4 space-y-3">
         <div className="flex items-center justify-center gap-2 flex-wrap">
           <button type="button" onClick={toggleRecord}
-            className={cn("rounded-full px-4 py-2 text-xs font-bold transition-all",
+            className={cn("rounded-full px-4 py-2 text-xs font-bold transition-transform",
               recording ? "bg-blush-400 text-white animate-pulse" : "clay-chip text-ink-deep")}>
             {recording ? "⏹ stop recording" : "🔴 record my song"}
           </button>
@@ -2183,7 +2183,7 @@ function AnimalBand() {
         <div className="flex items-center justify-center gap-2 flex-wrap">
           {duetPair && duetPair[1] !== -1 && !dueting && (
             <button type="button" onClick={startDuet}
-              className="rounded-full bg-[#EDEBF6] px-5 py-2 text-xs font-bold text-[#5F6DBE] transition-all hover:scale-105">duet 💫</button>
+              className="rounded-full bg-[#EDEBF6] px-5 py-2 text-xs font-bold text-[#5F6DBE] transition-transform hover:scale-105">duet 💫</button>
           )}
           {duetPair && duetPair[1] === -1 && !dueting && (
             <p className="text-[10px] font-bold text-lavender-500">tap a second animal for duet…</p>

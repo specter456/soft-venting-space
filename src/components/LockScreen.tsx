@@ -270,7 +270,7 @@ export function LockScreen({
               type="button"
               onClick={backspace}
               disabled={busy || digits.length === 0}
-              className="flex h-16 w-16 items-center justify-center rounded-full text-ink-soft transition-all hover:bg-lavender-100/70 active:scale-90 disabled:opacity-30"
+              className="flex h-16 w-16 items-center justify-center rounded-full text-ink-soft transition-transform hover:bg-lavender-100/70 active:scale-90 disabled:opacity-30"
               aria-label="Delete digit"
             >
               <Delete className="size-6" />
@@ -320,7 +320,7 @@ function PadKey({
       type="button"
       onClick={() => onPress(digit)}
       disabled={disabled}
-      className="clay-chip h-16 w-16 rounded-full text-2xl font-bold text-ink-deep transition-all hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0.5 active:scale-95 disabled:opacity-60"
+      className="clay-chip h-16 w-16 rounded-full text-2xl font-bold text-ink-deep transition-transform hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0.5 active:scale-95 disabled:opacity-60"
     >
       {digit}
     </button>

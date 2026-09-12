@@ -82,7 +82,7 @@ export default function GratitudeJar() {
           {/* Tiny jar visual */}
           <div className="relative h-14 w-10 shrink-0 overflow-hidden rounded-b-2xl rounded-t-lg border-2 border-[#C9A96A]/50 bg-[#FDF5E6]/60">
             <div
-              className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#C9A96A]/50 to-[#F0E2B8]/40 transition-all duration-500"
+              className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#C9A96A]/50 to-[#F0E2B8]/40 transition-transform duration-500"
               style={{ height: `${fillPct}%` }}
             />
             <span className="absolute inset-0 flex items-center justify-center text-lg opacity-40">🫙</span>
@@ -122,7 +122,7 @@ export default function GratitudeJar() {
               {/* Jar visual */}
               <div className="relative mx-auto mt-4 h-36 w-28 overflow-hidden rounded-b-3xl rounded-t-xl border-2 border-[#C9A96A]/40 bg-[#FDF5E6]/40">
                 <div
-                  className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#C9A96A]/40 to-[#F0E2B8]/30 transition-all duration-700"
+                  className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#C9A96A]/40 to-[#F0E2B8]/30 transition-transform duration-700"
                   style={{ height: `${fillPct}%` }}
                 />
                 {notes.slice(-6).map((n, i) => (
@@ -164,7 +164,7 @@ export default function GratitudeJar() {
                       type="button"
                       onClick={addNote}
                       disabled={!text.trim()}
-                      className="rounded-full bg-[#C9A96A] px-4 py-2.5 text-xs font-bold text-white transition-all hover:scale-105 disabled:opacity-40"
+                      className="rounded-full bg-[#C9A96A] px-4 py-2.5 text-xs font-bold text-white transition-transform hover:scale-105 disabled:opacity-40"
                     >
                       tuck in
                     </button>
@@ -173,7 +173,7 @@ export default function GratitudeJar() {
                     <button
                       type="button"
                       onClick={openMemory}
-                      className="w-full rounded-full border border-[#C9A96A]/30 bg-[#FDF5E6]/40 px-4 py-2.5 text-xs font-bold text-[#8B6820] transition-all hover:scale-[1.02]"
+                      className="w-full rounded-full border border-[#C9A96A]/30 bg-[#FDF5E6]/40 px-4 py-2.5 text-xs font-bold text-[#8B6820] transition-transform hover:scale-[1.02]"
                     >
                       open a memory 💌
                     </button>

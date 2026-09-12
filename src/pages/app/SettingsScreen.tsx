@@ -201,7 +201,7 @@ export default function SettingsScreen() {
             type="button"
             onClick={deleteEverything}
             className={cn(
-              "rounded-full px-4 py-2 text-xs font-bold transition-all",
+              "rounded-full px-4 py-2 text-xs font-bold transition-transform",
               armDelete
                 ? "bg-blush-500 text-cream-soft shadow-[0_8px_16px_-8px_rgba(201,106,124,0.6)]"
                 : "bg-blush-100/80 text-blush-500 hover:bg-blush-100",
@@ -346,7 +346,7 @@ function Toggle({
     >
       <span
         className={cn(
-          "absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-all",
+          "absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
           on ? "left-6" : "left-1",
         )}
       />
@@ -421,7 +421,7 @@ function ThemePicker() {
           type="button"
           onClick={() => setTheme(t.id)}
           className={cn(
-            "flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition-all",
+            "flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition-transform",
             themeId === t.id
               ? "ring-2 ring-[var(--theme-accent)] ring-offset-2 ring-offset-[var(--theme-bg-start)]"
               : "hover:bg-[var(--theme-accent-light)]",
@@ -500,7 +500,7 @@ function BackupSection() {
         }}
         disabled={restoring}
         className={cn(
-          "w-full rounded-2xl px-5 py-3.5 text-sm font-bold transition-all",
+          "w-full rounded-2xl px-5 py-3.5 text-sm font-bold transition-transform",
           confirmRestore
             ? "bg-blush-100/80 text-blush-500 shadow-[0_4px_12px_-4px_rgba(201,106,124,0.4)]"
             : "clay-btn text-white",

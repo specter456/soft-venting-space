@@ -752,13 +752,13 @@ export default function GifStudio() {
         <div className="flex gap-2 flex-wrap">
           {BRUSH_STYLES.map((b) => (
             <button key={b.id} type="button" onClick={() => { setBrushStyle(b.id); setEraserMode(false); }}
-              className={cn("clay-chip flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold transition-all",
+              className={cn("clay-chip flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold transition-transform",
                 brushStyle === b.id && !eraserMode ? "bg-lavender-300/70 text-ink-deep shadow-sm" : "text-ink-soft")}>
               {b.emoji} {b.label}
             </button>
           ))}
           <button type="button" onClick={() => setEraserMode((v) => !v)}
-            className={cn("clay-chip flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold transition-all",
+            className={cn("clay-chip flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold transition-transform",
               eraserMode ? "bg-blush-200/70 text-ink-deep shadow-sm" : "text-ink-soft")}>
             🧹 Eraser
           </button>
@@ -767,7 +767,7 @@ export default function GifStudio() {
           <span className="text-[10px] font-bold text-ink-soft">Color:</span>
           {INK_COLORS.map((c) => (
             <button key={c.name} type="button" onClick={() => { setInkColor(c.value); setEraserMode(false); }}
-              className={cn("h-7 w-7 rounded-full border-2 transition-all",
+              className={cn("h-7 w-7 rounded-full border-2 transition-transform",
                 inkColor === c.value && !eraserMode ? "border-ink-deep scale-110 shadow-md" : "border-white/70")}
               style={{ backgroundColor: c.value }} aria-label={`Ink color ${c.name}`} />
           ))}
@@ -776,7 +776,7 @@ export default function GifStudio() {
           <span className="text-[10px] font-bold text-ink-soft">Size:</span>
           {BRUSH_SIZES.map((s) => (
             <button key={s.value} type="button" onClick={() => setBrushSize(s.value)}
-              className={cn("clay-chip flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold transition-all",
+              className={cn("clay-chip flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold transition-transform",
                 brushSize === s.value ? "bg-lavender-300/70 text-ink-deep shadow-sm" : "text-ink-soft")}>
               <span className="rounded-full" style={{ width: Math.max(4, s.value * 0.8), height: Math.max(4, s.value * 0.8), backgroundColor: eraserMode ? "#999" : inkColor }} />
               {s.label}
@@ -811,7 +811,7 @@ export default function GifStudio() {
               {TEXT_FONTS.map((f) => (
                 <button key={f.id} type="button"
                   onClick={() => setCanvasTexts((prev) => prev.map((t, j) => j === i ? { ...t, font: f.id } : t))}
-                  className={cn("rounded-full px-2 py-0.5 text-[9px] font-bold transition-all",
+                  className={cn("rounded-full px-2 py-0.5 text-[9px] font-bold transition-transform",
                     ct.font === f.id ? "bg-[#5F6DBE] text-white" : "clay-chip text-ink-soft")}>
                   {f.label}
                 </button>
@@ -820,14 +820,14 @@ export default function GifStudio() {
               {TEXT_COLORS.map((c) => (
                 <button key={c.name} type="button"
                   onClick={() => setCanvasTexts((prev) => prev.map((t, j) => j === i ? { ...t, color: c.value } : t))}
-                  className={cn("h-4 w-4 rounded-full border transition-all",
+                  className={cn("h-4 w-4 rounded-full border transition-transform",
                     ct.color === c.value ? "border-ink-deep scale-125" : "border-white/70")}
                   style={{ backgroundColor: c.value }} />
               ))}
               <span className="text-[8px] text-ink-soft">|</span>
               <button type="button"
                 onClick={() => setCanvasTexts((prev) => prev.map((t, j) => j === i ? { ...t, bouncy: !t.bouncy } : t))}
-                className={cn("rounded-full px-2 py-0.5 text-[9px] font-bold transition-all",
+                className={cn("rounded-full px-2 py-0.5 text-[9px] font-bold transition-transform",
                   ct.bouncy ? "bg-[#5F6DBE] text-white" : "clay-chip text-ink-soft")}>
                 {ct.bouncy ? "🫧 bouncy" : "📌 still"}
               </button>
@@ -943,7 +943,7 @@ export default function GifStudio() {
                       {MOTION_TYPES.map((mt) => (
                         <button key={mt.id} type="button" onPointerDown={(e) => e.stopPropagation()}
                           onClick={(e) => { e.stopPropagation(); setStampMotion(s.id, mt.id); }}
-                          className={cn("h-5 w-5 rounded-full text-[9px] flex items-center justify-center transition-all",
+                          className={cn("h-5 w-5 rounded-full text-[9px] flex items-center justify-center transition-transform",
                             s.motion === mt.id ? "bg-lavender-300 scale-110" : "hover:bg-lavender-100")}
                           title={mt.label}>{mt.emoji}</button>
                       ))}
@@ -1008,14 +1008,14 @@ export default function GifStudio() {
                 {playing ? <Pause className="size-3" /> : <Play className="size-3" />}
                 {playing ? "Pause" : "Play"}</button>
               <button type="button" onClick={() => setMagicTouch((m) => !m)}
-                className={cn("clay-chip flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[10px] font-bold transition-all",
+                className={cn("clay-chip flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[10px] font-bold transition-transform",
                   magicTouch ? "bg-lavender-300 text-ink-deep" : "text-ink-soft")}>✨ magic touch</button>
             </div>
           </div>
           <div className="flex gap-1.5">
             {GIF_SPEEDS.map((s) => (
               <button key={s.id} type="button" onClick={() => setGifSpeed(s.id)}
-                className={cn("rounded-full px-2.5 py-1 text-[10px] font-bold transition-all",
+                className={cn("rounded-full px-2.5 py-1 text-[10px] font-bold transition-transform",
                   gifSpeed === s.id ? "bg-[#5F6DBE] text-white shadow-md" : "clay-chip text-ink-soft")}>
                 {s.emoji} {s.label}</button>
             ))}

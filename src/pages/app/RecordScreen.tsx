@@ -153,7 +153,7 @@ export default function RecordScreen() {
               setSavedId(null);
             }}
             className={cn(
-              "rounded-full px-5 py-2 text-sm font-bold transition-all",
+              "rounded-full px-5 py-2 text-sm font-bold transition-transform",
               mode === m
                 ? "bg-gradient-to-b from-[#c8b2ee] to-[#a588e0] text-cream-soft shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_6px_12px_-6px_rgba(118,90,190,0.55)]"
                 : "text-ink-soft hover:text-ink-deep",
@@ -178,7 +178,7 @@ export default function RecordScreen() {
             type="button"
             onClick={() => setMood((prev) => (prev === m.id ? null : m.id))}
             className={cn(
-              "rounded-full px-3 py-1.5 text-xs font-bold transition-all",
+              "rounded-full px-3 py-1.5 text-xs font-bold transition-transform",
               mood === m.id
                 ? "bg-lavender-500 text-cream-soft shadow-[0_6px_12px_-6px_rgba(118,90,190,0.6)]"
                 : "clay-chip text-ink hover:-translate-y-0.5",

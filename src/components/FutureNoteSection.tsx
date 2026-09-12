@@ -166,7 +166,7 @@ export default function FutureNoteSection() {
                       setShowDateInput(false);
                     }}
                     className={cn(
-                      "rounded-full px-3.5 py-1.5 text-xs font-bold transition-all",
+                      "rounded-full px-3.5 py-1.5 text-xs font-bold transition-transform",
                       pickedPreset === i
                         ? "bg-[#8C9AD6] text-white"
                         : "bg-[#EDEBF6]/70 text-ink-deep hover:bg-[#D9DEF4]",
@@ -182,7 +182,7 @@ export default function FutureNoteSection() {
                     setPickedPreset(null);
                   }}
                   className={cn(
-                    "rounded-full px-3.5 py-1.5 text-xs font-bold transition-all",
+                    "rounded-full px-3.5 py-1.5 text-xs font-bold transition-transform",
                     showDateInput
                       ? "bg-[#8C9AD6] text-white"
                       : "bg-[#EDEBF6]/70 text-ink-deep hover:bg-[#D9DEF4]",

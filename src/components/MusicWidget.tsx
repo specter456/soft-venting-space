@@ -68,11 +68,11 @@ export default function MusicWidget() {
               {!isGame && (
                 <div className="mt-2 flex gap-1">
                   <button type="button" onClick={() => setTab("music")}
-                    className={cn("flex-1 rounded-full py-1.5 text-[11px] font-bold transition-all", tab === "music" ? "bg-lavender-500 text-white shadow-md" : "text-ink-soft hover:text-ink-deep")}>
+                    className={cn("flex-1 rounded-full py-1.5 text-[11px] font-bold transition-transform", tab === "music" ? "bg-lavender-500 text-white shadow-md" : "text-ink-soft hover:text-ink-deep")}>
                     🎵 music
                   </button>
                   <button type="button" onClick={() => setTab("scenes")}
-                    className={cn("flex-1 rounded-full py-1.5 text-[11px] font-bold transition-all", tab === "scenes" ? "bg-lavender-500 text-white shadow-md" : "text-ink-soft hover:text-ink-deep")}>
+                    className={cn("flex-1 rounded-full py-1.5 text-[11px] font-bold transition-transform", tab === "scenes" ? "bg-lavender-500 text-white shadow-md" : "text-ink-soft hover:text-ink-deep")}>
                     🌿 scenes
                   </button>
                 </div>

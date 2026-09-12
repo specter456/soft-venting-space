@@ -217,7 +217,7 @@ export default function ScribbleScreen() {
             type="button"
             onClick={() => setTool(t.id)}
             className={cn(
-              "flex flex-col items-center gap-0.5 rounded-2xl px-2.5 py-1.5 transition-all",
+              "flex flex-col items-center gap-0.5 rounded-2xl px-2.5 py-1.5 transition-transform",
               tool === t.id ? "bg-lavender-100 text-lavender-600" : "text-ink-soft hover:text-ink-deep",
             )}
             aria-label={t.label}
@@ -229,7 +229,7 @@ export default function ScribbleScreen() {
         <button
           type="button"
           onClick={clear}
-          className="flex flex-col items-center gap-0.5 rounded-2xl px-2.5 py-1.5 text-ink-soft transition-all hover:text-blush-500"
+          className="flex flex-col items-center gap-0.5 rounded-2xl px-2.5 py-1.5 text-ink-soft transition-transform hover:text-blush-500"
           aria-label="Clear canvas"
         >
           <span aria-hidden className="text-sm">🗑️</span>

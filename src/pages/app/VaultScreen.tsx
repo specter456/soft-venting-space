@@ -129,7 +129,7 @@ export default function VaultScreen() {
             type="button"
             onClick={() => setFilter(f.id)}
             className={cn(
-              "shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-all",
+              "shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-transform",
               filter === f.id
                 ? "bg-lavender-500 text-cream-soft shadow-[0_6px_12px_-6px_rgba(118,90,190,0.6)]"
                 : "clay-chip text-ink hover:-translate-y-0.5",

@@ -180,7 +180,7 @@ export default function CalendarDayView() {
               type="button"
               onClick={() => setType(t.id)}
               className={cn(
-                "rounded-full px-3.5 py-1.5 text-xs font-bold transition-all",
+                "rounded-full px-3.5 py-1.5 text-xs font-bold transition-transform",
                 type === t.id
                   ? t.chip + " shadow-sm ring-1 ring-black/5"
                   : "bg-cream-soft/70 text-ink-soft",
@@ -211,7 +211,7 @@ export default function CalendarDayView() {
           onClick={save}
           disabled={!body.trim()}
           className={cn(
-            "w-full rounded-full py-3 text-sm font-bold transition-all",
+            "w-full rounded-full py-3 text-sm font-bold transition-transform",
             body.trim()
               ? "clay-btn text-ink-deep"
               : "bg-lavender-100/50 text-ink-soft cursor-not-allowed",
@@ -267,7 +267,7 @@ export default function CalendarDayView() {
                         type="button"
                         onClick={() => setEditType(t.id)}
                         className={cn(
-                          "rounded-full px-2.5 py-1 text-[10px] font-bold transition-all",
+                          "rounded-full px-2.5 py-1 text-[10px] font-bold transition-transform",
                           editType === t.id
                             ? t.chip + " shadow-sm"
                             : "bg-white/50 text-ink-soft",

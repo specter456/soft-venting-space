@@ -70,7 +70,7 @@ export function StarterRow({ onApply, current }: { onApply: (preset: Partial<Cus
               type="button"
               onClick={() => applied(r.preset)}
               className={cn(
-                "rounded-full px-4 py-2 text-xs font-bold transition-all",
+                "rounded-full px-4 py-2 text-xs font-bold transition-transform",
                 chosen
                   ? "bg-[var(--theme-accent, #5F6DBE)] text-white shadow-md"
                   : "bg-[var(--theme-card, rgba(255,255,255,0.65))] text-ink-deep hover:bg-white/80 hover:scale-[1.02] active:scale-95",

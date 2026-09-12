@@ -309,7 +309,7 @@ export default function Dashboard() {
                     to={tab.to}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "flex flex-1 flex-col items-center gap-0.5 py-2 transition-all",
+                      "flex flex-1 flex-col items-center gap-0.5 py-2 transition-transform",
                       !active && "hover:bg-[var(--theme-accent-light)]",
                     )}
                     style={{

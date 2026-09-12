@@ -637,7 +637,7 @@ export default function LoginEntry() {
                     onClick={() => { setCheckinPicked(m.id); finishCheckin(m.id); }}
                     className="group flex flex-1 flex-col items-center gap-1.5">
                     <span className={cn(
-                      "clay-chip flex h-14 w-14 items-center justify-center rounded-full text-3xl transition-all",
+                      "clay-chip flex h-14 w-14 items-center justify-center rounded-full text-3xl transition-transform",
                       checkinPicked === m.id && "mood-bubble mood-bubble-selected scale-110",
                     )}>
                       <span aria-hidden className="drop-shadow-sm">{m.emoji}</span>
@@ -709,7 +709,7 @@ function PasscodeUI({
         <span aria-hidden />
         <PadKey digit="0" onPress={onDigit} disabled={busy} />
         <button type="button" onClick={onBackspace} disabled={busy || digits.length === 0}
-          className="flex h-16 w-16 items-center justify-center rounded-full text-ink-soft transition-all hover:bg-[#EDEBF6]/60 active:scale-90 disabled:opacity-30"
+          className="flex h-16 w-16 items-center justify-center rounded-full text-ink-soft transition-transform hover:bg-[#EDEBF6]/60 active:scale-90 disabled:opacity-30"
           aria-label="Delete digit">
           <Delete className="size-6" />
         </button>
@@ -727,7 +727,7 @@ function PasscodeUI({
 function PadKey({ digit, onPress, disabled }: { digit: string; onPress: (d: string) => void; disabled?: boolean }) {
   return (
     <button type="button" onClick={() => onPress(digit)} disabled={disabled}
-      className="clay-chip h-16 w-16 rounded-full text-2xl font-bold text-ink-deep transition-all hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0.5 active:scale-95 disabled:opacity-60">
+      className="clay-chip h-16 w-16 rounded-full text-2xl font-bold text-ink-deep transition-transform hover:-translate-y-0.5 hover:brightness-105 active:translate-y-0.5 active:scale-95 disabled:opacity-60">
       {digit}
     </button>
   );
