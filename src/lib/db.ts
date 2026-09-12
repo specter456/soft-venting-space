@@ -173,10 +173,35 @@ export function getActiveSpaceId(): string | null {
 }
 
 /** Set the active space. Persists to kv and triggers re-render. */
+/** Keys that live in localStorage and need per-space migration. */
+const MIGRATABLE_LS_KEYS = [
+  "theme", "streak-plant", "plant-shelf", "future-notes", "polaroid-wall",
+  "pending-wall-pin", "gratitude-jar", "wind-down-used", "milestone-storyteller",
+  "reminder-shown-today", "music-volume", "music-ambient-track", "music-ambient-uploads",
+  "music-game-uploads", "music-off", "active-scene", "diary-cover", "custom-games",
+  "moon-track", "nimbus-color", "pond-pals", "calendar-decor", "onboarding-done",
+  "checkin", "lock-dismissed", "band-songs",
+];
+
+/** One-time: copy old unprefixed localStorage keys into the scoped namespace. */
+function migrateLocalStorageKeys(spaceId: string): void {
+  const prefix = `venting:${spaceId}:`;
+  try {
+    for (const key of MIGRATABLE_LS_KEYS) {
+      const scoped = prefix + key;
+      const old = `venting-${key}`;
+      if (!localStorage.getItem(scoped) && localStorage.getItem(old)) {
+        localStorage.setItem(scoped, localStorage.getItem(old)!);
+      }
+    }
+  } catch { /* private mode — ignore */ }
+}
+
 export async function setActiveSpaceId(id: string | null): Promise<void> {
   _activeSpaceId = id;
   setScopedSpaceId(id);
   if (id) {
+    migrateLocalStorageKeys(id);
     await setKv(KV_ACTIVE_SPACE_ID, id);
   } else {
     await deleteKv(KV_ACTIVE_SPACE_ID);

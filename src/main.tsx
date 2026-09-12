@@ -1,5 +1,4 @@
 import React, { Suspense } from "react";
-import '@vly-ai/integrations';
 import { AppErrorBoundary, ScreenBoundary, installGlobalErrorHandlers } from "@/components/AppErrorBoundary";
 import { hydrate } from "@/lib/db";
 
