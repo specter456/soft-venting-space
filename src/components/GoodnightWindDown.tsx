@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTapGuard } from "@/lib/useTapGuard";
-import { safeGetItem, safeSetItem } from "@/lib/safe-storage";
+import { scopedGetItem, scopedSetItem } from "@/lib/safe-storage";
 
 const GRATITUDE_KEY = "venting-gratitude-jar";
 
@@ -13,7 +13,7 @@ interface JarNote {
 
 function loadJar(): JarNote[] {
   try {
-    const raw = safeGetItem(GRATITUDE_KEY);
+    const raw = scopedGetItem(GRATITUDE_KEY);
     if (!raw) return [];
     return JSON.parse(raw) as JarNote[];
   } catch {
@@ -22,7 +22,7 @@ function loadJar(): JarNote[] {
 }
 
 function saveJar(notes: JarNote[]) {
-  safeSetItem(GRATITUDE_KEY, JSON.stringify(notes));
+  scopedSetItem(GRATITUDE_KEY, JSON.stringify(notes));
 }
 
 export default function GoodnightWindDown() {
@@ -80,7 +80,7 @@ export default function GoodnightWindDown() {
   }, 400);
 
   const skipGratitude = useTapGuard(() => setStep(1), 400);
-  const finish = useTapGuard(() => { safeSetItem("venting-wind-down-used", "true"); setOpen(false); setStep(0); setGratitude(""); }, 400);
+  const finish = useTapGuard(() => { scopedSetItem("venting-wind-down-used", "true"); setOpen(false); setStep(0); setGratitude(""); }, 400);
 
 
   return (

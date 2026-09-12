@@ -34,7 +34,7 @@ import { DIARY_STICKERS, DIARY_WEATHER, VIDEO_AVATARS } from "@/lib/art";
 import { MOODS, type MoodId, moodById } from "@/lib/moods";
 import { playPageTurn } from "@/lib/sound";
 import { cn } from "@/lib/utils";
-import { safeGetItem, safeSetItem } from "@/lib/safe-storage";
+import { scopedGetItem, scopedSetItem } from "@/lib/safe-storage";
 
 /* ─── Constants ─────────────────────────────────────────────────── */
 
@@ -154,7 +154,7 @@ export default function DiaryScreen() {
 
   const [cover, setCover] = useState(() => {
     try {
-      const raw = safeGetItem(COVER_KEY);
+      const raw = scopedGetItem(COVER_KEY);
       if (raw) return JSON.parse(raw) as { color: string; emblem: string };
     } catch {
       /* ignore */
@@ -194,7 +194,7 @@ export default function DiaryScreen() {
 
   const saveCover = (next: { color: string; emblem: string }) => {
     setCover(next);
-    safeSetItem(COVER_KEY, JSON.stringify(next));
+    scopedSetItem(COVER_KEY, JSON.stringify(next));
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

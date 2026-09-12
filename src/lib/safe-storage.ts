@@ -76,3 +76,35 @@ export function safeSessionRemoveItem(key: string): void {
 export function canPersist(): boolean {
   return localOk || sessionOk;
 }
+
+/* ─── Per-space scoped storage ────────────────────────────────────── */
+
+let _cachedSpaceId: string | null = null;
+
+/**
+ * Update the cached spaceId used by scoped storage functions.
+ * Called by setActiveSpaceId in db.ts — avoids circular import at module level.
+ */
+export function setScopedSpaceId(id: string | null): void {
+  _cachedSpaceId = id;
+}
+
+function scopedKey(key: string): string {
+  if (!_cachedSpaceId) return key; // fallback: no space active yet
+  return `venting:${_cachedSpaceId}:${key}`;
+}
+
+/** Read a value scoped to the active space. */
+export function scopedGetItem(key: string): string | null {
+  return safeGetItem(scopedKey(key));
+}
+
+/** Write a value scoped to the active space. */
+export function scopedSetItem(key: string, value: string): void {
+  safeSetItem(scopedKey(key), value);
+}
+
+/** Remove a value scoped to the active space. */
+export function scopedRemoveItem(key: string): void {
+  safeRemoveItem(scopedKey(key));
+}

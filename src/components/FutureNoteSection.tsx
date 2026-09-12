@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { safeGetItem, safeSetItem } from "@/lib/safe-storage";
+import { scopedGetItem, scopedSetItem } from "@/lib/safe-storage";
 import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "venting-future-notes";
@@ -14,7 +14,7 @@ export interface FutureNote {
 
 function loadNotes(): FutureNote[] {
   try {
-    const raw = safeGetItem(STORAGE_KEY);
+    const raw = scopedGetItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -22,7 +22,7 @@ function loadNotes(): FutureNote[] {
 }
 
 function saveNotes(notes: FutureNote[]) {
-  safeSetItem(STORAGE_KEY, JSON.stringify(notes));
+  scopedSetItem(STORAGE_KEY, JSON.stringify(notes));
 }
 
 function todayKey(): string {

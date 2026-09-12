@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import { safeGetItem, safeSetItem } from "@/lib/safe-storage";
+import { scopedGetItem, scopedSetItem } from "@/lib/safe-storage";
 
 export type ThemeId = "old-lace" | "midnight" | "spring-mint" | "peach-morning";
 
@@ -141,7 +141,7 @@ export const THEMES: ThemeDef[] = [
 
 function getSavedTheme(): ThemeId {
   try {
-    const saved = safeGetItem(STORAGE_KEY);
+    const saved = scopedGetItem(STORAGE_KEY);
     if (saved && THEMES.some((t) => t.id === saved)) return saved as ThemeId;
   } catch {
     /* ignore */
@@ -171,7 +171,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (!theme) return;
     const root = document.documentElement;
     Object.entries(theme.vars).forEach(([k, v]) => root.style.setProperty(k, v));
-    safeSetItem(STORAGE_KEY, themeId);
+    scopedSetItem(STORAGE_KEY, themeId);
   }, [themeId]);
 
   return (

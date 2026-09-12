@@ -28,7 +28,7 @@ import {
   type SavedSpace,
 } from "@/lib/spaces";
 import { todayDateKey } from "@/lib/moods";
-import { safeSetItem } from "@/lib/safe-storage";
+import { scopedSetItem } from "@/lib/safe-storage";
 import { cn } from "@/lib/utils";
 
 /**
@@ -254,7 +254,7 @@ export default function LoginEntry() {
 
   // ─── SCREEN 9: check-in finish ──────────────────────────────────
   const finishCheckin = useTapGuard((moodId: string | null) => {
-    safeSetItem(CHECKIN_KEY, JSON.stringify({ date: todayDateKey(), mood: moodId }));
+    scopedSetItem(CHECKIN_KEY, JSON.stringify({ date: todayDateKey(), mood: moodId }));
     navigate("/dashboard");
   }, 450);
 

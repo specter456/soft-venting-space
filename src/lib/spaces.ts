@@ -16,6 +16,7 @@ import {
   KV_USER_TYPE,
   getKvFromCache,
   setKv,
+  setActiveSpaceId,
 } from "./db";
 
 const KV_SPACES = "savedSpaces";
@@ -106,8 +107,11 @@ export async function removeSpace(id: string): Promise<void> {
   await saveSpaces(loadSpaces().filter((s) => s.id !== id));
 }
 
-/** Make a space the active identity for the whole app (lock + profile keys). */
+/** Make a space the active identity for the whole app (lock + profile + data isolation). */
 export async function activateSpace(space: SavedSpace): Promise<void> {
+  // 1. Set the active spaceId FIRST — this scopes all subsequent reads/writes
+  await setActiveSpaceId(space.id);
+  // 2. Set identity keys for this space
   await setKv(KV_PASSCODE_HASH, space.hash);
   await setKv(KV_PASSCODE_SALT, space.salt);
   await setKv(KV_USER_TYPE, space.type);

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { safeGetItem, safeSetItem } from "@/lib/safe-storage";
+import { scopedGetItem, scopedSetItem } from "@/lib/safe-storage";
 import { useTapGuard } from "@/lib/useTapGuard";
 
 const JAR_KEY = "venting-gratitude-jar";
@@ -13,7 +13,7 @@ interface JarNote {
 
 function loadJar(): JarNote[] {
   try {
-    const raw = safeGetItem(JAR_KEY);
+    const raw = scopedGetItem(JAR_KEY);
     if (!raw) return [];
     return JSON.parse(raw) as JarNote[];
   } catch {
@@ -22,7 +22,7 @@ function loadJar(): JarNote[] {
 }
 
 function saveJar(notes: JarNote[]) {
-  safeSetItem(JAR_KEY, JSON.stringify(notes));
+  scopedSetItem(JAR_KEY, JSON.stringify(notes));
 }
 
 export default function GratitudeJar() {

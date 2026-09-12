@@ -4,7 +4,7 @@
  * All state is local-only (localStorage). No death, no withering, no guilt.
  */
 
-import { safeGetItem, safeRemoveItem, safeSetItem } from "./safe-storage";
+import { scopedGetItem, scopedRemoveItem, scopedSetItem } from "./safe-storage";
 
 const PLANT_KEY = "venting-streak-plant";
 const SHELF_KEY = "venting-plant-shelf";
@@ -107,7 +107,7 @@ export function currentMonthDaysWatered(s: PlantState): number[] {
 
 export function loadPlantState(): PlantState | null {
   try {
-    const raw = safeGetItem(PLANT_KEY);
+    const raw = scopedGetItem(PLANT_KEY);
     if (!raw) return null;
     const s = JSON.parse(raw) as PlantState;
     if (!s || typeof s.careDays !== "number" || !s.seed) return null;
@@ -126,14 +126,14 @@ export function loadPlantState(): PlantState | null {
 
 export function savePlantState(s: PlantState | null): void {
   try {
-    if (s) safeSetItem(PLANT_KEY, JSON.stringify(s));
-    else safeRemoveItem(PLANT_KEY);
+    if (s) scopedSetItem(PLANT_KEY, JSON.stringify(s));
+    else scopedRemoveItem(PLANT_KEY);
   } catch { /* ignore */ }
 }
 
 export function loadShelf(): ShelfFlower[] {
   try {
-    const raw = safeGetItem(SHELF_KEY);
+    const raw = scopedGetItem(SHELF_KEY);
     if (raw) {
       const arr = JSON.parse(raw) as ShelfFlower[];
       return Array.isArray(arr) ? arr : [];
@@ -143,7 +143,7 @@ export function loadShelf(): ShelfFlower[] {
 }
 
 export function saveShelf(flowers: ShelfFlower[]): void {
-  try { safeSetItem(SHELF_KEY, JSON.stringify(flowers)); } catch { /* ignore */ }
+  try { scopedSetItem(SHELF_KEY, JSON.stringify(flowers)); } catch { /* ignore */ }
 }
 
 export function canWaterToday(s: PlantState): boolean {

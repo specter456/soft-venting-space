@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTable, type MoodCheckin, type VaultItem, type KVPair } from "@/lib/db";
-import { safeGetItem } from "@/lib/safe-storage";
+import { scopedGetItem } from "@/lib/safe-storage";
 import { cn } from "@/lib/utils";
 
 type MilestoneId =
@@ -77,7 +77,7 @@ function getEarnedMilestones(
   }
 
   // storyteller: finished a tale (flag set by TinyTales via localStorage)
-  if (safeGetItem("venting-milestone-storyteller") === "true") earned.add("storyteller");
+  if (scopedGetItem("venting-milestone-storyteller") === "true") earned.add("storyteller");
   // Also check the older KV-based flag for backward compat
   if (!earned.has("storyteller")) {
     const talesJson = kv.find((k) => k.key === "venting-tales-completed")?.value;
@@ -90,7 +90,7 @@ function getEarnedMilestones(
   }
 
   // night-owl: used wind-down
-  const windDown = safeGetItem("venting-wind-down-used");
+  const windDown = scopedGetItem("venting-wind-down-used");
   if (windDown === "true") earned.add("night-owl");
 
   // Also check for first-doodle via vault items (doodles saved to vault)

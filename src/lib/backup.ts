@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import {
   STORE_NAMES,
+  getActiveSpaceId,
   type StoreName,
   type LocalRow,
   type VaultItem,
@@ -8,25 +9,40 @@ import {
 } from "@/lib/db";
 
 /**
- * Bundle ALL local Venting data into a zip file and trigger a download.
- * Includes: IndexedDB stores + localStorage keys.
+ * Bundle the ACTIVE SPACE's local data into a zip and trigger download.
+ * Only includes data belonging to the active space.
  */
 export async function downloadBackup(): Promise<void> {
   const zip = new JSZip();
+  const spaceId = getActiveSpaceId();
 
-  // ─── 1. IndexedDB stores ────────────────────────────────────────
+  // ─── 1. IndexedDB stores (filtered by active space) ──────────────
   const dbData: Record<string, LocalRow[]> = {};
   for (const storeName of STORE_NAMES) {
-    const rows = await idbGetAll(storeName);
-    dbData[storeName] = rows;
+    const allRows = await idbGetAll(storeName);
+    // KV store is cross-space (savedSpaces, activeSpaceId) — include all
+    // Content stores: only include rows belonging to the active space
+    if (storeName === "kv") {
+      dbData[storeName] = allRows;
+    } else {
+      dbData[storeName] = spaceId
+        ? allRows.filter((r) => !r.spaceId || r.spaceId === spaceId)
+        : allRows;
+    }
   }
   zip.file("db.json", JSON.stringify(dbData, null, 2));
 
-  // ─── 2. localStorage keys ───────────────────────────────────────
+  // ─── 2. localStorage keys (scoped to active space) ──────────────
   const lsData: Record<string, string> = {};
+  const prefix = spaceId ? `venting:${spaceId}:` : null;
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key && key.startsWith("venting-")) {
+    if (!key) continue;
+    // Include scoped keys for this space, and cross-space venting-* keys
+    if (prefix && key.startsWith(prefix)) {
+      const val = localStorage.getItem(key);
+      if (val !== null) lsData[key] = val;
+    } else if (key.startsWith("venting-") && !key.startsWith("venting:")) {
       const val = localStorage.getItem(key);
       if (val !== null) lsData[key] = val;
     }
@@ -100,10 +116,15 @@ export async function restoreBackup(file: File): Promise<{ ok: boolean; error?: 
     // ─── Wipe existing data first ─────────────────────────────────
     await wipeAllIDB();
 
-    // ─── Restore IndexedDB stores ─────────────────────────────────
+    // ─── Restore IndexedDB stores (stamp content rows with active spaceId) ──
+    const spaceId = getActiveSpaceId();
     for (const storeName of STORE_NAMES) {
       const rows = dbData[storeName] || [];
       for (const row of rows) {
+        // Stamp content rows with the active spaceId so they belong to this space
+        if (storeName !== "kv" && spaceId && !row.spaceId) {
+          row.spaceId = spaceId;
+        }
         await idbPut(storeName as StoreName, row);
       }
     }

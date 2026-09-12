@@ -12,7 +12,7 @@
  */
 
 import { useSyncExternalStore } from "react";
-import { safeGetItem, safeSetItem } from "./safe-storage";
+import { scopedGetItem, scopedSetItem } from "./safe-storage";
 
 const KV_VOLUME = "venting-music-volume";
 const KV_AMBIENT_TRACK = "venting-music-ambient-track";
@@ -76,27 +76,27 @@ export interface MusicState {
 /* ─── Storage helpers ────────────────────────────────────────────── */
 
 function readVolume(): number {
-  const raw = safeGetItem(KV_VOLUME);
+  const raw = scopedGetItem(KV_VOLUME);
   const n = raw === null ? NaN : Number(raw);
   if (!Number.isFinite(n)) return 0.38;
   return Math.min(1, Math.max(0, n));
 }
 
 function readAmbientTrackId(): BuiltinTrackId | null {
-  const raw = safeGetItem(KV_AMBIENT_TRACK);
+  const raw = scopedGetItem(KV_AMBIENT_TRACK);
   return BUILTIN_TRACKS.some((t) => t.id === raw) ? (raw as BuiltinTrackId) : null;
 }
 
 function readUploads(key: string): UploadedTrack[] {
   try {
-    const raw = safeGetItem(key);
+    const raw = scopedGetItem(key);
     if (raw) return JSON.parse(raw) as UploadedTrack[];
   } catch { /* ignore */ }
   return [];
 }
 
 function writeUploads(key: string, tracks: UploadedTrack[]): void {
-  safeSetItem(key, JSON.stringify(tracks));
+  scopedSetItem(key, JSON.stringify(tracks));
 }
 
 /* ─── WebAudio helpers ───────────────────────────────────────────── */
@@ -444,9 +444,9 @@ class MusicEngine {
 
   private ambientTrack: MusicTrack | null = null; // what the user chose as ambient
   private gameTrack: MusicTrack | null = null;     // currently playing game track
-  private _activeScene: SceneId = (safeGetItem(KV_ACTIVE_SCENE) as SceneId) || null;
+  private _activeScene: SceneId = (scopedGetItem(KV_ACTIVE_SCENE) as SceneId) || null;
   private _volume = readVolume();
-  private _muted = safeGetItem(KV_MUSIC_OFF) === "1";
+  private _muted = scopedGetItem(KV_MUSIC_OFF) === "1";
   private _playing = false;
   private _layer: "ambient" | "game" | null = null;
 
@@ -520,7 +520,7 @@ class MusicEngine {
   /** Change the ambient track (from the CD menu on app screens). */
   setAmbient(track: MusicTrack): void {
     this.ambientTrack = track;
-    if (track.kind === "builtin") safeSetItem(KV_AMBIENT_TRACK, track.id);
+    if (track.kind === "builtin") scopedSetItem(KV_AMBIENT_TRACK, track.id);
     // If ambient is currently playing (not overridden by game), restart with new track
     if (this._layer === "ambient" || this._layer === null) {
       this.ambient.prime(this._effectiveVol());
@@ -637,7 +637,7 @@ class MusicEngine {
 
   setVolume(v: number): void {
     this._volume = Math.min(1, Math.max(0, v));
-    safeSetItem(KV_VOLUME, String(this._volume));
+    scopedSetItem(KV_VOLUME, String(this._volume));
     const eff = this._effectiveVol();
     this.ambient.setGain(eff);
     this.game.setGain(eff);
@@ -648,7 +648,7 @@ class MusicEngine {
   /** Globally mute / unmute everything. */
   setMuted(m: boolean): void {
     this._muted = m;
-    safeSetItem(KV_MUSIC_OFF, m ? "1" : "0");
+    scopedSetItem(KV_MUSIC_OFF, m ? "1" : "0");
     if (m) {
       this.ambient.hardStop();
       this.game.hardStop();
@@ -699,7 +699,7 @@ class MusicEngine {
     }
     this.scene.hardStop();
     this._activeScene = sceneId;
-    safeSetItem(KV_ACTIVE_SCENE, sceneId);
+    scopedSetItem(KV_ACTIVE_SCENE, sceneId);
     this.scene.prime(this._effectiveVol());
     this.scene.playScene(sceneId, this._effectiveVol());
     this.emit();
@@ -710,7 +710,7 @@ class MusicEngine {
     if (!this._activeScene) return;
     this.scene.hardStop();
     this._activeScene = null;
-    safeSetItem(KV_ACTIVE_SCENE, "");
+    scopedSetItem(KV_ACTIVE_SCENE, "");
     this.emit();
   }
 

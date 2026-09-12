@@ -12,6 +12,7 @@
  */
 
 import { useSyncExternalStore } from "react";
+import { setScopedSpaceId } from "@/lib/safe-storage";
 
 const DB_NAME = "venting-local";
 // v2: adds the calendarEntries store. Existing devices get the new store
@@ -32,6 +33,8 @@ export type StoreName = (typeof STORE_NAMES)[number];
 export interface LocalRow {
   _id: string;
   _creationTime: number;
+  /** Per-space isolation — stamped on creation, used to filter by active space. */
+  spaceId?: string;
 }
 
 export type AttachmentKind = "audio" | "video" | "photo";
@@ -131,6 +134,9 @@ export const KV_USER_TYPE = "userType"; // "email" | "guest"
 export const KV_USER_EMAIL = "userEmail";
 export const KV_USER_NAME = "userName";
 
+/** Active space ID — set ONLY after signup or correct passcode at login. */
+export const KV_ACTIVE_SPACE_ID = "activeSpaceId";
+
 /* ─── Cache + subscription bus ─────────────────────────────────────── */
 
 const cache: Record<StoreName, LocalRow[]> = {
@@ -147,6 +153,67 @@ let hydrated = false;
 let dbPromise: Promise<IDBDatabase> | null = null;
 const listeners = new Set<() => void>();
 
+/* ─── Per-space isolation ─────────────────────────────────────────── */
+
+/** Content stores that are scoped per-space. */
+const CONTENT_STORES: readonly StoreName[] = [
+  "notes",
+  "recordings",
+  "diaryEntries",
+  "vaultItems",
+  "moodCheckins",
+  "calendarEntries",
+];
+
+let _activeSpaceId: string | null = null;
+
+/** Returns the active space ID (set only after login/signup). */
+export function getActiveSpaceId(): string | null {
+  return _activeSpaceId;
+}
+
+/** Set the active space. Persists to kv and triggers re-render. */
+export async function setActiveSpaceId(id: string | null): Promise<void> {
+  _activeSpaceId = id;
+  setScopedSpaceId(id);
+  if (id) {
+    await setKv(KV_ACTIVE_SPACE_ID, id);
+  } else {
+    await deleteKv(KV_ACTIVE_SPACE_ID);
+  }
+  notify();
+}
+
+/** Re-read all IDB stores into cache (used after space switch). */
+export async function rehydrateActiveSpace(): Promise<void> {
+  if (!dbPromise) return;
+  try {
+    for (const name of STORE_NAMES) {
+      const rows = await withStore<LocalRow[]>(name, "readonly", (s) => s.getAll());
+      cache[name] = rows ?? [];
+    }
+    // Re-read activeSpaceId from kv
+    _activeSpaceId = (cache.kv as KVPair[]).find((k) => k.key === KV_ACTIVE_SPACE_ID)?.value ?? null;
+  } catch { /* ignore */ }
+  notify();
+}
+
+/** Tag all spaceId-less content rows with the given spaceId (one-time migration). */
+async function migrateUntaggedRows(spaceId: string): Promise<void> {
+  let changed = false;
+  for (const name of CONTENT_STORES) {
+    const rows = cache[name];
+    const untagged = rows.filter((r) => !r.spaceId);
+    if (untagged.length === 0) continue;
+    changed = true;
+    cache[name] = rows.map((r) => (r.spaceId ? r : { ...r, spaceId }));
+    for (const row of untagged) {
+      await persistPut(name, { ...row, spaceId });
+    }
+  }
+  if (changed) notify();
+}
+
 function notify(): void {
   for (const listener of listeners) {
     listener();
@@ -161,7 +228,10 @@ export function subscribe(listener: () => void): () => void {
 }
 
 function getSnapshot(name: StoreName): LocalRow[] {
-  return cache[name];
+  // KV store is never filtered — it holds cross-space metadata (savedSpaces, activeSpaceId)
+  // and per-space identity keys that are overwritten by activateSpace().
+  if (!CONTENT_STORES.includes(name) || !_activeSpaceId) return cache[name];
+  return cache[name].filter((row) => row.spaceId === _activeSpaceId);
 }
 
 /* ─── IndexedDB plumbing (with a graceful in-memory fallback) ─────── */
@@ -210,6 +280,13 @@ export async function hydrate(): Promise<void> {
     for (const name of STORE_NAMES) {
       const rows = await withStore<LocalRow[]>(name, "readonly", (s) => s.getAll());
       cache[name] = rows ?? [];
+    }
+    // Read active space ID from kv
+    _activeSpaceId = (cache.kv as KVPair[]).find((k) => k.key === KV_ACTIVE_SPACE_ID)?.value ?? null;
+    setScopedSpaceId(_activeSpaceId);
+    // One-time migration: tag spaceId-less content rows with active space
+    if (_activeSpaceId) {
+      await migrateUntaggedRows(_activeSpaceId);
     }
   } catch {
     // No storage available (private mode / odd environment) — stay
@@ -260,7 +337,7 @@ function uid(): string {
 }
 
 function addRow<T extends LocalRow>(name: StoreName, input: Omit<T, "_id" | "_creationTime">): T {
-  const row = { ...input, _id: uid(), _creationTime: Date.now() } as T;
+  const row = { ...input, _id: uid(), _creationTime: Date.now(), spaceId: _activeSpaceId ?? undefined } as T;
   cache[name] = [...cache[name], row];
   void persistAdd(name, row);
   notify();
@@ -406,32 +483,68 @@ export function getPasscodeLocally(): { hash: string; salt: string } | null {
 }
 
 /**
- * Gentle full wipe: clears every store (including the lock) on this device.
- * Used by Settings → "Delete everything" after confirmation. Never touches
- * anything outside this device.
+ * Space-scoped wipe: clears only the active space's data.
+ * Used by Settings → "Delete everything" after confirmation.
  */
 export async function wipeAll(): Promise<void> {
+  const spaceId = _activeSpaceId;
   try {
     const db = await openDb();
-    await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(STORE_NAMES, "readwrite");
-      for (const name of STORE_NAMES) {
-        tx.objectStore(name).clear();
+    if (spaceId) {
+      // Only clear rows belonging to the active space
+      for (const name of CONTENT_STORES) {
+        const rows = (cache[name] as LocalRow[]).filter((r) => r.spaceId === spaceId);
+        for (const row of rows) {
+          await persistDelete(name, row._id);
+        }
       }
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
+      // Clear this space's identity keys
+      await deleteKv(KV_PASSCODE_HASH);
+      await deleteKv(KV_PASSCODE_SALT);
+      await deleteKv(KV_USER_TYPE);
+      await deleteKv(KV_USER_EMAIL);
+      await deleteKv(KV_USER_NAME);
+      await deleteKv(KV_ACTIVE_SPACE_ID);
+      // Remove this space from the savedSpaces list
+      try {
+        const { loadSpaces, saveSpaces } = await import("./spaces");
+        await saveSpaces(loadSpaces().filter((s) => s.id !== spaceId));
+      } catch { /* ignore */ }
+    } else {
+      // No active space — full wipe (fallback for edge cases)
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(STORE_NAMES, "readwrite");
+        for (const name of STORE_NAMES) {
+          tx.objectStore(name).clear();
+        }
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    }
   } catch {
     /* in-memory mode — nothing persisted to clear */
   }
-  for (const name of STORE_NAMES) {
-    cache[name] = [];
+  // Update cache
+  if (spaceId) {
+    for (const name of CONTENT_STORES) {
+      cache[name] = cache[name].filter((r) => r.spaceId !== spaceId);
+    }
+  } else {
+    for (const name of STORE_NAMES) {
+      cache[name] = [];
+    }
   }
-  // Also clear localStorage keys so the next visit is a fresh start
+  // Clear scoped localStorage keys for this space
   try {
-    localStorage.removeItem("venting-profile-email");
-    localStorage.removeItem("venting-checkin");
-    localStorage.removeItem("venting-lock-dismissed");
+    const prefix = spaceId ? `venting:${spaceId}:` : null;
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith("venting-")) keysToRemove.push(k);
+      if (prefix && k && k.startsWith(prefix)) keysToRemove.push(k);
+    }
+    keysToRemove.forEach((k) => localStorage.removeItem(k));
   } catch { /* ignore */ }
+  _activeSpaceId = null;
   notify();
 }

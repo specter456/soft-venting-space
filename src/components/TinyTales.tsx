@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { safeGetItem, safeSetItem } from "@/lib/safe-storage";
+import { scopedGetItem, scopedSetItem } from "@/lib/safe-storage";
 import { createDiaryEntry } from "@/lib/db";
 import { useTapGuard } from "@/lib/useTapGuard";
 
@@ -86,7 +86,7 @@ const STORIES: Story[] = [
 
 function loadProgress(): Record<string, number> {
   try {
-    const raw = safeGetItem(TALES_KEY);
+    const raw = scopedGetItem(TALES_KEY);
     if (!raw) return {};
     return JSON.parse(raw) as Record<string, number>;
   } catch {
@@ -95,7 +95,7 @@ function loadProgress(): Record<string, number> {
 }
 
 function saveProgress(progress: Record<string, number>) {
-  safeSetItem(TALES_KEY, JSON.stringify(progress));
+  scopedSetItem(TALES_KEY, JSON.stringify(progress));
 }
 
 /* ─── Component ───────────────────────────────────────────────────── */
@@ -145,7 +145,7 @@ export default function TinyTales() {
   }, 400);
 
   const anotherTale = useTapGuard(() => {
-    safeSetItem("venting-milestone-storyteller", "true");
+    scopedSetItem("venting-milestone-storyteller", "true");
     setActiveStory(null);
     setPageIdx(0);
   }, 300);

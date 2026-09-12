@@ -7,7 +7,7 @@ import { BuilderShell } from "@/components/BuilderShell";
 import { WORRY_BUBBLES } from "@/lib/art";
 import { music, type BuiltinTrackId } from "@/lib/music";
 import { useTapGuard } from "@/lib/useTapGuard";
-import { safeGetItem, safeSetItem } from "@/lib/safe-storage";
+import { scopedGetItem, scopedSetItem } from "@/lib/safe-storage";
 import { cn } from "@/lib/utils";
 
 /* ─── Custom game types & storage ─────────────────────────────────── */
@@ -40,7 +40,7 @@ const STORAGE_KEY = "venting-custom-games";
 
 function loadCustomGames(): CustomGameConfig[] {
   try {
-    const raw = safeGetItem(STORAGE_KEY);
+    const raw = scopedGetItem(STORAGE_KEY);
     if (!raw) return [];
     return JSON.parse(raw) as CustomGameConfig[];
   } catch {
@@ -49,7 +49,7 @@ function loadCustomGames(): CustomGameConfig[] {
 }
 
 function saveCustomGames(games: CustomGameConfig[]) {
-  safeSetItem(STORAGE_KEY, JSON.stringify(games));
+  scopedSetItem(STORAGE_KEY, JSON.stringify(games));
 }
 
 /* ─── Option data ─────────────────────────────────────────────────── */
@@ -311,14 +311,14 @@ const MOON_MUSIC_KEY = "venting-moon-track";
 
 function loadMoonTrack(): MoonTrack {
   try {
-    const raw = safeGetItem(MOON_MUSIC_KEY);
+    const raw = scopedGetItem(MOON_MUSIC_KEY);
     if (raw && MOON_TRACKS.some((t) => t.id === raw)) return raw as MoonTrack;
   } catch { /* ignore */ }
   return "dreamy-piano";
 }
 
 function saveMoonTrack(track: MoonTrack) {
-  safeSetItem(MOON_MUSIC_KEY, track);
+  scopedSetItem(MOON_MUSIC_KEY, track);
 }
 
 /* Soft ambient music engine for Moonlight Glide */
@@ -1601,7 +1601,7 @@ function SoftColoring() {
 
   const savePic = () => {
     const data = { picture: pic.id, fills };
-    safeSetItem("venting-coloring-" + pic.id, JSON.stringify(data));
+    scopedSetItem("venting-coloring-" + pic.id, JSON.stringify(data));
   };
 
   return (
@@ -1661,7 +1661,7 @@ function PondPals() {
   const [state, setState] = useState<"idle" | "cast" | "nibble" | "caught">("idle");
   const [catch_, setCatch] = useState<typeof POND_CATCHES[0] | null>(null);
   const [shelf, setShelf] = useState<string[]>(() => {
-    try { const r = safeGetItem(POND_SHELF_KEY); return r ? JSON.parse(r) : []; } catch { return []; }
+    try { const r = scopedGetItem(POND_SHELF_KEY); return r ? JSON.parse(r) : []; } catch { return []; }
   });
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -1679,7 +1679,7 @@ function PondPals() {
     setState("caught");
     const next = [...new Set([...shelf, c.name])];
     setShelf(next);
-    safeSetItem(POND_SHELF_KEY, JSON.stringify(next));
+    scopedSetItem(POND_SHELF_KEY, JSON.stringify(next));
   };
 
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);

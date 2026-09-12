@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { createVaultItem, useTable, type VaultItem } from "@/lib/db";
-import { safeGetItem, safeSetItem, safeRemoveItem } from "@/lib/safe-storage";
+import { scopedGetItem, scopedSetItem, scopedRemoveItem } from "@/lib/safe-storage";
 import { isImageArt } from "@/lib/canvas-art";
 import { cn } from "@/lib/utils";
 
@@ -17,15 +17,15 @@ export interface PendingPin {
 
 /** Call after saving a photo/doodle anywhere: arms the next wall visit to pin it. */
 export function armPendingPin(vaultId: string, art: string): void {
-  safeSetItem(PENDING_PIN_KEY, JSON.stringify({ vaultId, art } satisfies PendingPin));
+  scopedSetItem(PENDING_PIN_KEY, JSON.stringify({ vaultId, art } satisfies PendingPin));
 }
 
 /** Read + clear a pending pin (one-shot). */
 function consumePendingPin(): PendingPin | null {
   try {
-    const raw = safeGetItem(PENDING_PIN_KEY);
+    const raw = scopedGetItem(PENDING_PIN_KEY);
     if (!raw) return null;
-    safeRemoveItem(PENDING_PIN_KEY);
+    scopedRemoveItem(PENDING_PIN_KEY);
     const p = JSON.parse(raw) as PendingPin;
     return p && typeof p.art === "string" ? p : null;
   } catch {
@@ -45,7 +45,7 @@ interface PolaroidPin {
 
 function loadWall(): PolaroidPin[] {
   try {
-    const raw = safeGetItem(STORAGE_KEY);
+    const raw = scopedGetItem(STORAGE_KEY);
     if (raw) {
       const arr = JSON.parse(raw) as PolaroidPin[];
       return Array.isArray(arr) ? arr : [];
@@ -55,7 +55,7 @@ function loadWall(): PolaroidPin[] {
 }
 
 function saveWall(pins: PolaroidPin[]) {
-  safeSetItem(STORAGE_KEY, JSON.stringify(pins));
+  scopedSetItem(STORAGE_KEY, JSON.stringify(pins));
 }
 
 /* ─── Home card ──────────────────────────────────────────────────── */

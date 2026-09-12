@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useTable, getKvFromCache, type MoodCheckin } from "@/lib/db";
 import { todayDateKey } from "@/lib/moods";
-import { safeGetItem, safeSetItem } from "@/lib/safe-storage";
+import { scopedGetItem, scopedSetItem } from "@/lib/safe-storage";
 
 const REMINDER_SHOWN_KEY = "venting-reminder-shown-today";
 
@@ -29,7 +29,7 @@ export default function GentleReminder() {
 
     // Check if already shown today
     const today = todayDateKey();
-    const shownToday = safeGetItem(REMINDER_SHOWN_KEY);
+    const shownToday = scopedGetItem(REMINDER_SHOWN_KEY);
     if (shownToday === today) return;
 
     // Check if user has checked in today
@@ -48,7 +48,7 @@ export default function GentleReminder() {
     });
 
     // Mark as shown for today
-    safeSetItem(REMINDER_SHOWN_KEY, today);
+    scopedSetItem(REMINDER_SHOWN_KEY, today);
   }, [checkins]);
 
   // This component renders nothing — it only fires a side effect

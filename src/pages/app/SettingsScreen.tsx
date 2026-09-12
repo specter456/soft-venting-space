@@ -9,7 +9,7 @@ import {
   wipeAll,
   type KVPair,
 } from "@/lib/db";
-import { safeRemoveItem, safeSessionRemoveItem } from "@/lib/safe-storage";
+import { scopedRemoveItem, safeSessionRemoveItem } from "@/lib/safe-storage";
 import { useAsyncTapGuard, useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
 import { THEMES, useTheme } from "@/lib/themes";
@@ -101,10 +101,10 @@ export default function SettingsScreen() {
       return;
     }
     await wipeAll();
-    safeRemoveItem("venting-onboarding-done");
-    safeRemoveItem("venting-checkin");
-    safeRemoveItem("venting-diary-cover");
-    safeRemoveItem("venting-lock-dismissed");
+    scopedRemoveItem("venting-onboarding-done");
+    scopedRemoveItem("venting-checkin");
+    scopedRemoveItem("venting-diary-cover");
+    scopedRemoveItem("venting-lock-dismissed");
     safeSessionRemoveItem("venting-vault-unlocked");
     // start fresh — the welcome flow will greet you again
     window.location.href = "/";

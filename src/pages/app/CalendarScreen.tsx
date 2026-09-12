@@ -9,7 +9,7 @@ import {
   WEEKDAY_LABELS,
 } from "@/lib/calendar";
 import { useTable, type CalendarEntry, type VaultItem } from "@/lib/db";
-import { safeGetItem, safeSetItem } from "@/lib/safe-storage";
+import { scopedGetItem, scopedSetItem } from "@/lib/safe-storage";
 import { useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
 
@@ -44,14 +44,14 @@ const DECOR_KEY = "venting-calendar-decor";
 
 function loadDecorations(): CalendarDecorations {
   try {
-    const raw = safeGetItem(DECOR_KEY);
+    const raw = scopedGetItem(DECOR_KEY);
     if (raw) return JSON.parse(raw) as CalendarDecorations;
   } catch { /* ignore */ }
   return { stickers: [], wallpaper: null, wallpaperType: null };
 }
 
 function saveDecorations(d: CalendarDecorations) {
-  safeSetItem(DECOR_KEY, JSON.stringify(d));
+  scopedSetItem(DECOR_KEY, JSON.stringify(d));
 }
 
 const BUILT_IN_STICKERS = [
