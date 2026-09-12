@@ -73,7 +73,7 @@ export default function SeasonalParticles() {
     const timer = setInterval(() => {
       setParticles((prev) => {
         const next = [...prev, spawnParticle(season)];
-        return next.length > 3 ? next.slice(-3) : next;
+        return next.length > 2 ? next.slice(-2) : next;
       });
     }, 12000);
     return () => clearInterval(timer);

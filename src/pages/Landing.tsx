@@ -80,14 +80,6 @@ export default function Landing() {
         aria-hidden
         className="pointer-events-none absolute top-40 -right-32 h-[28rem] w-[28rem] rounded-full bg-[#F3E7C9]/30 blur-lg"
       />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute top-[52rem] -left-40 h-96 w-96 rounded-full bg-[#C4CBE8]/30 blur-lg"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[#EDEBF6]/30 blur-lg"
-      />
 
 
 
