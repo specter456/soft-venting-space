@@ -1,12 +1,13 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { Check, Loader2, Pause, Play, Trash2 } from "lucide-react";
+import { Check, Loader2, Pause, Play, Trash2, VolumeX } from "lucide-react";
 import { Waveform } from "@/components/AttachmentChip";
 import { createRecording, removeItem, useTable, type Recording } from "@/lib/db";
 import { VIDEO_AVATARS, VOICE_COMPANION } from "@/lib/art";
 import { MOODS, type MoodId, moodById } from "@/lib/moods";
+import { music } from "@/lib/music";
 import { cn } from "@/lib/utils";
 import { useTapGuard } from "@/lib/useTapGuard";
 
@@ -38,7 +39,22 @@ export default function RecordScreen() {
   const [seconds, setSeconds] = useState(0);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [permDenied, setPermDenied] = useState(false);
+  const [recordedBlob, setRecordedBlob] = useState<string | null>(null);
   const timerRef = useRef<number | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<BlobPart[]>([]);
+
+  // Cleanup stream on unmount
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+    }
+  }, []);
 
   // stop the timer if we leave the screen mid-recording
   useEffect(() => {
@@ -48,18 +64,60 @@ export default function RecordScreen() {
   }, []);
 
   // Guarded so a double-tap or held press can't start two timers at once.
-  const startRecording = useTapGuard(() => {
+  const startRecording = useTapGuard(async () => {
     if (stage === "recording") return;
-    setStage("recording");
-    setSeconds(0);
-    setSavedId(null);
-    timerRef.current = window.setInterval(() => {
-      setSeconds((s) => s + 1);
-    }, 1000);
+    setPermDenied(false);
+    setRecordedBlob(null);
+    try {
+      // Stop any playing music before recording (one-brain rule)
+      music.stop(400);
+      const constraints: MediaStreamConstraints =
+        mode === "video"
+          ? { video: { facingMode: "user" }, audio: true }
+          : { audio: true };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")
+        ? "audio/ogg;codecs=opus"
+        : "audio/webm";
+      const recorder = new MediaRecorder(stream, { mimeType });
+      recorderRef.current = recorder;
+      chunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      recorder.onstop = async () => {
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType });
+        // Convert to data URL for storage
+        const reader = new FileReader();
+        reader.onload = () => setRecordedBlob(reader.result as string);
+        reader.readAsDataURL(blob);
+        // Stop tracks
+        stream.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      };
+      recorder.start(100);
+      setStage("recording");
+      setSeconds(0);
+      setSavedId(null);
+      timerRef.current = window.setInterval(() => {
+        setSeconds((s) => s + 1);
+      }, 1000);
+    } catch (err) {
+      console.warn("[record] permission denied or error:", err);
+      setPermDenied(true);
+    }
   }, 400);
 
   const stopRecording = () => {
     if (timerRef.current) window.clearInterval(timerRef.current);
+    try {
+      if (recorderRef.current && recorderRef.current.state !== "inactive") {
+        recorderRef.current.stop();
+      }
+    } catch { /* already stopped */ }
     setStage("done");
   };
 
@@ -78,6 +136,7 @@ export default function RecordScreen() {
         kind: mode,
         mood: mood ?? undefined,
         duration: Math.max(1, seconds),
+        dataUrl: recordedBlob ?? undefined,
       });
       setSavedId(recording._id);
       return recording._id;
@@ -271,6 +330,11 @@ export default function RecordScreen() {
                   ? "Safe, quiet, non-judgmental — always."
                   : "A private emotional mirror, never social media."}
               </p>
+              {permDenied && (
+                <p className="mt-3 flex items-center gap-1.5 text-xs font-bold text-ink-soft">
+                  <VolumeX className="size-3.5" /> that's okay — recording stays off
+                </p>
+              )}
             </motion.div>
           )}
 
@@ -456,6 +520,7 @@ export default function RecordScreen() {
               kind={rec.kind}
               duration={rec.duration}
               mood={rec.mood}
+              dataUrl={rec.dataUrl}
               createdAt={rec._creationTime}
               onDelete={() => {
                 removeItem("recordings", rec._id);
@@ -564,25 +629,87 @@ function RecordingRow({
   kind,
   duration,
   mood,
+  dataUrl,
   createdAt,
   onDelete,
 }: {
   kind: "voice" | "video";
   duration: number;
   mood?: string;
+  dataUrl?: string;
   createdAt: number;
   onDelete: () => void;
 }) {
   const [playing, setPlaying] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const moodInfo = moodById(mood);
-  // Guarded so a double-tap can't toggle play/pause twice in a row.
-  const togglePlay = useTapGuard(() => setPlaying((p) => !p), 400);
+  const wasMusicPlaying = useRef(false);
 
+  // Cleanup blob URLs on unmount
   useEffect(() => {
-    if (!playing) return;
-    const t = window.setTimeout(() => setPlaying(false), 3500);
-    return () => window.clearTimeout(t);
-  }, [playing]);
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.src = '';
+      }
+    };
+  }, []);
+
+  const handlePlay = useCallback(() => {
+    if (!dataUrl) {
+      // No recording data — just animate the waveform
+      setPlaying(true);
+      window.setTimeout(() => setPlaying(false), 3500);
+      return;
+    }
+    // Duck music before playing recording
+    wasMusicPlaying.current = music.getState().playing;
+    music.stop(300);
+    if (kind === "video") {
+      setShowVideo(true);
+      // Video playback happens via the video element rendered in the expanded view
+    } else {
+      // Voice: create or reuse audio element
+      let el = audioRef.current;
+      if (!el) {
+        el = new Audio();
+        el.volume = 1;
+        el.muted = false;
+        audioRef.current = el;
+      }
+      el.src = dataUrl;
+      el.play().catch(() => {});
+      el.onended = () => {
+        setPlaying(false);
+        // Resume music if it was playing
+        if (wasMusicPlaying.current) music.resume();
+      };
+    }
+    setPlaying(true);
+  }, [dataUrl, kind]);
+
+  const handlePause = useCallback(() => {
+    if (kind === "voice" && audioRef.current) {
+      audioRef.current.pause();
+    } else if (kind === "video" && videoRef.current) {
+      videoRef.current.pause();
+    }
+    setPlaying(false);
+    setShowVideo(false);
+    // Resume music if it was playing before
+    if (wasMusicPlaying.current) music.resume();
+  }, [kind]);
+
+  const togglePlay = useTapGuard(() => {
+    if (playing) handlePause();
+    else handlePlay();
+  }, 400);
 
   return (
     <div className="clay-card flex items-center gap-3 rounded-3xl px-4 py-3">
@@ -619,6 +746,49 @@ function RecordingRow({
       >
         <Trash2 className="size-3.5" />
       </button>
+      {/* Hidden audio element for voice playback */}
+      {kind === "voice" && (
+        <audio ref={audioRef} preload="auto" className="hidden" />
+      )}
+      {/* Video playback overlay */}
+      {kind === "video" && showVideo && dataUrl && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
+          <div className="relative max-w-lg w-full">
+            <video
+              ref={videoRef}
+              src={dataUrl}
+              controls
+              autoPlay
+              muted={false}
+              className="w-full rounded-2xl"
+              onEnded={() => {
+                setPlaying(false);
+                setShowVideo(false);
+                if (wasMusicPlaying.current) music.resume();
+              }}
+              onPlay={() => setPlaying(true)}
+              onPause={() => {
+                setPlaying(false);
+                setShowVideo(false);
+                if (wasMusicPlaying.current) music.resume();
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (videoRef.current) videoRef.current.pause();
+                setPlaying(false);
+                setShowVideo(false);
+                if (wasMusicPlaying.current) music.resume();
+              }}
+              className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white text-xs font-bold"
+              aria-label="Close video"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

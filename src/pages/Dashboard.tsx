@@ -60,6 +60,9 @@ const TABS = [
 export default function Dashboard() {
   const location = useLocation();
   const hydrated = useHydrated();
+  const [hydrationTimeout, setHydrationTimeout] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setHydrationTimeout(true), 3000); return () => clearTimeout(t); }, []);
+  const showContent = hydrated || hydrationTimeout;
   const kv = useTable<KVPair>("kv");
 
   const hasPasscode =
@@ -188,10 +191,10 @@ export default function Dashboard() {
       />
 
       {/* ─── Drifting sky clouds (decorative) ──────────────────── */}
-      <div className="sky-cloud sky-cloud-1" aria-hidden />
-      <div className="sky-cloud sky-cloud-2" aria-hidden />
-      <div className="sky-cloud sky-cloud-3" aria-hidden />
-      <div className="sky-cloud sky-cloud-4" aria-hidden />
+      <div className="pointer-events-none sky-cloud sky-cloud-1" aria-hidden />
+      <div className="pointer-events-none sky-cloud sky-cloud-2" aria-hidden />
+      <div className="pointer-events-none sky-cloud sky-cloud-3" aria-hidden />
+      <div className="pointer-events-none sky-cloud sky-cloud-4" aria-hidden />
 
       <QuietBoundary name="SeasonalParticles">
         <React.Suspense fallback={null}>
@@ -261,7 +264,7 @@ export default function Dashboard() {
             <MusicWidget />
           </React.Suspense>
         </QuietBoundary>
-          {hydrated ? (
+          {showContent ? (
             <Outlet />
           ) : (
             <div className="flex min-h-[60dvh] flex-col items-center justify-center gap-4 text-center">
@@ -293,10 +296,10 @@ export default function Dashboard() {
         {showBar && (
           <nav
             aria-label="Main"
-            className="fixed right-0 bottom-4 lg:bottom-0 left-0 z-40 flex justify-center px-5 lg:px-0 lg:justify-center"
+            className="fixed right-0 bottom-4 lg:bottom-0 left-0 z-[9999] flex justify-center px-5 lg:px-0 lg:justify-center pointer-events-auto"
           >
             <div
-              className="flex w-full lg:max-w-none items-center gap-1 p-1.5 lg:p-0 lg:h-14 bg-white/70 lg:bg-white/80 backdrop-blur-md border border-white/50 lg:border-0 lg:border-t border-white/40 shadow-lg shadow-[#8C9AD6]/15 lg:shadow-none"
+              className="flex w-full lg:max-w-none items-center gap-1 p-1.5 lg:p-0 lg:h-14 bg-white/70 lg:bg-white/80 backdrop-blur-md border border-white/50 lg:border-0 lg:border-t border-white/40 shadow-lg shadow-[#8C9AD6]/15 lg:shadow-none pointer-events-auto"
               style={{ borderRadius: "24px 24px 0 0" }}
             >
               {TABS.map((tab) => {
@@ -308,8 +311,9 @@ export default function Dashboard() {
                     key={tab.to}
                     to={tab.to}
                     aria-current={active ? "page" : undefined}
+                    onPointerUp={() => navigate(tab.to)}
                     className={cn(
-                      "flex flex-1 flex-col items-center gap-0.5 py-2 transition-transform",
+                      "flex flex-1 flex-col items-center gap-0.5 py-2 min-h-[44px] transition-transform pointer-events-auto",
                       !active && "hover:bg-[var(--theme-accent-light)]",
                     )}
                     style={{

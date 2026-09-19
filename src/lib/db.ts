@@ -51,6 +51,8 @@ export interface Recording extends LocalRow {
   duration: number;
   noteId?: string;
   diaryId?: string;
+  /** Base64 data URL of the recorded audio/video blob. */
+  dataUrl?: string;
 }
 
 export interface Note extends LocalRow {
