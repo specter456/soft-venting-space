@@ -13,8 +13,6 @@ interface Props {
 
 interface State {
   hasError: boolean;
-  /** Number of automatic recovery attempts made (max 3). */
-  recoveryAttempts: number;
   /** The captured error for the report code. */
   capturedError: Error | null;
 }
@@ -22,15 +20,13 @@ interface State {
 let lastGlobalErrorAt = 0;
 
 /**
- * Friendly error boundary with auto-recovery.
- * Recovery flow:
- *   1) Retry rendering once (setState hasError=false)
- *   2) If it fails again, clear cached UI state and retry
- *   3) If it fails again, soft-reload once
- *   4) Only then show the snag card
+ * Friendly error boundary. Shows a gentle snag card with a report code.
+ * Recovery is via the manual "try again" button (safe — fires from click,
+ * not from React's commit phase). Auto-recovery from componentDidCatch
+ * causes removeChild DOM errors, so it is avoided.
  */
 export class AppErrorBoundary extends React.Component<Props, State> {
-  state: State = { hasError: false, recoveryAttempts: 0, capturedError: null };
+  state: State = { hasError: false, capturedError: null };
 
   static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, capturedError: error };
@@ -43,51 +39,20 @@ export class AppErrorBoundary extends React.Component<Props, State> {
       this.props.compact ? "screen" : "app",
       error,
     );
-    // Auto-recovery: attempt up to 3 times before showing the card
-    this.attemptRecovery(error);
+    // NOTE: auto-recovery from componentDidCatch fights React's commit phase
+    // and causes removeChild DOM errors. Recovery happens via the manual
+    // retry button below, which fires from a user click after React finishes.
   }
-
-  private attemptRecovery = (error: Error) => {
-    const attempt = this.state.recoveryAttempts + 1;
-    this.setState({ recoveryAttempts: attempt });
-
-    if (attempt === 1) {
-      // Attempt 1: retry rendering once
-      console.info("[venting] recovery attempt 1: retry render");
-      setTimeout(() => this.setState({ hasError: false }), 100);
-    } else if (attempt === 2) {
-      // Attempt 2: clear this screen's cached UI state and retry
-      console.info("[venting] recovery attempt 2: clear cache + retry");
-      try {
-        // Clear any sessionStorage keys that might be corrupt
-        const keys: string[] = [];
-        for (let i = 0; i < sessionStorage.length; i++) {
-          const k = sessionStorage.key(i);
-          if (k && k.startsWith("venting-")) keys.push(k);
-        }
-        keys.forEach((k) => sessionStorage.removeItem(k));
-      } catch { /* ignore */ }
-      setTimeout(() => this.setState({ hasError: false }), 200);
-    } else if (attempt === 3) {
-      // Attempt 3: soft-reload once
-      console.info("[venting] recovery attempt 3: soft reload");
-      try {
-        window.location.reload();
-      } catch { /* ignore */ }
-    }
-    // If attempt >= 4, componentDidCatch won't fire again (error boundary
-    // is already showing), so the card stays visible.
-  };
 
   componentDidUpdate(prevProps: Props) {
     // When the parent re-mounts children with a new key, clear the error.
     if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
-      this.setState({ hasError: false, recoveryAttempts: 0, capturedError: null });
+      this.setState({ hasError: false, capturedError: null });
     }
   }
 
   private retry = () => {
-    this.setState({ hasError: false, recoveryAttempts: 0, capturedError: null });
+    this.setState({ hasError: false, capturedError: null });
   };
 
   private handleCopy = async () => {
@@ -99,7 +64,7 @@ export class AppErrorBoundary extends React.Component<Props, State> {
   };
 
   render() {
-    if (this.state.hasError && this.state.recoveryAttempts >= 3) {
+    if (this.state.hasError) {
       const code = this.state.capturedError
         ? reportCode(this.state.capturedError.message + (this.props.compact ? "screen" : "app"))
         : "0000";
@@ -167,18 +132,6 @@ export class AppErrorBoundary extends React.Component<Props, State> {
           onCopy={this.handleCopy}
           onShare={this.handleShare}
         />
-      );
-    }
-    // Either no error, or recovery is still in progress (spinner)
-    if (this.state.hasError) {
-      // Show a soft loading state while auto-recovery runs
-      return (
-        <div className="flex min-h-[40dvh] items-center justify-center">
-          <div className="text-center">
-            <div className="text-2xl animate-floaty-slow">💜</div>
-            <p className="mt-2 text-sm font-semibold text-ink-soft">let me warm up again…</p>
-          </div>
-        </div>
       );
     }
     return this.props.children;
