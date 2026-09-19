@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { scopedGetItem, scopedSetItem } from "@/lib/safe-storage";
+import { quarantineKey } from "@/lib/error-journal";
 import { useTapGuard } from "@/lib/useTapGuard";
 
 const JAR_KEY = "venting-gratitude-jar";
@@ -17,6 +18,7 @@ function loadJar(): JarNote[] {
     if (!raw) return [];
     return JSON.parse(raw) as JarNote[];
   } catch {
+    quarantineKey(JAR_KEY);
     return [];
   }
 }

@@ -5,6 +5,7 @@
  */
 
 import { scopedGetItem, scopedRemoveItem, scopedSetItem } from "./safe-storage";
+import { quarantineKey } from "@/lib/error-journal";
 
 const PLANT_KEY = "venting-streak-plant";
 const SHELF_KEY = "venting-plant-shelf";
@@ -120,6 +121,7 @@ export function loadPlantState(): PlantState | null {
       milestonesHit: Array.isArray(s.milestonesHit) ? s.milestonesHit : [],
     };
   } catch {
+    quarantineKey(PLANT_KEY);
     return null;
   }
 }
@@ -138,7 +140,10 @@ export function loadShelf(): ShelfFlower[] {
       const arr = JSON.parse(raw) as ShelfFlower[];
       return Array.isArray(arr) ? arr : [];
     }
-  } catch { /* ignore */ }
+  } catch {
+    quarantineKey(SHELF_KEY);
+    /* ignore */
+  }
   return [];
 }
 

@@ -18,6 +18,7 @@ import {
   setKv,
   setActiveSpaceId,
 } from "./db";
+import { quarantineKey } from "@/lib/error-journal";
 
 const KV_SPACES = "savedSpaces";
 
@@ -62,6 +63,7 @@ export function loadSpaces(): SavedSpace[] {
         typeof s.salt === "string",
     );
   } catch {
+    quarantineKey(KV_SPACES);
     return [];
   }
 }

@@ -10,6 +10,7 @@ import {
   type KVPair,
 } from "@/lib/db";
 import { scopedRemoveItem, safeSessionRemoveItem } from "@/lib/safe-storage";
+import { journalCount, copyReport, clearJournal, APP_VERSION } from "@/lib/error-journal";
 import { useAsyncTapGuard, useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
 import { THEMES, useTheme } from "@/lib/themes";
@@ -281,10 +282,13 @@ export default function SettingsScreen() {
           <Toggle on={localOnly} onChange={toggleLocalOnly} label="Local-only mode" />
         </Row>
         <Row label="About">
-          <p className="max-w-[16rem] text-[11px] leading-relaxed font-medium text-ink-soft">
-            Venting — a private emotional wellness space. No accounts, no ads, no tracking, no
-            sharing. Version 1.0.
-          </p>
+          <div className="max-w-[16rem] space-y-2">
+            <p className="text-[11px] leading-relaxed font-medium text-ink-soft">
+              Venting — a private emotional wellness space. No accounts, no ads, no tracking, no
+              sharing. Version {APP_VERSION}.
+            </p>
+            <ErrorJournalSection />
+          </div>
         </Row>
         <Row label="Safety resources">
           <p className="max-w-[16rem] text-[11px] leading-relaxed font-medium text-ink-soft">
@@ -524,6 +528,47 @@ function BackupSection() {
         className="hidden"
         aria-label="Choose backup file"
       />
+    </div>
+  );
+}
+
+function ErrorJournalSection() {
+  const [count, setCount] = useState(() => journalCount());
+
+  const handleCopy = async () => {
+    const ok = await copyReport();
+    toast(ok ? "Report copied" : "Couldn't copy", {
+      description: ok ? "Technical details on your clipboard — paste where needed." : "Try again in a moment.",
+    });
+  };
+
+  const handleClear = () => {
+    clearJournal();
+    setCount(0);
+    toast("Journal cleared");
+  };
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[11px] font-semibold text-ink-deep">
+        error journal · {count} {count === 1 ? "entry" : "entries"}
+      </p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="rounded-full bg-lavender-100/80 px-3 py-1.5 text-[10px] font-bold text-lavender-600 transition-transform hover:scale-105 active:scale-95"
+        >
+          copy report
+        </button>
+        <button
+          type="button"
+          onClick={handleClear}
+          className="rounded-full bg-blush-100/80 px-3 py-1.5 text-[10px] font-bold text-blush-500 transition-transform hover:scale-105 active:scale-95"
+        >
+          clear journal
+        </button>
+      </div>
     </div>
   );
 }

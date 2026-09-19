@@ -1,6 +1,7 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router";
 import { FriendlyCrashFallback } from "@/components/Friendly";
+import { logError, reportCode, copyReport, shareReport, APP_VERSION } from "@/lib/error-journal";
 
 interface Props {
   children: React.ReactNode;
@@ -12,39 +13,97 @@ interface Props {
 
 interface State {
   hasError: boolean;
+  /** Number of automatic recovery attempts made (max 3). */
+  recoveryAttempts: number;
+  /** The captured error for the report code. */
+  capturedError: Error | null;
 }
 
 let lastGlobalErrorAt = 0;
 
 /**
- * Friendly error boundary. Never a blank screen, never raw technical text:
- * the fallback explains that data is safe, offers "Try again" (remount) and
- * "Continue offline" (return to the landing page).
+ * Friendly error boundary with auto-recovery.
+ * Recovery flow:
+ *   1) Retry rendering once (setState hasError=false)
+ *   2) If it fails again, clear cached UI state and retry
+ *   3) If it fails again, soft-reload once
+ *   4) Only then show the snag card
  */
 export class AppErrorBoundary extends React.Component<Props, State> {
-  state: State = { hasError: false };
+  state: State = { hasError: false, recoveryAttempts: 0, capturedError: null };
 
-  static getDerivedStateFromError(): State {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error): Partial<State> {
+    return { hasError: true, capturedError: error };
   }
 
   componentDidCatch(error: Error) {
     console.error("[venting] caught error:", error?.message ?? error);
+    // Log to journal (never stores user content)
+    logError(
+      this.props.compact ? "screen" : "app",
+      error,
+    );
+    // Auto-recovery: attempt up to 3 times before showing the card
+    this.attemptRecovery(error);
   }
+
+  private attemptRecovery = (error: Error) => {
+    const attempt = this.state.recoveryAttempts + 1;
+    this.setState({ recoveryAttempts: attempt });
+
+    if (attempt === 1) {
+      // Attempt 1: retry rendering once
+      console.info("[venting] recovery attempt 1: retry render");
+      setTimeout(() => this.setState({ hasError: false }), 100);
+    } else if (attempt === 2) {
+      // Attempt 2: clear this screen's cached UI state and retry
+      console.info("[venting] recovery attempt 2: clear cache + retry");
+      try {
+        // Clear any sessionStorage keys that might be corrupt
+        const keys: string[] = [];
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const k = sessionStorage.key(i);
+          if (k && k.startsWith("venting-")) keys.push(k);
+        }
+        keys.forEach((k) => sessionStorage.removeItem(k));
+      } catch { /* ignore */ }
+      setTimeout(() => this.setState({ hasError: false }), 200);
+    } else if (attempt === 3) {
+      // Attempt 3: soft-reload once
+      console.info("[venting] recovery attempt 3: soft reload");
+      try {
+        window.location.reload();
+      } catch { /* ignore */ }
+    }
+    // If attempt >= 4, componentDidCatch won't fire again (error boundary
+    // is already showing), so the card stays visible.
+  };
 
   componentDidUpdate(prevProps: Props) {
     // When the parent re-mounts children with a new key, clear the error.
     if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
-      this.setState({ hasError: false });
+      this.setState({ hasError: false, recoveryAttempts: 0, capturedError: null });
     }
   }
 
   private retry = () => {
-    this.setState({ hasError: false });
+    this.setState({ hasError: false, recoveryAttempts: 0, capturedError: null });
+  };
+
+  private handleCopy = async () => {
+    await copyReport();
+  };
+
+  private handleShare = async () => {
+    await shareReport();
   };
 
   render() {
-    if (this.state.hasError) {
+    if (this.state.hasError && this.state.recoveryAttempts >= 3) {
+      const code = this.state.capturedError
+        ? reportCode(this.state.capturedError.message + (this.props.compact ? "screen" : "app"))
+        : "0000";
+
       if (this.props.compact) {
         // In-shell fallback: gentle card, shell (header/taskbar) stays alive.
         return (
@@ -56,7 +115,13 @@ export class AppErrorBoundary extends React.Component<Props, State> {
               this screen hit a soft snag.
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-              {friendlyText}
+              Don't worry — your feelings are all still safe on this device.
+            </p>
+            <p className="mt-2 text-[11px] font-mono font-semibold text-lavender-600">
+              snag #{code}
+            </p>
+            <p className="mt-1 text-[11px] text-ink-soft">
+              if this keeps happening, tell them this code: {code}
             </p>
             <div className="mt-5 flex flex-col gap-2">
               <button
@@ -65,6 +130,20 @@ export class AppErrorBoundary extends React.Component<Props, State> {
                 className="clay-btn px-5 py-2.5 text-sm font-bold text-ink-deep"
               >
                 try again
+              </button>
+              <button
+                type="button"
+                onClick={this.handleCopy}
+                className="rounded-full px-5 py-2 text-xs font-bold text-ink-soft transition-colors hover:bg-lavender-100/70 hover:text-ink-deep"
+              >
+                copy report
+              </button>
+              <button
+                type="button"
+                onClick={this.handleShare}
+                className="rounded-full px-5 py-2 text-xs font-bold text-ink-soft transition-colors hover:bg-lavender-100/70 hover:text-ink-deep"
+              >
+                share report
               </button>
               {this.props.onContinue ? (
                 <button
@@ -80,15 +159,31 @@ export class AppErrorBoundary extends React.Component<Props, State> {
         );
       }
       return (
-        <FriendlyCrashFallback onRetry={this.retry} onContinue={this.props.onContinue} />
+        <FriendlyCrashFallback
+          onRetry={this.retry}
+          onContinue={this.props.onContinue}
+          title="something went softly wrong."
+          code={code}
+          onCopy={this.handleCopy}
+          onShare={this.handleShare}
+        />
+      );
+    }
+    // Either no error, or recovery is still in progress (spinner)
+    if (this.state.hasError) {
+      // Show a soft loading state while auto-recovery runs
+      return (
+        <div className="flex min-h-[40dvh] items-center justify-center">
+          <div className="text-center">
+            <div className="text-2xl animate-floaty-slow">💜</div>
+            <p className="mt-2 text-sm font-semibold text-ink-soft">let me warm up again…</p>
+          </div>
+        </div>
       );
     }
     return this.props.children;
   }
 }
-
-const friendlyText =
-  "Don't worry — your feelings are all still safe on this device. Try again, and if it keeps happening, we're here for you.";
 
 /**
  * Boundary around inner dashboard screens (the <Outlet /> content).

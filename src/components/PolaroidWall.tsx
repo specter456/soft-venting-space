@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { createVaultItem, useTable, type VaultItem } from "@/lib/db";
 import { scopedGetItem, scopedSetItem, scopedRemoveItem } from "@/lib/safe-storage";
+import { quarantineKey } from "@/lib/error-journal";
 import { isImageArt } from "@/lib/canvas-art";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ function consumePendingPin(): PendingPin | null {
     const p = JSON.parse(raw) as PendingPin;
     return p && typeof p.art === "string" ? p : null;
   } catch {
+    quarantineKey(PENDING_PIN_KEY);
     return null;
   }
 }
@@ -50,7 +52,9 @@ function loadWall(): PolaroidPin[] {
       const arr = JSON.parse(raw) as PolaroidPin[];
       return Array.isArray(arr) ? arr : [];
     }
-  } catch { /* ignore */ }
+  } catch {
+    quarantineKey(STORAGE_KEY);
+  }
   return [];
 }
 

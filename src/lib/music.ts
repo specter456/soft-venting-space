@@ -13,6 +13,7 @@
 
 import { useSyncExternalStore } from "react";
 import { scopedGetItem, scopedSetItem } from "./safe-storage";
+import { quarantineKey } from "@/lib/error-journal";
 
 const KV_VOLUME = "venting-music-volume";
 const KV_AMBIENT_TRACK = "venting-music-ambient-track";
@@ -91,7 +92,9 @@ function readUploads(key: string): UploadedTrack[] {
   try {
     const raw = scopedGetItem(key);
     if (raw) return JSON.parse(raw) as UploadedTrack[];
-  } catch { /* ignore */ }
+  } catch {
+    quarantineKey(key);
+  }
   return [];
 }
 

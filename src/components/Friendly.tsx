@@ -15,10 +15,16 @@ export function FriendlyCrashFallback({
   onRetry,
   onContinue,
   title = "something went softly wrong.",
+  code,
+  onCopy,
+  onShare,
 }: {
   onRetry: () => void;
   onContinue?: () => void;
   title?: string;
+  code?: string;
+  onCopy?: () => void;
+  onShare?: () => void;
 }) {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-cream-soft via-cream to-lavender-50 p-6 text-ink">
@@ -28,6 +34,16 @@ export function FriendlyCrashFallback({
         </div>
         <h1 className="mt-4 text-xl font-bold tracking-tight text-ink-deep">{title}</h1>
         <p className="mt-2 text-sm leading-relaxed text-ink-soft">{friendlyErrorText()}</p>
+        {code && (
+          <>
+            <p className="mt-3 text-[11px] font-mono font-semibold text-lavender-600">
+              snag #{code}
+            </p>
+            <p className="mt-1 text-[11px] text-ink-soft">
+              if this keeps happening, tell them this code: {code}
+            </p>
+          </>
+        )}
         <div className="mt-6 flex flex-col gap-2.5">
           <button
             type="button"
@@ -36,6 +52,24 @@ export function FriendlyCrashFallback({
           >
             try again
           </button>
+          {onCopy && (
+            <button
+              type="button"
+              onClick={onCopy}
+              className="rounded-full px-5 py-2.5 text-xs font-bold text-ink-soft transition-colors hover:bg-lavender-100/70 hover:text-ink-deep"
+            >
+              copy report
+            </button>
+          )}
+          {onShare && (
+            <button
+              type="button"
+              onClick={onShare}
+              className="rounded-full px-5 py-2.5 text-xs font-bold text-ink-soft transition-colors hover:bg-lavender-100/70 hover:text-ink-deep"
+            >
+              share report
+            </button>
+          )}
           {onContinue ? (
             <button
               type="button"

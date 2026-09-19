@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router";
 import MyLittlePlant from "@/components/MyLittlePlant";
 import { sfxWater, sfxArpeggio } from "@/lib/sfx";
 import { BuilderShell } from "@/components/BuilderShell";
+import { quarantineKey } from "@/lib/error-journal";
 import { WORRY_BUBBLES } from "@/lib/art";
 import { music, type BuiltinTrackId } from "@/lib/music";
 import { useTapGuard } from "@/lib/useTapGuard";
@@ -44,6 +45,7 @@ function loadCustomGames(): CustomGameConfig[] {
     if (!raw) return [];
     return JSON.parse(raw) as CustomGameConfig[];
   } catch {
+    quarantineKey(STORAGE_KEY);
     return [];
   }
 }
