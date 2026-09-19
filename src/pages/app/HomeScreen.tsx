@@ -170,110 +170,113 @@ function HomeScreenInner() {
         </div>
       </section>
 
-      {/* ─── Mood typing box + 4 quick moods ──────────────────────── */}
-      <SoftSection name="MoodCard">
-        <div className="clay-card relative overflow-hidden px-5 py-6">
-          <SparkleDecor />
+      {/* ─── Row 1: Mood card (2/3) + Plant card (1/3) on desktop ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 items-start">
+        {/* ─── Mood typing box + 4 quick moods ──────────────────────── */}
+        <div className="lg:col-span-2">
+          <SoftSection name="MoodCard">
+            <div className="clay-card relative overflow-hidden px-5 py-6">
+              <SparkleDecor />
 
-          {todayMood && today ? (
-            <div className="text-center">
-              <div className="mx-auto w-fit">
-                <MoodBubble mood={todayMood} size="lg" />
-              </div>
-              <p className="mt-3 text-lg font-bold tracking-tight text-ink-deep">
-                You&apos;re feeling {todayMood.label.toLowerCase()}
-              </p>
-              <p className="mx-auto mt-1.5 max-w-[17rem] text-sm leading-relaxed text-ink">
-                {todayMood.affirmation}
-              </p>
-              <MoodSuggestion moodId={today.mood} />
-              {today.note && (
-                <p className="mx-auto mt-4 max-w-[18rem] rounded-2xl bg-cream-deep/60 px-4 py-3 text-sm leading-relaxed text-ink italic">
-                  “{today.note}”
-                </p>
+              {todayMood && today ? (
+                <div className="text-center">
+                  <div className="mx-auto w-fit">
+                    <MoodBubble mood={todayMood} size="lg" />
+                  </div>
+                  <p className="mt-3 text-lg font-bold tracking-tight text-ink-deep">
+                    You&apos;re feeling {todayMood.label.toLowerCase()}
+                  </p>
+                  <p className="mx-auto mt-1.5 max-w-[17rem] text-sm leading-relaxed text-ink">
+                    {todayMood.affirmation}
+                  </p>
+                  <MoodSuggestion moodId={today.mood} />
+                  {today.note && (
+                    <p className="mx-auto mt-4 max-w-[18rem] rounded-2xl bg-cream-deep/60 px-4 py-3 text-sm leading-relaxed text-ink italic">
+                      “{today.note}”
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={clearToday}
+                    className="mt-4 rounded-full px-4 py-2 text-xs font-bold text-lavender-600 underline-offset-4 transition-colors hover:bg-lavender-100/70 hover:underline"
+                  >
+                    I feel differently now
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <p className="font-script text-center text-xl font-bold tracking-tight text-ink-deep">
+                    How are you feeling today?
+                  </p>
+                  <p className="mt-1 text-center text-sm text-ink-soft">
+                    Type your exact feeling, then tap one mood.
+                  </p>
+
+                  {/* typing box */}
+                  <input
+                    type="text"
+                    value={feelingText}
+                    onChange={(e) => setFeelingText(e.target.value)}
+                    autoCorrect="off"
+                    autoCapitalize="sentences"
+                    spellCheck={false}
+                    placeholder="Type how you feel… (slightly happy, extremely sad, a little nervous…)"
+                    aria-label="How you feel right now"
+                    className="mt-5 w-full rounded-2xl border-0 bg-[#FDF5E6]/70 px-4 py-3.5 text-sm leading-relaxed text-ink-deep shadow-[inset_0_2px_6px_rgba(90,90,140,0.08)] placeholder:text-ink-soft/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8C9AD6]"
+                  />
+
+                  {/* exactly four quick moods, one row */}
+                  <div className="mt-5 grid grid-cols-4 gap-x-2 gap-y-3">
+                    {QUICK_MOODS.map((id) => {
+                      const m = moodById(id);
+                      if (!m) return null;
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => pickMood(m.id)}
+                          className="group flex flex-col items-center gap-1.5"
+                        >
+                          <MoodBubble mood={m} size="md" className="group-hover:scale-110" />
+                          <span className="text-[11px] font-bold text-ink-soft group-hover:text-ink">
+                            {m.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-4 text-center text-xs text-ink-soft">
+                    One tap, one mood — no wrong answers here.
+                  </p>
+                </div>
               )}
-              <button
-                type="button"
-                onClick={clearToday}
-                className="mt-4 rounded-full px-4 py-2 text-xs font-bold text-lavender-600 underline-offset-4 transition-colors hover:bg-lavender-100/70 hover:underline"
-              >
-                I feel differently now
-              </button>
             </div>
-          ) : (
-            <div>
-              <p className="font-script text-center text-xl font-bold tracking-tight text-ink-deep">
-                How are you feeling today?
-              </p>
-              <p className="mt-1 text-center text-sm text-ink-soft">
-                Type your exact feeling, then tap one mood.
-              </p>
-
-              {/* typing box */}
-              <input
-                type="text"
-                value={feelingText}
-                onChange={(e) => setFeelingText(e.target.value)}
-                autoCorrect="off"
-                autoCapitalize="sentences"
-                spellCheck={false}
-                placeholder="Type how you feel… (slightly happy, extremely sad, a little nervous…)"
-                aria-label="How you feel right now"
-                className="mt-5 w-full rounded-2xl border-0 bg-[#FDF5E6]/70 px-4 py-3.5 text-sm leading-relaxed text-ink-deep shadow-[inset_0_2px_6px_rgba(90,90,140,0.08)] placeholder:text-ink-soft/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8C9AD6]"
-              />
-
-              {/* exactly four quick moods, one row */}
-              <div className="mt-5 grid grid-cols-4 gap-x-2 gap-y-3">
-                {QUICK_MOODS.map((id) => {
-                  const m = moodById(id);
-                  if (!m) return null;
-                  return (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => pickMood(m.id)}
-                      className="group flex flex-col items-center gap-1.5"
-                    >
-                      <MoodBubble mood={m} size="md" className="group-hover:scale-110" />
-                      <span className="text-[11px] font-bold text-ink-soft group-hover:text-ink">
-                        {m.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="mt-4 text-center text-xs text-ink-soft">
-                One tap, one mood — no wrong answers here.
-              </p>
-            </div>
-          )}
+          </SoftSection>
         </div>
-      </SoftSection>
 
-      {/* ─── 4 · My Little Plant — full width ─────────────────── */}
-      <SoftSection name="MyLittlePlant"><Suspense fallback={null}><PlantHomeCard /></Suspense></SoftSection>
-
-      {/* ─── 5 · Row: gratitude jar + tiny tales (equal, aligned) ── */}
-      <div className="grid grid-cols-2 items-stretch gap-4 [&>button]:h-full [&>button]:w-full">
-        <SoftSection name="GratitudeJar"><Suspense fallback={null}><GratitudeJar /></Suspense></SoftSection>
-        <SoftSection name="TinyTales"><Suspense fallback={null}><TinyTales /></Suspense></SoftSection>
+        {/* ─── My Little Plant — 1/3 on desktop ─────────────────── */}
+        <div className="lg:col-span-1">
+          <SoftSection name="MyLittlePlant"><Suspense fallback={null}><PlantHomeCard /></Suspense></SoftSection>
+        </div>
       </div>
 
-      {/* ─── 6 · Row: month's weather + wind-down (equal, aligned) ─ */}
-      <div className="grid grid-cols-2 items-stretch gap-4 [&>button]:h-full [&>button]:w-full">
+      {/* ─── Row 2: Jar + Tales + Weather + Wind-down (4 cols on desktop) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 items-stretch gap-4 [&>button]:h-full [&>button]:w-full">
+        <SoftSection name="GratitudeJar"><Suspense fallback={null}><GratitudeJar /></Suspense></SoftSection>
+        <SoftSection name="TinyTales"><Suspense fallback={null}><TinyTales /></Suspense></SoftSection>
         <SoftSection name="MonthlyWeather"><Suspense fallback={null}><MonthlyWeather /></Suspense></SoftSection>
         <SoftSection name="WindDown"><Suspense fallback={null}><GoodnightWindDown /></Suspense></SoftSection>
       </div>
 
-      {/* ─── 7 · A Note for Future You — full width ─────────────── */}
-      <SoftSection name="FutureNote"><Suspense fallback={null}><FutureNoteSection /></Suspense></SoftSection>
+      {/* ─── Row 3: Future Note + Polaroid Wall side by side on desktop ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+        <SoftSection name="FutureNote"><Suspense fallback={null}><FutureNoteSection /></Suspense></SoftSection>
+        <SoftSection name="PolaroidWall"><Suspense fallback={null}><PolaroidWallSection /></Suspense></SoftSection>
+      </div>
 
-      {/* ─── Polaroid Wall ──────────────────────────────────────── */}
-      <SoftSection name="PolaroidWall"><Suspense fallback={null}><PolaroidWallSection /></Suspense></SoftSection>
-
-      {/* ─── Feature grid — exactly two per row ───────────────────── */}
+      {/* ─── Feature grid — 2 cols mobile, 4 cols desktop ───────────── */}
       <SoftSection name="FeatureGrid">
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {FEATURES.map((f) => (
             <div key={f.to + f.title}>
               <Link

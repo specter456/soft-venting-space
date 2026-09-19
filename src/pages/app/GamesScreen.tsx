@@ -576,7 +576,7 @@ export default function GamesScreen() {
             <p className="mt-1 text-sm font-medium text-ink-soft">gentle places to land — no scores, no timers, no rush</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {(() => {
               const total = BUILT_IN_GAMES.length + customGames.length + 1; // +1 for creator card
               const isOdd = total % 2 !== 0;

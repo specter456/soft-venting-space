@@ -198,9 +198,9 @@ export default function Dashboard() {
           <SeasonalParticles />
         </React.Suspense>
       </QuietBoundary>
-      <div className="relative mx-auto flex w-full max-w-[600px] flex-col">
+      <div className="relative mx-auto flex w-full lg:max-w-none flex-col">
         {/* ─── Header ─────────────────────────────────────────────── */}
-        <header className="sticky top-0 z-40 px-5 pt-6 pb-3 border-b border-white/40" style={{ background: "var(--theme-header-bg, rgba(200,225,250,0.8))" }}>
+        <header className="sticky top-0 z-40 px-5 lg:px-10 pt-6 pb-3 border-b border-white/40" style={{ background: "var(--theme-header-bg, rgba(200,225,250,0.8))" }}>
           <div className="flex items-center justify-between">
             {isHome ? (
               <div className="flex items-center gap-2.5">
@@ -255,7 +255,7 @@ export default function Dashboard() {
         </header>
 
         {/* ─── Current room ───────────────────────────────────────── */}
-        <main className={cn("px-5", showBar ? "pb-32" : "pb-14")}>
+        <main className={cn("px-5 lg:px-10", showBar ? "pb-32 lg:pb-20" : "pb-14")}>
           <QuietBoundary name="MusicWidget">
           <React.Suspense fallback={null}>
             <MusicWidget />
@@ -293,11 +293,11 @@ export default function Dashboard() {
         {showBar && (
           <nav
             aria-label="Main"
-            className="fixed right-0 bottom-4 left-0 z-40 flex justify-center px-5"
+            className="fixed right-0 bottom-4 lg:bottom-0 left-0 z-40 flex justify-center px-5 lg:px-0 lg:justify-center"
           >
             <div
-              className="flex w-full max-w-[720px] items-center gap-1 p-1.5 bg-white/70 backdrop-blur-md border border-white/50 shadow-lg shadow-[#8C9AD6]/15"
-              style={{ borderRadius: "24px" }}
+              className="flex w-full lg:max-w-none items-center gap-1 p-1.5 lg:p-0 lg:h-14 bg-white/70 lg:bg-white/80 backdrop-blur-md border border-white/50 lg:border-0 lg:border-t border-white/40 shadow-lg shadow-[#8C9AD6]/15 lg:shadow-none"
+              style={{ borderRadius: "24px 24px 0 0" }}
             >
               {TABS.map((tab) => {
                 const active = tab.to === "/dashboard/calendar"
