@@ -1,5 +1,13 @@
 import { cn } from "@/lib/utils";
-import type { TouchAction, SparkleStyle, GameSound, GamePace } from "@/pages/app/GamesScreen";
+import type {
+  TouchAction,
+  SparkleStyle,
+  GameSound,
+  GamePace,
+  WeatherLayer,
+  ObjectAmount,
+  DriftDirection,
+} from "@/pages/app/GamesScreen";
 
 const TOUCH_ROW = [
   { id: "pop" as const, label: "Pop it", emoji: "💥" },
@@ -30,6 +38,27 @@ const PACE_ROW = [
   { id: "medium" as const, label: "Medium" },
 ];
 
+const WEATHER_ROW = [
+  { id: "none" as const, label: "None", emoji: "🤍" },
+  { id: "petals" as const, label: "Petals", emoji: "🌸" },
+  { id: "snow" as const, label: "Snow", emoji: "❄️" },
+  { id: "sparkles" as const, label: "Sparkles", emoji: "✨" },
+  { id: "rain" as const, label: "Rain", emoji: "🌧️" },
+];
+
+const AMOUNT_ROW = [
+  { id: "few" as const, label: "Few" },
+  { id: "some" as const, label: "Some" },
+  { id: "many" as const, label: "Many" },
+];
+
+const DRIFT_ROW = [
+  { id: "up" as const, label: "Up", emoji: "⬆️" },
+  { id: "down" as const, label: "Down", emoji: "⬇️" },
+  { id: "sideways" as const, label: "Sideways", emoji: "↔️" },
+  { id: "wander" as const, label: "Wander", emoji: "🌀" },
+];
+
 export function MagicPickerTile({
   touch,
   setTouch,
@@ -39,6 +68,12 @@ export function MagicPickerTile({
   setSound,
   pace,
   setPace,
+  weather,
+  setWeather,
+  amount,
+  setAmount,
+  drift,
+  setDrift,
 }: {
   touch: TouchAction;
   setTouch: (t: TouchAction) => void;
@@ -48,6 +83,12 @@ export function MagicPickerTile({
   setSound: (s: GameSound) => void;
   pace: GamePace;
   setPace: (p: GamePace) => void;
+  weather: WeatherLayer;
+  setWeather: (w: WeatherLayer) => void;
+  amount: ObjectAmount;
+  setAmount: (a: ObjectAmount) => void;
+  drift: DriftDirection;
+  setDrift: (d: DriftDirection) => void;
 }) {
   return (
     <div className="clay-card overflow-hidden p-4">
@@ -73,6 +114,45 @@ export function MagicPickerTile({
         <div className="flex flex-wrap gap-1.5">
           {SPARKLE_ROW.map((s) => (
             <TouchChip key={s.id} id={s.id} label={s.label} emoji={s.emoji} active={sparkleStyle === s.id} onClick={() => setSparkleStyle(s.id)} />
+          ))}
+        </div>
+      </div>
+
+      {/* Weather layer */}
+      <div className="mb-3">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-sm" aria-hidden>🌦️</span>
+          <span className="text-xs font-bold text-ink-deep">Weather layer</span>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {WEATHER_ROW.map((w) => (
+            <TouchChip key={w.id} id={`w-${w.id}`} label={w.label} emoji={w.emoji} active={weather === w.id} onClick={() => setWeather(w.id)} />
+          ))}
+        </div>
+      </div>
+
+      {/* Object amount */}
+      <div className="mb-3">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-sm" aria-hidden>🫧</span>
+          <span className="text-xs font-bold text-ink-deep">Object amount</span>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {AMOUNT_ROW.map((a) => (
+            <TouchChip key={a.id} id={`a-${a.id}`} label={a.label} active={amount === a.id} onClick={() => setAmount(a.id)} />
+          ))}
+        </div>
+      </div>
+
+      {/* Drift direction */}
+      <div className="mb-3">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-sm" aria-hidden>🍃</span>
+          <span className="text-xs font-bold text-ink-deep">Drift direction</span>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {DRIFT_ROW.map((d) => (
+            <TouchChip key={d.id} id={`d-${d.id}`} label={d.label} emoji={d.emoji} active={drift === d.id} onClick={() => setDrift(d.id)} />
           ))}
         </div>
       </div>

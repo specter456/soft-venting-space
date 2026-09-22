@@ -622,6 +622,12 @@
   100% { transform: translateX(-80px) translateY(-5px); }
 }
 /* Seasonal particle fall + horizontal sway — driven entirely by CSS, zero setState re-renders */
+@keyframes weather-fall {
+  0% { transform: translateY(-24px); opacity: 0; }
+  12% { opacity: 0.75; }
+  85% { opacity: 0.55; }
+  100% { transform: translateY(80vh); opacity: 0; }
+}
 @keyframes particle-fall {
   0%   { transform: translateY(0)     translateX(0); opacity: 0.28; }
   25%  { transform: translateY(25vh)  translateX(var(--sway, 12px)); }

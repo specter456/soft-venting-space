@@ -1,9 +1,9 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import MyLittlePlant from "@/components/MyLittlePlant";
 import { sfxArpeggio } from "@/lib/sfx";
-import { BuilderShell } from "@/components/BuilderShell";
+import { BuilderShell, worldGradientFor } from "@/components/BuilderShell";
 import { quarantineKey } from "@/lib/error-journal";
 import { WORRY_BUBBLES } from "@/lib/art";
 import { music, type BuiltinTrackId } from "@/lib/music";
@@ -20,6 +20,9 @@ export type SparkleStyle = "sparkles" | "ripples" | "hearts" | "notes";
 export type ObjectSize = "small" | "medium" | "large";
 export type GameSound = "chimes" | "rain" | "wind" | "piano" | "none";
 export type GamePace = "very-slow" | "slow" | "medium";
+export type WeatherLayer = "none" | "petals" | "snow" | "sparkles" | "rain";
+export type ObjectAmount = "few" | "some" | "many";
+export type DriftDirection = "up" | "down" | "sideways" | "wander";
 
 export interface CustomGameConfig {
   id: string;
@@ -32,6 +35,12 @@ export interface CustomGameConfig {
   whisper: string;
   sound: GameSound;
   pace: GamePace;
+  /** Optional weather overlay — defaults to none for older games. */
+  weather?: WeatherLayer;
+  /** How many objects float at once — defaults to legacy behavior. */
+  amount?: ObjectAmount;
+  /** How objects drift — defaults to the classic gentle fall. */
+  drift?: DriftDirection;
   worldPhoto?: string;
   myDoodle?: string;
   createdAt: number;
@@ -53,6 +62,44 @@ function loadCustomGames(): CustomGameConfig[] {
 function saveCustomGames(games: CustomGameConfig[]) {
   scopedSetItem(STORAGE_KEY, JSON.stringify(games));
 }
+
+/* ─── Recently played + favorites (per-space, local only) ─────────── */
+
+const RECENT_KEY = "venting-recent-games";
+const FAV_KEY = "venting-favorite-games";
+
+function loadIdList(key: string): string[] {
+  try {
+    const raw = scopedGetItem(key);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === "string") : [];
+  } catch {
+    quarantineKey(key);
+    return [];
+  }
+}
+
+function saveIdList(key: string, ids: string[]): void {
+  scopedSetItem(key, JSON.stringify(ids));
+}
+
+/** Tiny remix starting points — each built-in game becomes a tweakable draft. */
+const REMIX_PRESETS: Partial<Record<BuiltInGameId, Partial<CustomGameConfig>>> = {
+  pop: { world: "sea", things: ["bubbles"], touch: "pop", sparkleStyle: "ripples", sound: "rain", pace: "slow", objectSize: "medium", weather: "none", amount: "many", drift: "up" },
+  tiles: { world: "cozy", things: ["hearts"], touch: "note", sparkleStyle: "notes", sound: "piano", pace: "medium", objectSize: "small", weather: "sparkles", amount: "some", drift: "wander" },
+  moon: { world: "starry", things: ["stars"], touch: "catch", sparkleStyle: "sparkles", sound: "piano", pace: "very-slow", objectSize: "medium", weather: "sparkles", amount: "some", drift: "down" },
+  honeycomb: { world: "sunset", things: ["fireflies"], touch: "pop", sparkleStyle: "sparkles", sound: "chimes", pace: "slow", objectSize: "medium", weather: "none", amount: "many", drift: "wander" },
+  nimbus: { world: "sky", things: ["clouds"], touch: "soothe", sparkleStyle: "sparkles", sound: "wind", pace: "very-slow", objectSize: "medium", weather: "none", amount: "some", drift: "sideways" },
+  garden: { world: "garden", things: ["petals", "fireflies"], touch: "catch", sparkleStyle: "hearts", sound: "chimes", pace: "slow", objectSize: "medium", weather: "petals", amount: "some", drift: "down" },
+  coloring: { world: "garden", things: ["hearts", "stars"], touch: "note", sparkleStyle: "sparkles", sound: "piano", pace: "slow", objectSize: "medium", weather: "petals", amount: "few", drift: "wander" },
+  pond: { world: "sea", things: ["fish", "bubbles"], touch: "catch", sparkleStyle: "ripples", sound: "rain", pace: "slow", objectSize: "medium", weather: "none", amount: "some", drift: "sideways" },
+  clouds: { world: "sky", things: ["clouds"], touch: "blow", sparkleStyle: "sparkles", sound: "wind", pace: "medium", objectSize: "large", weather: "none", amount: "many", drift: "sideways" },
+  jelly: { world: "cozy", things: ["hearts"], touch: "pop", sparkleStyle: "hearts", sound: "chimes", pace: "medium", objectSize: "large", weather: "sparkles", amount: "few", drift: "up" },
+  plinko: { world: "sunset", things: ["stars"], touch: "note", sparkleStyle: "notes", sound: "chimes", pace: "medium", objectSize: "small", weather: "sparkles", amount: "many", drift: "down" },
+  band: { world: "garden", things: ["hearts", "fireflies"], touch: "note", sparkleStyle: "notes", sound: "piano", pace: "slow", objectSize: "medium", weather: "sparkles", amount: "some", drift: "up" },
+  fireworks: { world: "starry", things: ["stars", "fireflies"], touch: "pop", sparkleStyle: "sparkles", sound: "chimes", pace: "medium", objectSize: "medium", weather: "sparkles", amount: "many", drift: "up" },
+};
 
 /* ─── Option data ─────────────────────────────────────────────────── */
 
@@ -491,12 +538,38 @@ export default function GamesScreen() {
     : screenState;
   const [customGames, setCustomGames] = useState<CustomGameConfig[]>(loadCustomGames);
 
+  // ─── Recently played (last 3) + favorites — saved locally ────────
+  const [recentIds, setRecentIds] = useState<string[]>(() => loadIdList(RECENT_KEY));
+  const [favIds, setFavIds] = useState<string[]>(() => loadIdList(FAV_KEY));
+
+  const recordPlay = useCallback((ref: string) => {
+    setRecentIds((prev) => {
+      const next = [ref, ...prev.filter((r) => r !== ref)].slice(0, 3);
+      saveIdList(RECENT_KEY, next);
+      return next;
+    });
+  }, []);
+
+  const toggleFav = useCallback((ref: string) => {
+    setFavIds((prev) => {
+      const next = prev.includes(ref) ? prev.filter((r) => r !== ref) : [...prev, ref];
+      saveIdList(FAV_KEY, next);
+      return next;
+    });
+  }, []);
+
+  // Live builder draft — feeds the preview + playtest overlay.
+  const [draft, setDraft] = useState<CustomGameConfig | null>(null);
+  const [playtest, setPlaytest] = useState(false);
+  const handleDraft = useCallback((cfg: CustomGameConfig) => setDraft(cfg), []);
+
   useEffect(() => {
     return () => { music.stopGameTrack(); };
   }, []);
 
   // Games that have their own continuous music override ambient
   const openBuiltIn = useCallback((id: BuiltInGameId) => {
+    recordPlay(`b:${id}`);
     setScreen({ kind: "play", game: id });
     // Moonlight Glide uses the main music engine; others keep ambient
     if (id === "moon") {
@@ -510,13 +583,13 @@ export default function GamesScreen() {
       }
     }
     // tiles, pop, breathe, dandelion, buddy, jars, star, shelf, coloring, bloom, pond, cloud, custom: ambient continues
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [recordPlay]);
 
   const openCustom = useCallback((config: CustomGameConfig) => {
+    recordPlay(`c:${config.id}`);
     setScreen({ kind: "custom-play-saved", config });
     // Custom games keep ambient playing
-  }, []);
+  }, [recordPlay]);
 
   const goGrid = useCallback(() => {
     // Stop game music and resume ambient
@@ -525,16 +598,81 @@ export default function GamesScreen() {
     }
     // Clear any deep-link params so the grid stays put
     setSearchParams({}, { replace: true });
+    setPlaytest(false);
+    setDraft(null);
     setScreen({ kind: "grid" });
   }, [screen, setSearchParams]);
 
   const openBuilder = useCallback(() => {
+    setDraft(null);
     setScreen({ kind: "builder" });
   }, []);
 
   const openEditBuilder = useCallback((config: CustomGameConfig) => {
+    setDraft(null);
     setScreen({ kind: "builder", editing: config });
   }, []);
+
+  /** Remix a built-in game: opens the creator pre-filled with its ingredients. */
+  const remixBuiltIn = useCallback((g: (typeof BUILT_IN_GAMES)[number]) => {
+    const preset = REMIX_PRESETS[g.id] ?? {};
+    const now = Date.now();
+    setDraft(null);
+    setPlaytest(false);
+    setScreen({
+      kind: "builder",
+      editing: {
+        id: `custom-remix-${now}`,
+        name: "",
+        world: preset.world ?? "sky",
+        things: preset.things ?? ["stars"],
+        touch: preset.touch ?? "catch",
+        sparkleStyle: preset.sparkleStyle ?? "sparkles",
+        objectSize: preset.objectSize ?? "medium",
+        whisper: preset.whisper ?? "",
+        sound: preset.sound ?? "chimes",
+        pace: preset.pace ?? "slow",
+        weather: preset.weather ?? "none",
+        amount: preset.amount ?? "some",
+        drift: preset.drift ?? "down",
+        createdAt: now,
+      },
+    });
+  }, []);
+
+  const isFav = (ref: string) => favIds.includes(ref);
+
+  // Deep links (?game=x from the mood suggestion) count as recently played too.
+  // Deferred a tick so the effect body stays side-effect-free for React.
+  useEffect(() => {
+    if (!forcedGame) return;
+    const t = window.setTimeout(() => recordPlay(`b:${forcedGame}`), 0);
+    return () => window.clearTimeout(t);
+  }, [forcedGame, recordPlay]);
+
+  /** Turn a stored id ("b:pop" / "c:custom-1") into something openable. */
+  const resolveGame = (ref: string): { ref: string; name: string; emoji: string; open: () => void } | null => {
+    if (ref.startsWith("b:")) {
+      const g = BUILT_IN_GAMES.find((x) => x.id === ref.slice(2));
+      return g ? { ref, name: g.name, emoji: g.emoji, open: () => openBuiltIn(g.id) } : null;
+    }
+    const id = ref.startsWith("c:") ? ref.slice(2) : ref;
+    const cg = customGames.find((x) => x.id === id);
+    return cg
+      ? {
+          ref,
+          name: cg.name || "my little game",
+          emoji: cg.myDoodle ? "✏️" : (getThingEmojis(cg.things)[0] ?? "✨"),
+          open: () => openCustom(cg),
+        }
+      : null;
+  };
+  const recentResolved = recentIds
+    .map(resolveGame)
+    .filter((r): r is NonNullable<typeof r> => r !== null);
+  const favResolved = favIds
+    .map(resolveGame)
+    .filter((r): r is NonNullable<typeof r> => r !== null);
 
   const saveGame = useCallback((config: CustomGameConfig) => {
     setCustomGames((prev) => {
@@ -560,17 +698,8 @@ export default function GamesScreen() {
     setScreen({ kind: "grid" });
   }, []);
 
-  const previewConfig = useMemo<CustomGameConfig | null>(() => screen.kind === "builder" ? (screen.editing ?? null) : null, [screen]);
-
   return (
     <div className="relative">
-      {previewConfig && !screen.kind.startsWith('builder') && (
-        <div className="sticky top-0 z-10">
-          <div className="clay-chip rounded-full px-4 py-2 text-xs font-bold text-white transition-transform hover:scale-105 active:scale-95">▶ preview ↻ tap inside to play</div>
-          <TinyGameEngine config={previewConfig} minimal />
-        </div>
-      )}
-
       {screen.kind === "grid" && (
         <div className="space-y-5">
           <div className="text-center">
@@ -578,7 +707,47 @@ export default function GamesScreen() {
             <p className="mt-1 text-sm font-medium text-ink-soft">gentle places to land — no scores, no timers, no rush</p>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {/* ─── Recently played (last 3, small cards) ─────────────── */}
+          {recentResolved.length > 0 && (
+            <div>
+              <p className="mb-2 text-[11px] font-bold text-ink-soft uppercase tracking-wide">recently played</p>
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                {recentResolved.map((r) => (
+                  <button
+                    key={`recent-${r.ref}`}
+                    type="button"
+                    onClick={r.open}
+                    className="clay-chip flex flex-col items-center gap-1 px-2 py-2.5 text-center transition-transform hover:-translate-y-0.5 active:scale-95"
+                  >
+                    <span className="text-xl leading-none" aria-hidden>{r.emoji}</span>
+                    <span className="w-full truncate text-[10px] font-bold text-ink-deep">{r.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ─── Favorites row ──────────────────────────────────────── */}
+          {favResolved.length > 0 && (
+            <div>
+              <p className="mb-2 text-[11px] font-bold text-ink-soft uppercase tracking-wide">❤️ favorites</p>
+              <div className="flex flex-wrap gap-2">
+                {favResolved.map((r) => (
+                  <button
+                    key={`fav-${r.ref}`}
+                    type="button"
+                    onClick={r.open}
+                    className="clay-chip flex items-center gap-1.5 rounded-full px-3 py-2 transition-transform hover:-translate-y-0.5 active:scale-95"
+                  >
+                    <span aria-hidden>{r.emoji}</span>
+                    <span className="max-w-[7rem] truncate text-[11px] font-bold text-ink-deep">{r.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {(() => {
               const total = BUILT_IN_GAMES.length + customGames.length + 1; // +1 for creator card
               const isOdd = total % 2 !== 0;
@@ -589,16 +758,29 @@ export default function GamesScreen() {
                     const i = idx++;
                     const last = isOdd && i === total - 1;
                     return (
-                      <motion.button key={g.id} type="button" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-                        onClick={() => openBuiltIn(g.id)}
-                        className={cn("clay-card group flex flex-col items-center gap-2 px-4 py-5 sm:py-6 text-center transition-transform hover:-translate-y-0.5 h-full",
+                      <motion.div key={g.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+                        className={cn("clay-card group relative flex flex-col items-center gap-2 px-4 py-5 sm:py-6 text-center h-full",
                           last && "col-span-2 justify-self-center w-[calc(50%-0.375rem)]")}>
-                        <span className={cn("flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl text-2xl sm:text-3xl transition-transform group-hover:scale-110", g.tile)}>
-                          <span aria-hidden className="drop-shadow-sm">{g.emoji}</span>
-                        </span>
-                        <span className="text-sm sm:text-base font-bold tracking-tight text-ink-deep">{g.name}</span>
-                        <span className="text-[11px] sm:text-xs leading-snug font-medium text-ink-soft">{g.line}</span>
-                      </motion.button>
+                        <button type="button" onClick={() => openBuiltIn(g.id)}
+                          className="flex w-full flex-col items-center gap-2 transition-transform hover:-translate-y-0.5">
+                          <span className={cn("flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl text-2xl sm:text-3xl transition-transform group-hover:scale-110", g.tile)}>
+                            <span aria-hidden className="drop-shadow-sm">{g.emoji}</span>
+                          </span>
+                          <span className="text-sm sm:text-base font-bold tracking-tight text-ink-deep">{g.name}</span>
+                          <span className="text-[11px] sm:text-xs leading-snug font-medium text-ink-soft">{g.line}</span>
+                        </button>
+                        <button type="button" onClick={() => remixBuiltIn(g)}
+                          aria-label={`Remix ${g.name} in the creator`}
+                          className="clay-chip rounded-full px-3 py-1 text-[10px] font-bold text-ink-soft transition-transform hover:scale-105 hover:text-ink-deep active:scale-95">
+                          remix ✨
+                        </button>
+                        <button type="button" onClick={() => toggleFav(`b:${g.id}`)}
+                          aria-label={isFav(`b:${g.id}`) ? `Remove ${g.name} from favorites` : `Add ${g.name} to favorites`}
+                          aria-pressed={isFav(`b:${g.id}`)}
+                          className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full text-sm transition-transform hover:scale-110 active:scale-95">
+                          <span aria-hidden>{isFav(`b:${g.id}`) ? "❤️" : "🤍"}</span>
+                        </button>
+                      </motion.div>
                     );
                   })}
 
@@ -611,9 +793,16 @@ export default function GamesScreen() {
                         className={cn("clay-card group flex flex-col items-center gap-2 px-4 py-5 sm:py-6 text-center transition-transform hover:-translate-y-0.5 h-full relative",
                           last && "col-span-2 justify-self-center w-[calc(50%-0.375rem)]")}>
                         <span className="absolute top-2 left-2 text-xs">✨</span>
+                        <button type="button" onClick={() => toggleFav(`c:${cg.id}`)}
+                          aria-label={isFav(`c:${cg.id}`) ? `Remove ${cg.name || "my game"} from favorites` : `Add ${cg.name || "my game"} to favorites`}
+                          aria-pressed={isFav(`c:${cg.id}`)}
+                          className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full text-sm transition-transform hover:scale-110 active:scale-95">
+                          <span aria-hidden>{isFav(`c:${cg.id}`) ? "❤️" : "🤍"}</span>
+                        </button>
                         <button type="button" onClick={(e) => { e.stopPropagation(); openCustom(cg); }}
                           className="flex flex-col items-center gap-2 w-full">
-                          <span className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl text-2xl sm:text-3xl transition-transform group-hover:scale-110 tile-lavender">
+                          <span className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl text-2xl sm:text-3xl transition-transform group-hover:scale-110 ring-1 ring-white/50"
+                            style={{ background: worldGradientFor(cg.world) }}>
                             <span aria-hidden className="drop-shadow-sm">{mainEmoji}</span>
                           </span>
                           <span className="text-sm sm:text-base font-bold tracking-tight text-ink-deep">{cg.name || "My Game"}</span>
@@ -697,12 +886,54 @@ export default function GamesScreen() {
       )}
 
       {screen.kind === "builder" && (
-        <BuilderShell
-          initial={screen.editing ?? null}
-          onCreate={saveGame}
-          onCancel={goGrid}
-          onPlay={(config) => setScreen({ kind: "custom-play-saved", config })}
-        />
+        <div className="space-y-5">
+          {/* ─── Live preview + fullscreen playtest ─────────────── */}
+          {draft && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="clay-chip rounded-full px-3 py-1.5 text-[11px] font-bold text-ink-soft">
+                  ▶ preview — tap inside to play
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPlaytest(true)}
+                  className="clay-btn rounded-full px-4 py-1.5 text-[11px] font-bold text-white transition-transform hover:scale-105 active:scale-95"
+                >
+                  playtest fullscreen ⛶
+                </button>
+              </div>
+              <div className="h-44 overflow-hidden rounded-2xl">
+                <TinyGameEngine config={draft} minimal />
+              </div>
+            </div>
+          )}
+          <BuilderShell
+            initial={screen.editing ?? null}
+            onCreate={saveGame}
+            onCancel={goGrid}
+            onPlay={(config) => setScreen({ kind: "custom-play-saved", config })}
+            onDraft={handleDraft}
+          />
+        </div>
+      )}
+
+      {/* ─── Fullscreen playtest overlay (always escapable) ─────── */}
+      {playtest && draft && screen.kind === "builder" && (
+        <div className="fixed inset-0 z-[110] flex flex-col bg-[#FDF5E6] p-3">
+          <div className="flex items-center justify-between gap-2 pb-2">
+            <p className="text-sm font-bold text-ink-deep">🧪 playtest</p>
+            <button
+              type="button"
+              onClick={() => setPlaytest(false)}
+              className="clay-chip rounded-full px-4 py-1.5 text-xs font-bold text-ink-deep transition-transform active:scale-95"
+            >
+              ✕ close playtest
+            </button>
+          </div>
+          <div className="min-h-0 flex-1 overflow-hidden rounded-2xl">
+            <TinyGameEngine config={draft} minimal />
+          </div>
+        </div>
       )}
     </div>
   );
@@ -716,6 +947,49 @@ interface FloatingObj {
   opacity: number;
   emoji: string;
   sparkle: string;
+  /** Horizontal direction for sideways drift. */
+  dx?: number;
+}
+
+/* ─── Weather layer (decorative, GPU-friendly, never interactive) ──── */
+
+const WEATHER_GLYPHS: Record<Exclude<WeatherLayer, "none">, string[]> = {
+  petals: ["🌸", "🌺", "💮"],
+  snow: ["❄️", "❅", "❆"],
+  sparkles: ["✨", "⭐", "💫"],
+  rain: ["💧", "💦", "💧"],
+};
+
+function WeatherOverlay({ kind }: { kind?: WeatherLayer }) {
+  if (!kind || kind === "none") return null;
+  const glyphs = WEATHER_GLYPHS[kind];
+  if (!glyphs) return null;
+  const items = Array.from({ length: 9 }, (_, i) => ({
+    id: i,
+    glyph: glyphs[i % glyphs.length],
+    left: (i * 11 + (i % 3) * 7) % 94,
+    dur: (kind === "rain" ? 3.5 : 9) + (i % 4) * 1.6,
+    delay: (i % 9) * 0.85,
+    size: kind === "rain" ? "text-xs" : "text-sm",
+  }));
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+      {items.map((s) => (
+        <span
+          key={s.id}
+          className={cn("absolute select-none opacity-60", s.size)}
+          style={{
+            left: `${s.left}%`,
+            top: "-1.5em",
+            animation: `weather-fall ${s.dur}s linear infinite`,
+            animationDelay: `${s.delay}s`,
+          }}
+        >
+          {s.glyph}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 export function TinyGameEngine({ config, minimal = false }: { config: CustomGameConfig; minimal?: boolean }) {
@@ -730,38 +1004,71 @@ export function TinyGameEngine({ config, minimal = false }: { config: CustomGame
   const sizeCls = OBJECT_SIZES.find((s) => s.id === config.objectSize)?.cls ?? "text-2xl";
   const emojis = getThingEmojis(config.things);
   const sparkleEmoji = getSparkleEmoji(config.sparkleStyle);
+  const drift = config.drift;
+  // Object amount — older games (no amount set) keep the classic cap of 15.
+  const maxObjects =
+    config.amount === "few" ? 5 : config.amount === "some" ? 10 : 15;
 
   // Spawn objects (random from selected things)
   useEffect(() => {
     const timer = setInterval(() => {
       setObjects((prev) => {
-        if (prev.length > 15) return prev;
+        if (prev.length >= maxObjects) return prev;
         const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+        const sideways = drift === "sideways";
+        const startX = sideways
+          ? (nextId.current % 2 === 0 ? -4 : 104)
+          : 5 + Math.random() * 90;
+        const startY =
+          drift === "up" ? 105 : sideways ? 15 + Math.random() * 70 : -5;
         return [...prev, {
           id: nextId.current++,
-          x: 5 + Math.random() * 90,
-          y: -5,
+          x: startX,
+          y: startY,
           opacity: 0.9,
           emoji,
           sparkle: sparkleEmoji,
+          dx: sideways ? (startX < 0 ? 1 : -1) : undefined,
         }];
       });
     }, paceMs);
     return () => clearInterval(timer);
-  }, [paceMs, emojis, sparkleEmoji]);
+  }, [paceMs, emojis, sparkleEmoji, maxObjects, drift]);
 
-  // Move objects
+  // Move objects (drift direction — default = the classic gentle fall)
   useEffect(() => {
     const speed = config.pace === "very-slow" ? 0.3 : config.pace === "slow" ? 0.5 : 0.8;
     const timer = setInterval(() => {
       setObjects((prev) =>
         prev
-          .map((o) => ({ ...o, y: o.y + speed, x: o.x + Math.sin(o.y / 10) * 0.2 }))
-          .filter((o) => o.y < 110),
+          .map((o) => {
+            if (drift === "up") {
+              return { ...o, y: o.y - speed, x: o.x + Math.sin(o.y / 10) * 0.2 };
+            }
+            if (drift === "sideways") {
+              return { ...o, x: o.x + speed * 1.4 * (o.dx ?? 1) };
+            }
+            if (drift === "wander") {
+              const nx = o.x + Math.sin((o.y + o.id * 13) / 7) * 0.9;
+              return {
+                ...o,
+                y: o.y + speed * 0.8,
+                x: nx < -2 ? 102 : nx > 102 ? -2 : nx,
+              };
+            }
+            return { ...o, y: o.y + speed, x: o.x + Math.sin(o.y / 10) * 0.2 };
+          })
+          .filter((o) =>
+            drift === "up"
+              ? o.y > -12
+              : drift === "sideways"
+                ? o.x > -12 && o.x < 112
+                : o.y < 110,
+          ),
       );
     }, 50);
     return () => clearInterval(timer);
-  }, [config.pace]);
+  }, [config.pace, drift]);
 
   // Whisper messages
   useEffect(() => {
@@ -820,10 +1127,11 @@ export function TinyGameEngine({ config, minimal = false }: { config: CustomGame
       !config.worldPhoto && getWorldGradient(config.world),
       minimal ? "h-full" : "h-72",
     )} style={worldStyle}>
-      {/* Doodle object sit in the world, layered among the other floating things */}
-      {config.myDoodle && (
-        <></>
-      )}
+      {/* Doodle object sits in the world among the other floating things */}
+      {config.myDoodle && <></>}
+
+      {/* Weather layer — decorative, pointer-events none, transform/opacity only */}
+      <WeatherOverlay kind={config.weather} />
 
       {/* Objects */}
       {objects.map((obj) => (
