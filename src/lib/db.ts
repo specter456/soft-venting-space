@@ -43,6 +43,8 @@ export interface Attachment {
   label: string;
   duration?: number;
   art?: string;
+  /** Linked recording so the chip can actually play the audio back. */
+  recordingId?: string;
 }
 
 export interface Recording extends LocalRow {

@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
+import { useSetDirty } from "@/lib/useUnsavedGuard";
 import { ArrowLeft, Check, Images, Loader2, Lock, Palette, Sparkles, ImageDown, Grid2x2 } from "lucide-react";
 import { createVaultItem } from "@/lib/db";
 import { saveToGallery } from "@/lib/save-to-gallery";
@@ -45,6 +46,11 @@ export default function CreateScreen() {
   const [view, setView] = useState<"hub" | "photos">(params.get("view") === "photos" ? "photos" : "hub");
   const [selected, setSelected] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  // Unsaved-work guard: picked-but-unsaved photos trigger the leave dialog.
+  const setDirty = useSetDirty();
+  useEffect(() => {
+    setDirty(selected.length > 0);
+  }, [selected.length, setDirty]);
 
   const savePhotos = async () => {
     if (saving || selected.length === 0) return;

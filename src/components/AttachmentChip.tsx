@@ -1,13 +1,17 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ImageIcon, Pause, Play, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTable, type Recording } from "@/lib/db";
+import { music } from "@/lib/music";
 
 export interface Attachment {
   kind: "audio" | "video" | "photo";
   label: string;
   duration?: number;
   art?: string;
+  /** Linked recording so the chip can actually play the audio back. */
+  recordingId?: string;
 }
 
 function fmt(seconds?: number): string {
@@ -63,15 +67,78 @@ export function Waveform({
  * avatar frame, photo a pastel thumbnail. Attachments are always optional —
  * notes and diaries are complete without them.
  */
-export function AttachmentChip({ attachment }: { attachment: Attachment }) {
+export function AttachmentChip({
+  attachment,
+  recordingId,
+}: {
+  attachment: Attachment;
+  /** Fallback link (e.g. resolved from the note/diary's attached recording). */
+  recordingId?: string;
+}) {
   const [playing, setPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const musicWasPlaying = useRef(false);
+  const blipTimer = useRef<number | null>(null);
+
+  // Resolve the real recording so the play button makes actual sound.
+  const recordings = useTable<Recording>("recordings");
+  const linkedId = attachment.recordingId ?? recordingId;
+  const dataUrl = linkedId
+    ? recordings.find((r) => r._id === linkedId)?.dataUrl
+    : undefined;
+
+  const resumeMusic = () => {
+    if (musicWasPlaying.current) {
+      musicWasPlaying.current = false;
+      music.resume();
+    }
+  };
+
+  // Stop sound and timers if the chip unmounts mid-playback.
+  useEffect(() => {
+    const audio = audioRef.current;
+    return () => {
+      if (blipTimer.current) window.clearTimeout(blipTimer.current);
+      audio?.pause();
+      if (musicWasPlaying.current) {
+        musicWasPlaying.current = false;
+        music.resume();
+      }
+    };
+  }, []);
+
+  const toggle = () => {
+    if (!dataUrl) {
+      // Legacy attachment with no recoverable audio — gentle waveform blip
+      // so the button still gives feedback instead of feeling dead.
+      if (playing) {
+        if (blipTimer.current) window.clearTimeout(blipTimer.current);
+        setPlaying(false);
+        return;
+      }
+      setPlaying(true);
+      blipTimer.current = window.setTimeout(() => setPlaying(false), 3500);
+      return;
+    }
+    if (playing) {
+      audioRef.current?.pause();
+      return;
+    }
+    // One-brain: duck ambient music, then play the recording out loud.
+    musicWasPlaying.current = music.getState().playing;
+    music.stop(300);
+    audioRef.current?.play().catch(() => {
+      setPlaying(false);
+      resumeMusic();
+    });
+  };
 
   if (attachment.kind === "audio") {
     return (
       <div className="flex items-center gap-2.5 rounded-full bg-lavender-100/70 py-1.5 pr-4 pl-1.5">
         <button
           type="button"
-          onClick={() => setPlaying((p) => !p)}
+          onClick={toggle}
           className="clay-chip flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lavender-600 transition-transform hover:scale-105 active:scale-95"
           aria-label={playing ? "Pause voice note" : "Play voice note"}
         >
@@ -84,6 +151,23 @@ export function AttachmentChip({ attachment }: { attachment: Attachment }) {
         <span className="text-[10px] font-semibold text-ink-soft">
           {fmt(attachment.duration)}
         </span>
+        {dataUrl && (
+          <audio
+            ref={audioRef}
+            src={dataUrl}
+            preload="auto"
+            className="hidden"
+            onPlay={() => setPlaying(true)}
+            onPause={() => {
+              setPlaying(false);
+              resumeMusic();
+            }}
+            onEnded={() => {
+              setPlaying(false);
+              resumeMusic();
+            }}
+          />
+        )}
       </div>
     );
   }

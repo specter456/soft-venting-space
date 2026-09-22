@@ -50,11 +50,13 @@ export default function NoteEditor() {
                 kind: "audio" as const,
                 label: "a voice vent",
                 duration: selectedRecording.duration,
+                recordingId: selectedRecording._id,
               }
             : {
                 kind: "video" as const,
                 label: "a video vent",
                 duration: selectedRecording.duration,
+                recordingId: selectedRecording._id,
                 art: VIDEO_AVATARS[Math.floor(Math.random() * VIDEO_AVATARS.length)],
               },
         );

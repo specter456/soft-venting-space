@@ -663,14 +663,16 @@ function RecordingRow({
 
   // Cleanup blob URLs on unmount
   useEffect(() => {
+    const audio = audioRef.current;
+    const video = videoRef.current;
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
+      if (audio) {
+        audio.pause();
+        audio.src = "";
       }
-      if (videoRef.current) {
-        videoRef.current.pause();
-        videoRef.current.src = '';
+      if (video) {
+        video.pause();
+        video.src = "";
       }
     };
   }, []);

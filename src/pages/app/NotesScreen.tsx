@@ -2,11 +2,12 @@ import { motion } from "framer-motion";
 import { Plus, Trash2 } from "lucide-react";
 import { Link } from "react-router";
 import { AttachmentChip } from "@/components/AttachmentChip";
-import { removeItem, useTable, type Note } from "@/lib/db";
+import { removeItem, useTable, type Note, type Recording } from "@/lib/db";
 import { moodById } from "@/lib/moods";
 
 export default function NotesScreen() {
   const notes = useTable<Note>("notes");
+  const recordings = useTable<Recording>("recordings");
 
   return (
     <div className="space-y-5">
@@ -99,7 +100,14 @@ export default function NotesScreen() {
               {note.attachments.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-2">
                   {note.attachments.map((a, idx) => (
-                    <AttachmentChip key={idx} attachment={a} />
+                    <AttachmentChip
+                      key={idx}
+                      attachment={a}
+                      recordingId={
+                        a.recordingId ??
+                        recordings.find((r) => r.noteId === note._id)?._id
+                      }
+                    />
                   ))}
                 </div>
               )}

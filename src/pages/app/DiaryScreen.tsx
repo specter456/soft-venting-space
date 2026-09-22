@@ -230,11 +230,13 @@ export default function DiaryScreen() {
                 kind: "audio" as const,
                 label: "a voice vent",
                 duration: selectedRecording.duration,
+                recordingId: selectedRecording._id,
               }
             : {
                 kind: "video" as const,
                 label: "a video vent",
                 duration: selectedRecording.duration,
+                recordingId: selectedRecording._id,
                 art: VIDEO_AVATARS[Math.floor(Math.random() * VIDEO_AVATARS.length)],
               },
         );
@@ -953,7 +955,14 @@ export default function DiaryScreen() {
             {entry.attachments.length > 0 && (
               <div className="relative mt-5 flex flex-wrap gap-2">
                 {entry.attachments.map((a, i) => (
-                  <AttachmentChip key={i} attachment={a} />
+                  <AttachmentChip
+                    key={i}
+                    attachment={a}
+                    recordingId={
+                      a.recordingId ??
+                      recordings.find((r) => r.diaryId === entry._id)?._id
+                    }
+                  />
                 ))}
               </div>
             )}
