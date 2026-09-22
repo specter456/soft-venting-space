@@ -112,8 +112,17 @@ export default function GoodnightWindDown() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-sm text-center"
+              className="relative w-full max-w-sm text-center"
             >
+              {/* always-available gentle exit — no step can ever trap you */}
+              <button
+                type="button"
+                onClick={() => { setOpen(false); setStep(0); setGratitude(""); }}
+                aria-label="Close wind-down"
+                className="absolute -top-1 right-0 flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold text-white/50 transition-colors hover:bg-white/10 hover:text-white/80"
+              >
+                ✕
+              </button>
               {step === 0 && (
                 <div className="space-y-6">
                   <div className="space-y-2">

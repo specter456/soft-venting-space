@@ -2,7 +2,7 @@ import React, { Suspense, useState, Component, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router";
 
 import { MoodBubble } from "@/components/MoodBubble";
-import { removeItem, saveCheckin, useTable, getKvFromCache, type MoodCheckin } from "@/lib/db";
+import { removeItem, saveCheckin, useTable, getSetting, type MoodCheckin } from "@/lib/db";
 import { type MoodId, moodById, todayDateKey } from "@/lib/moods";
 import { useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
@@ -365,7 +365,7 @@ export default function HomeScreen() {
 
 function UserAvatar() {
   let avatar = "💜";
-  try { avatar = getKvFromCache("profileAvatar") || "💜"; } catch { /* safe fallback */ }
+  try { avatar = getSetting("profileAvatar") || "💜"; } catch { /* safe fallback */ }
   // If it's an emoji, show it big. If it's a data URL (sticker), show as image.
   if (avatar.startsWith("data:") || avatar.startsWith("http")) {
     return (

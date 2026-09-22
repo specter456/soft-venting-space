@@ -16,6 +16,7 @@ import {
   KV_USER_TYPE,
   getKvFromCache,
   setKv,
+  setSetting,
   setActiveSpaceId,
 } from "./db";
 import { quarantineKey } from "@/lib/error-journal";
@@ -120,15 +121,22 @@ export async function activateSpace(space: SavedSpace): Promise<void> {
   if (space.type === "guest") {
     await setKv(KV_USER_NAME, space.name ?? "");
     await setKv(KV_USER_EMAIL, "");
+    setSetting("profileEmail", "");
   } else {
     await setKv(KV_USER_EMAIL, space.email ?? "");
     await setKv(KV_USER_NAME, "");
+    setSetting("profileEmail", space.email ?? "");
   }
 }
 
 /**
  * Older devices saved a single space directly in the identity keys.
  * Build a space record from that identity so existing users keep working.
+ *
+ * The id must be STABLE across sessions, otherwise content rows tagged with
+ * a previous id would become invisible. We prefer the persisted
+ * activeSpaceId (exactly the id this legacy data was first tagged with);
+ * otherwise we derive a deterministic id from the passcode hash.
  */
 export function spaceFromActiveIdentity(
   type: string | null,
@@ -136,12 +144,13 @@ export function spaceFromActiveIdentity(
   email: string | null,
   hash: string | null,
   salt: string | null,
+  activeSpaceId?: string | null,
 ): SavedSpace | null {
   if (!hash || !salt || (type !== "guest" && type !== "email")) return null;
   if (type === "guest" && !name) return null;
   if (type === "email" && !email) return null;
   return {
-    id: newSpaceId(),
+    id: activeSpaceId || `sp-${hash.slice(0, 16)}-${salt.slice(0, 8)}`,
     type,
     name: type === "guest" ? (name ?? undefined) : undefined,
     email: type === "email" ? (email ?? undefined) : undefined,

@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { LockScreen } from "@/components/LockScreen";
 import {
-  getKvFromCache,
+  getSetting,
   hasPasscodeLocally,
-  setKv,
+  setSetting,
   useTable,
   wipeAll,
   type KVPair,
@@ -30,13 +30,13 @@ interface BeforeInstallPromptEvent extends Event {
  */
 export default function SettingsScreen() {
   const kv = useTable<KVPair>("kv");
-  const [name, setName] = useState(() => getKvFromCache("profileName") ?? "");
-  const [avatar, setAvatar] = useState(() => getKvFromCache("profileAvatar") ?? AVATARS[0]);
+  const [name, setName] = useState(() => getSetting("profileName") ?? "");
+  const [avatar, setAvatar] = useState(() => getSetting("profileAvatar") ?? AVATARS[0]);
   const [doubleLock, setDoubleLock] = useState(
-    () => getKvFromCache("vaultDoubleLock") !== "false",
+    () => getSetting("vaultDoubleLock") !== "false",
   );
-  const [sounds, setSounds] = useState(() => getKvFromCache("soundsEnabled") !== "false");
-  const [reminders, setReminders] = useState(() => getKvFromCache("gentleReminders") === "true");
+  const [sounds, setSounds] = useState(() => getSetting("soundsEnabled") !== "false");
+  const [reminders, setReminders] = useState(() => getSetting("gentleReminders") === "true");
   const [localOnly, setLocalOnly] = useState(true);
   const [passcodeStep, setPasscodeStep] = useState<"idle" | "verify" | "set">("idle");
   const [armDelete, setArmDelete] = useState(false);
@@ -58,14 +58,14 @@ export default function SettingsScreen() {
   }, []);
 
   const saveName = useTapGuard(() => {
-    void setKv("profileName", name.trim());
+    setSetting("profileName", name.trim());
     toast("Name saved", { description: "Only Venting on this device knows it." });
   }, 500);
 
   const toggleDoubleLock = useTapGuard(() => {
     const next = !doubleLock;
     setDoubleLock(next);
-    void setKv("vaultDoubleLock", next ? "true" : "false");
+    setSetting("vaultDoubleLock", next ? "true" : "false");
     toast(next ? "Vault double-lock on" : "Vault double-lock off", {
       description: next
         ? "Photos and videos now need the second lock again."
@@ -76,13 +76,13 @@ export default function SettingsScreen() {
   const toggleSounds = useTapGuard(() => {
     const next = !sounds;
     setSounds(next);
-    void setKv("soundsEnabled", next ? "true" : "false");
+    setSetting("soundsEnabled", next ? "true" : "false");
   }, 450);
 
   const toggleReminders = useTapGuard(() => {
     const next = !reminders;
     setReminders(next);
-    void setKv("gentleReminders", next ? "true" : "false");
+    setSetting("gentleReminders", next ? "true" : "false");
   }, 450);
 
   const toggleLocalOnly = useTapGuard(() => {
@@ -117,7 +117,7 @@ export default function SettingsScreen() {
       <Section title="Profile & Account" emoji="👤">
         <Row label="Mode">
           <p className="text-xs font-bold text-ink-soft">
-            {getKvFromCache("profileEmail") ? "Email" : "Guest mode"} · full access, nothing
+            {getSetting("profileEmail") ? "Email" : "Guest mode"} · full access, nothing
             required
           </p>
         </Row>
@@ -142,7 +142,7 @@ export default function SettingsScreen() {
           </div>
         </Row>
         <Row label="Your face">
-          <AvatarPicker avatar={avatar} onSelect={(a) => { setAvatar(a); void setKv("profileAvatar", a); }} />
+          <AvatarPicker avatar={avatar} onSelect={(a) => { setAvatar(a); setSetting("profileAvatar", a); }} />
         </Row>
       </Section>
 

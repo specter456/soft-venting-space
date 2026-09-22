@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { Delete, LockKeyhole, Sparkles } from "lucide-react";
-import { KV_PASSCODE_HASH, KV_PASSCODE_SALT, setKv, getKvFromCache } from "@/lib/db";
+import { KV_PASSCODE_HASH, KV_PASSCODE_SALT, setKv, getSetting } from "@/lib/db";
 import { hashPasscode, randomSalt } from "@/lib/passcode";
 import { cn } from "@/lib/utils";
 
@@ -328,7 +328,7 @@ function PadKey({
 }
 
 function LockAvatar() {
-  const avatar = getKvFromCache("profileAvatar") || "💜";
+  const avatar = getSetting("profileAvatar") || "💜";
   if (avatar.startsWith("data:") || avatar.startsWith("http")) {
     return (
       <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-[var(--theme-accent-light)]">

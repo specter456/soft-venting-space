@@ -14,7 +14,7 @@ const BreathingMinute = React.lazy(() => import("@/components/BreathingMinute"))
 const GentleReminder = React.lazy(() => import("@/components/GentleReminder"));
 // LockScreen lazy — imports framer-motion + sonner + lucide-react, only needed when lock is active
 const LockScreen = React.lazy(() => import("@/components/LockScreen").then(m => ({ default: m.LockScreen })));
-import { getKvFromCache } from "@/lib/db";
+import { getSetting } from "@/lib/db";
 import {
   KV_PASSCODE_HASH,
   KV_PASSCODE_SALT,
@@ -107,8 +107,28 @@ export default function Dashboard() {
     : decided;
 
   const navigate = useNavigate();
-  const goHome = useCallback(() => navigate("/dashboard"), [navigate]);
-  const { showGuard, handleSave, handleLeave, handleBack } = useUnsavedGuard(goHome);
+  // Header back = exactly ONE step back in the in-app stack; falls back to
+  // Home when there is no in-app history (deep link / fresh load).
+  const backOneStep = useCallback(() => {
+    const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+    if (idx > 0) navigate(-1);
+    else navigate("/dashboard");
+  }, [navigate]);
+  const { showGuard, handleSave, handleLeave, handleBack } = useUnsavedGuard(backOneStep);
+
+  // Taskbar taps fire BOTH onPointerUp and Link's click — dedupe so each tap
+  // pushes exactly one history entry (otherwise "back one step" feels broken).
+  const lastNavRef = React.useRef<{ to: string; at: number } | null>(null);
+  const navTo = useCallback(
+    (to: string) => {
+      const now = Date.now();
+      const last = lastNavRef.current;
+      if (last && last.to === to && now - last.at < 700) return;
+      lastNavRef.current = { to, at: now };
+      navigate(to);
+    },
+    [navigate],
+  );
 
   // Scroll to top on every route change so header/greeting is always visible first.
   useEffect(() => {
@@ -194,7 +214,6 @@ export default function Dashboard() {
       <div className="pointer-events-none sky-cloud sky-cloud-1" aria-hidden />
       <div className="pointer-events-none sky-cloud sky-cloud-2" aria-hidden />
       <div className="pointer-events-none sky-cloud sky-cloud-3" aria-hidden />
-      <div className="pointer-events-none sky-cloud sky-cloud-4" aria-hidden />
 
       <QuietBoundary name="SeasonalParticles">
         <React.Suspense fallback={null}>
@@ -311,7 +330,13 @@ export default function Dashboard() {
                     key={tab.to}
                     to={tab.to}
                     aria-current={active ? "page" : undefined}
-                    onPointerUp={() => navigate(tab.to)}
+                    onClick={(e) => {
+                      // Let modified clicks (new tab etc.) behave natively.
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                      e.preventDefault();
+                      navTo(tab.to);
+                    }}
+                    onPointerUp={() => navTo(tab.to)}
                     className={cn(
                       "flex flex-1 flex-col items-center gap-0.5 py-2 min-h-[44px] transition-transform pointer-events-auto",
                       !active && "hover:bg-[var(--theme-accent-light)]",
@@ -351,7 +376,7 @@ export default function Dashboard() {
 
 function HeaderAvatar() {
   let avatar = "💜";
-  try { avatar = getKvFromCache("profileAvatar") || "💜"; } catch { /* safe fallback */ }
+  try { avatar = getSetting("profileAvatar") || "💜"; } catch { /* safe fallback */ }
   if (avatar.startsWith("data:") || avatar.startsWith("http")) {
     return (
       <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-[var(--theme-accent-light)]">

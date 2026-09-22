@@ -11,6 +11,7 @@ import {
   KV_USER_TYPE,
   KV_USER_EMAIL,
   KV_USER_NAME,
+  KV_ACTIVE_SPACE_ID,
   wipeAll,
   useTable,
   useHydrated,
@@ -23,6 +24,7 @@ import {
   spaceLabel,
   spaceFace,
   findSpaceByIdentifier,
+  newSpaceId,
   upsertSpace,
   activateSpace,
   type SavedSpace,
@@ -101,10 +103,21 @@ export default function LoginEntry() {
 
   // Older devices stored one space directly in the identity keys —
   // surface it in the login list so existing users keep working.
+  // The persisted activeSpaceId keeps this legacy space's id STABLE across
+  // sessions, so previously tagged rows stay visible after re-login.
+  const storedActiveSpaceId =
+    kv.find((k) => k.key === KV_ACTIVE_SPACE_ID)?.value ?? null;
   const legacySpace = useMemo(
     () =>
-      spaceFromActiveIdentity(userType, userName, userEmail, storedHash, storedSalt),
-    [userType, userName, userEmail, storedHash, storedSalt],
+      spaceFromActiveIdentity(
+        userType,
+        userName,
+        userEmail,
+        storedHash,
+        storedSalt,
+        storedActiveSpaceId,
+      ),
+    [userType, userName, userEmail, storedHash, storedSalt, storedActiveSpaceId],
   );
 
   const visibleSpaces: SavedSpace[] = useMemo(() => {
@@ -127,6 +140,8 @@ export default function LoginEntry() {
           const hash = await hashPasscode(code, activeSpace.salt);
           if (hash === activeSpace.hash) {
             setDigits("");
+            // Persist first (covers legacy identity-only spaces), then activate.
+            await upsertSpace(activeSpace);
             await activateSpace(activeSpace);
             sessionStorage.setItem("venting-just-onboarded", "1");
             navigate("/dashboard");
@@ -168,7 +183,7 @@ export default function LoginEntry() {
           const trimmedName = username.trim();
           const trimmedEmail = email.trim();
           const space: SavedSpace = {
-            id: crypto.randomUUID(),
+            id: newSpaceId(),
             type: path,
             name: path === "guest" ? trimmedName : undefined,
             email: path === "email" ? trimmedEmail : undefined,

@@ -1,7 +1,7 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router";
 import { FriendlyCrashFallback } from "@/components/Friendly";
-import { logError, reportCode, copyReport, shareReport, APP_VERSION } from "@/lib/error-journal";
+import { logError, reportCode, copyReport, shareReport } from "@/lib/error-journal";
 
 interface Props {
   children: React.ReactNode;

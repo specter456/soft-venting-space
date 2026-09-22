@@ -4,6 +4,7 @@ import {
   getActiveSpaceId,
   type StoreName,
   type LocalRow,
+  type KVPair,
   type VaultItem,
   type DiaryEntry,
 } from "@/lib/db";
@@ -20,10 +21,13 @@ export async function downloadBackup(): Promise<void> {
   const dbData: Record<string, LocalRow[]> = {};
   for (const storeName of STORE_NAMES) {
     const allRows = await idbGetAll(storeName);
-    // KV store is cross-space (savedSpaces, activeSpaceId) — include all
-    // Content stores: only include rows belonging to the active space
+    // Content stores: only rows belonging to the active space.
+    // KV: keep this space's keys, but NEVER ship the device's savedSpaces
+    // list (it holds every space's passcode hash — not this space's data).
     if (storeName === "kv") {
-      dbData[storeName] = allRows;
+      dbData[storeName] = allRows.filter(
+        (r) => (r as KVPair).key !== "savedSpaces",
+      );
     } else {
       dbData[storeName] = spaceId
         ? allRows.filter((r) => !r.spaceId || r.spaceId === spaceId)
@@ -90,7 +94,11 @@ export async function downloadBackup(): Promise<void> {
 }
 
 /**
- * Restore from a Venting backup zip. Replaces all local data.
+ * Restore from a Venting backup zip.
+ *
+ * Writes ONLY into the active space: other spaces' rows, keys and passcodes
+ * on this device are never touched. Content rows from the zip are restamped
+ * into the active space so everything in the backup becomes this space's.
  */
 export async function restoreBackup(file: File): Promise<{ ok: boolean; error?: string }> {
   try {
@@ -113,20 +121,49 @@ export async function restoreBackup(file: File): Promise<{ ok: boolean; error?: 
       }
     }
 
-    // ─── Wipe existing data first ─────────────────────────────────
-    await wipeAllIDB();
-
-    // ─── Restore IndexedDB stores (stamp content rows with active spaceId) ──
     const spaceId = getActiveSpaceId();
+
+    // ─── Remove ONLY the active space's rows (others stay untouched) ──
     for (const storeName of STORE_NAMES) {
+      if (storeName === "kv") continue;
+      const existing = await idbGetAll(storeName);
+      for (const row of existing) {
+        const owned = spaceId ? row.spaceId === spaceId : !row.spaceId;
+        if (owned) await idbDelete(storeName as StoreName, row._id);
+      }
+    }
+
+    // ─── Restore IndexedDB stores, restamped into the active space ──
+    for (const storeName of STORE_NAMES) {
+      if (storeName === "kv") continue;
       const rows = dbData[storeName] || [];
       for (const row of rows) {
-        // Stamp content rows with the active spaceId so they belong to this space
-        if (storeName !== "kv" && spaceId && !row.spaceId) {
-          row.spaceId = spaceId;
-        }
+        // Restamp (overwrite) so the backup always lands in THIS space and
+        // never bleeds into the space it was originally made from.
+        if (spaceId) row.spaceId = spaceId;
         await idbPut(storeName as StoreName, row);
       }
+    }
+
+    // ─── Restore kv — device/space metadata stays put in-place ───
+    // savedSpaces (the device's space list), and — when a space is already
+    // active — this device's identity/passcode, never get overwritten, so
+    // restoring can't hijack the login list or morph one space into another.
+    const PROTECTED_KV = new Set([
+      "savedSpaces",
+      "activeSpaceId",
+      "settingsMigrated",
+      "passcodeHash",
+      "passcodeSalt",
+      "userType",
+      "userEmail",
+      "userName",
+    ]);
+    const kvRows = (dbData.kv || []) as KVPair[];
+    for (const row of kvRows) {
+      if (row.key === "savedSpaces") continue;
+      if (spaceId && PROTECTED_KV.has(row.key)) continue;
+      await idbPut("kv", row);
     }
 
     // ─── Restore vault images from zip files ──────────────────────
@@ -165,16 +202,43 @@ export async function restoreBackup(file: File): Promise<{ ok: boolean; error?: 
     if (lsFile) {
       const lsRaw = await lsFile.async("text");
       const lsData: Record<string, string> = JSON.parse(lsRaw);
-      // Clear existing venting keys first
-      const keysToRemove: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && k.startsWith("venting-")) keysToRemove.push(k);
-      }
-      keysToRemove.forEach((k) => localStorage.removeItem(k));
-      // Write restored keys
-      for (const [k, v] of Object.entries(lsData)) {
-        localStorage.setItem(k, v);
+      if (spaceId) {
+        // In-place restore: remap EVERY incoming key into the active space.
+        // 1. clear this space's current keys (other spaces keep theirs)
+        const prefix = `venting:${spaceId}:`;
+        const doomed: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith(prefix)) doomed.push(k);
+        }
+        doomed.forEach((k) => localStorage.removeItem(k));
+        // 2. write incoming keys under the active space's namespace
+        for (const [k, v] of Object.entries(lsData)) {
+          let bare: string | null = null;
+          if (k.startsWith("venting:")) {
+            const rest = k.slice("venting:".length);
+            const sep = rest.indexOf(":");
+            bare = sep >= 0 ? rest.slice(sep + 1) : null;
+          } else if (k.startsWith("venting-")) {
+            bare = k.slice("venting-".length);
+          }
+          if (!bare) continue;
+          // canonicalize: strip a caller-side "venting-" prefix if present
+          if (bare.startsWith("venting-")) bare = bare.slice("venting-".length);
+          localStorage.setItem(prefix + bare, v);
+        }
+      } else {
+        // No active space (fresh-device restore): write keys as-is — the
+        // restored activeSpaceId kv row above makes them line up again.
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith("venting-")) keysToRemove.push(k);
+        }
+        keysToRemove.forEach((k) => localStorage.removeItem(k));
+        for (const [k, v] of Object.entries(lsData)) {
+          localStorage.setItem(k, v);
+        }
       }
     }
 
@@ -233,14 +297,12 @@ async function idbPut(name: StoreName, row: LocalRow): Promise<void> {
   }
 }
 
-async function wipeAllIDB(): Promise<void> {
+async function idbDelete(name: StoreName, id: string): Promise<void> {
   try {
     const db = await openDb();
     await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(STORE_NAMES, "readwrite");
-      for (const name of STORE_NAMES) {
-        tx.objectStore(name).clear();
-      }
+      const tx = db.transaction(name, "readwrite");
+      tx.objectStore(name).delete(id);
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });

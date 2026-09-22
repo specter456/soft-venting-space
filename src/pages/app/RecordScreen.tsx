@@ -45,6 +45,7 @@ export default function RecordScreen() {
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
+  const musicWasPlayingRef = useRef(false);
 
   // Cleanup stream on unmount
   useEffect(() => {
@@ -69,7 +70,9 @@ export default function RecordScreen() {
     setPermDenied(false);
     setRecordedBlob(null);
     try {
-      // Stop any playing music before recording (one-brain rule)
+      // Stop any playing music before recording (one-brain rule), remembering
+      // whether it was playing so we can bring it back after the session.
+      musicWasPlayingRef.current = music.getState().playing;
       music.stop(400);
       const constraints: MediaStreamConstraints =
         mode === "video"
@@ -77,12 +80,17 @@ export default function RecordScreen() {
           : { audio: true };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")
-        ? "audio/ogg;codecs=opus"
-        : "audio/webm";
-      const recorder = new MediaRecorder(stream, { mimeType });
+      // Video vents MUST use a video container — an audio-only mime would
+      // silently drop the video track. Voice vents prefer audio containers.
+      // If nothing is supported (e.g. Safari), fall back to the browser default.
+      const candidates =
+        mode === "video"
+          ? ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm", "video/mp4"]
+          : ["audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/webm", "audio/mp4"];
+      const mimeType = candidates.find((t) => MediaRecorder.isTypeSupported(t));
+      const recorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
       recorderRef.current = recorder;
       chunksRef.current = [];
       recorder.ondataavailable = (e) => {
@@ -119,6 +127,12 @@ export default function RecordScreen() {
       }
     } catch { /* already stopped */ }
     setStage("done");
+    // One-brain: recording is over — bring the ambient music back if it was
+    // playing before we ducked it. (Playback below will duck it again.)
+    if (musicWasPlayingRef.current) {
+      musicWasPlayingRef.current = false;
+      music.resume();
+    }
   };
 
   const reset = () => {
@@ -675,21 +689,8 @@ function RecordingRow({
       setShowVideo(true);
       // Video playback happens via the video element rendered in the expanded view
     } else {
-      // Voice: create or reuse audio element
-      let el = audioRef.current;
-      if (!el) {
-        el = new Audio();
-        el.volume = 1;
-        el.muted = false;
-        audioRef.current = el;
-      }
-      el.src = dataUrl;
-      el.play().catch(() => {});
-      el.onended = () => {
-        setPlaying(false);
-        // Resume music if it was playing
-        if (wasMusicPlaying.current) music.resume();
-      };
+      // Voice: the hidden <audio> already has src set via JSX (volume 1, unmuted)
+      audioRef.current?.play().catch(() => {});
     }
     setPlaying(true);
   }, [dataUrl, kind]);
@@ -746,9 +747,18 @@ function RecordingRow({
       >
         <Trash2 className="size-3.5" />
       </button>
-      {/* Hidden audio element for voice playback */}
-      {kind === "voice" && (
-        <audio ref={audioRef} preload="auto" className="hidden" />
+      {/* Hidden audio element for voice playback — real sound, never muted */}
+      {kind === "voice" && dataUrl && (
+        <audio
+          ref={audioRef}
+          src={dataUrl}
+          preload="auto"
+          className="hidden"
+          onEnded={() => {
+            setPlaying(false);
+            if (wasMusicPlaying.current) music.resume();
+          }}
+        />
       )}
       {/* Video playback overlay */}
       {kind === "video" && showVideo && dataUrl && (

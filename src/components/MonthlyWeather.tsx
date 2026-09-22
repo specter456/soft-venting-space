@@ -54,7 +54,12 @@ export default function MonthlyWeather() {
   // Count diary moods for this month
   diaryEntries.forEach((e) => {
     try {
-      const d = new Date(Number(e._id));
+      // Rows carry _creationTime; fall back to a legacy numeric _id.
+      const ts =
+        typeof e._creationTime === "number" && e._creationTime > 0
+          ? e._creationTime
+          : Number(e._id);
+      const d = new Date(ts);
       if (!isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === month - 1) {
         const mood = e.mood?.toLowerCase();
         if (mood && WEATHER_MAP[mood]) {
@@ -86,7 +91,7 @@ export default function MonthlyWeather() {
     const d = new Date(year, month, 1);
     setViewMonth(monthKey(d));
   };
-  const canGoNext = viewMonth !== monthKey(now);
+  const atCurrentMonth = viewMonth === monthKey(now);
 
   // Always show the card, but only expand when tapped
   return (
@@ -155,10 +160,10 @@ export default function MonthlyWeather() {
                 <button
                   type="button"
                   onClick={nextMonth}
-                  disabled={canGoNext}
+                  disabled={atCurrentMonth}
                   className={cn(
                     "clay-chip flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold",
-                    canGoNext ? "text-ink-soft/40" : "text-ink-deep",
+                    atCurrentMonth ? "text-ink-soft/40" : "text-ink-deep",
                   )}
                   aria-label="Next month"
                 >

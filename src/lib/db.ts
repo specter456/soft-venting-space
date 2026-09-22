@@ -12,7 +12,7 @@
  */
 
 import { useSyncExternalStore } from "react";
-import { setScopedSpaceId } from "@/lib/safe-storage";
+import { setScopedSpaceId, scopedGetItem, scopedSetItem } from "@/lib/safe-storage";
 
 const DB_NAME = "venting-local";
 // v2: adds the calendarEntries store. Existing devices get the new store
@@ -191,9 +191,15 @@ function migrateLocalStorageKeys(spaceId: string): void {
   try {
     for (const key of MIGRATABLE_LS_KEYS) {
       const scoped = prefix + key;
-      const old = `venting-${key}`;
-      if (!localStorage.getItem(scoped) && localStorage.getItem(old)) {
-        localStorage.setItem(scoped, localStorage.getItem(old)!);
+      if (localStorage.getItem(scoped)) continue;
+      // Prefer the value an older build wrote under the double-prefixed
+      // scoped key, then fall back to the legacy unprefixed key.
+      const candidates = [`${prefix}venting-${key}`, `venting-${key}`];
+      const found = candidates
+        .map((c) => localStorage.getItem(c))
+        .find((v) => v !== null);
+      if (found !== undefined && found !== null) {
+        localStorage.setItem(scoped, found);
       }
     }
   } catch { /* private mode — ignore */ }
@@ -205,10 +211,78 @@ export async function setActiveSpaceId(id: string | null): Promise<void> {
   if (id) {
     migrateLocalStorageKeys(id);
     await setKv(KV_ACTIVE_SPACE_ID, id);
+    if (hydrated) {
+      // Attach any still-untagged legacy rows to the FIRST space that activates
+      // (one-time, idempotent) — nobody loses pre-space data.
+      await migrateUntaggedRows(id);
+      // Hand the old GLOBAL profile/toggle settings to their rightful space.
+      migrateGlobalSettings(id);
+    }
   } else {
     await deleteKv(KV_ACTIVE_SPACE_ID);
   }
   notify();
+}
+
+/* ─── Per-space settings (display name, face, toggles) ──────────────── */
+
+/**
+ * These keys used to live in the GLOBAL kv store, so every space on the
+ * device shared one display name / face / toggles. They now live in the
+ * active space's scoped localStorage namespace — per-space, like all content.
+ */
+const SETTINGS_KEYS = [
+  "profileName",
+  "profileEmail",
+  "profileAvatar",
+  "vaultDoubleLock",
+  "soundsEnabled",
+  "gentleReminders",
+] as const;
+const KV_SETTINGS_MIGRATED = "settingsMigrated";
+
+function settingsMigrated(): boolean {
+  return (cache.kv as KVPair[]).some(
+    (k) => k.key === KV_SETTINGS_MIGRATED && k.value,
+  );
+}
+
+/**
+ * One-time migration: copy the legacy GLOBAL settings into the space that
+ * owns them, then flag it done so no later space ever inherits them.
+ */
+function migrateGlobalSettings(spaceId: string): void {
+  if (settingsMigrated()) return;
+  try {
+    const prefix = `venting:${spaceId}:`;
+    for (const key of SETTINGS_KEYS) {
+      const row = (cache.kv as KVPair[]).find((k) => k.key === key);
+      if (row?.value && localStorage.getItem(prefix + key) === null) {
+        localStorage.setItem(prefix + key, row.value);
+      }
+    }
+  } catch { /* private mode — ignore */ }
+  void setKv(KV_SETTINGS_MIGRATED, "1");
+}
+
+/**
+ * Read a per-space setting. Scoped value wins; before the one-time
+ * migration has run we still fall back to the legacy global value so
+ * nobody's name/face disappears mid-update. After migration, global is
+ * never consulted again — no cross-space leakage.
+ */
+export function getSetting(key: string): string | undefined {
+  const scoped = scopedGetItem(key);
+  if (scoped !== null) return scoped;
+  if (!settingsMigrated()) {
+    return (cache.kv as KVPair[]).find((k) => k.key === key)?.value;
+  }
+  return undefined;
+}
+
+/** Write a per-space setting — only the active space ever sees it. */
+export function setSetting(key: string, value: string): void {
+  scopedSetItem(key, value);
 }
 
 /** Re-read all IDB stores into cache (used after space switch). */
@@ -313,6 +387,8 @@ export async function hydrate(): Promise<void> {
     setScopedSpaceId(_activeSpaceId);
     // One-time migration: tag spaceId-less content rows with active space
     if (_activeSpaceId) {
+      migrateLocalStorageKeys(_activeSpaceId);
+      migrateGlobalSettings(_activeSpaceId);
       await migrateUntaggedRows(_activeSpaceId);
     }
   } catch {

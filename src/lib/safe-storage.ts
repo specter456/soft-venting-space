@@ -91,7 +91,12 @@ export function setScopedSpaceId(id: string | null): void {
 
 function scopedKey(key: string): string {
   if (!_cachedSpaceId) return key; // fallback: no space active yet
-  return `venting:${_cachedSpaceId}:${key}`;
+  // Some callers pass keys that already include the legacy "venting-"
+  // prefix (e.g. "venting-checkin"). Normalize to the bare key so every
+  // caller, the migration list, and Settings' reset buttons all agree on
+  // ONE canonical scoped key: venting:<spaceId>:<bare>.
+  const bare = key.startsWith("venting-") ? key.slice("venting-".length) : key;
+  return `venting:${_cachedSpaceId}:${bare}`;
 }
 
 /** Read a value scoped to the active space. */

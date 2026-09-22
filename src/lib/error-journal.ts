@@ -5,6 +5,8 @@
  */
 
 import { getActiveSpaceId } from "@/lib/db";
+// Real version from package.json (bundled at build time — no network, no config).
+import { version as pkgVersion } from "../../package.json";
 
 const JOURNAL_KEY = "venting-error-journal";
 const MAX_ENTRIES = 50;
@@ -18,11 +20,11 @@ export interface JournalEntry {
   version: string;
 }
 
-/** App version — injected at build time or fallback. */
+/** App version — build-time define if present, otherwise package.json. */
 export const APP_VERSION: string =
-  typeof __APP_VERSION__ !== "undefined"
+  typeof __APP_VERSION__ !== "undefined" && __APP_VERSION__
     ? (__APP_VERSION__ as string)
-    : "dev";
+    : pkgVersion;
 
 declare const __APP_VERSION__: string | undefined;
 

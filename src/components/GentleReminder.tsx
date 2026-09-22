@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { useTable, getKvFromCache, type MoodCheckin } from "@/lib/db";
+import { useTable, getSetting, type MoodCheckin } from "@/lib/db";
 import { todayDateKey } from "@/lib/moods";
 import { scopedGetItem, scopedSetItem } from "@/lib/safe-storage";
 
@@ -24,7 +24,7 @@ export default function GentleReminder() {
     shownRef.current = true;
 
     // Check if reminders are enabled
-    const enabled = getKvFromCache("gentleReminders") === "true";
+    const enabled = getSetting("gentleReminders") === "true";
     if (!enabled) return;
 
     // Check if already shown today

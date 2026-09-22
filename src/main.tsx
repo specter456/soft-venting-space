@@ -7,9 +7,11 @@ import { logError } from "@/lib/error-journal";
  * Wrap a lazy import with auto-retry (up to 2 retries with backoff).
  * If the chunk fails to load (network blip), this retries before giving up.
  */
-function retryLazy(factory: () => Promise<{ default: React.ComponentType<any> }>, retries = 2, delayMs = 800): React.LazyExoticComponent<React.ComponentType<any>> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- each screen keeps its own prop type at the JSX call site; the wrapper stays props-agnostic.
+type LazyFactory = () => Promise<{ default: React.ComponentType<any> }>;
+function retryLazy(factory: LazyFactory, retries = 2, delayMs = 800) {
   return React.lazy(() => {
-    const attempt = (remaining: number): Promise<{ default: React.ComponentType<any> }> =>
+    const attempt = (remaining: number): ReturnType<LazyFactory> =>
       factory().catch((err) => {
         if (remaining <= 0) {
           logError("lazy-chunk", err);

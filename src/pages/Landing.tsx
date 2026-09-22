@@ -66,7 +66,6 @@ export default function Landing() {
       <div className="sky-cloud sky-cloud-1" aria-hidden />
       <div className="sky-cloud sky-cloud-2" aria-hidden />
       <div className="sky-cloud sky-cloud-3" aria-hidden />
-      <div className="sky-cloud sky-cloud-4" aria-hidden />
 
       {/* splash screen */}
       <SplashScreen visible={showSplash} />

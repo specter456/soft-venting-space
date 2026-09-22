@@ -4,11 +4,11 @@
  * if audio isn't available (autoplay policies, old browsers, etc.).
  */
 
-import { getKvFromCache } from "./db";
+import { getSetting } from "./db";
 
-/** Sounds on/off — read from on-device prefs (default on). */
+/** Sounds on/off — read from the active space's prefs (default on). */
 export function soundsEnabled(): boolean {
-  return getKvFromCache("soundsEnabled") !== "false";
+  return getSetting("soundsEnabled") !== "false";
 }
 
 let audioCtx: AudioContext | null = null;

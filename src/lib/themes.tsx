@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { scopedGetItem, scopedSetItem } from "@/lib/safe-storage";
 
-export type ThemeId = "old-lace" | "midnight" | "spring-mint" | "peach-morning";
+export type ThemeId = "old-lace" | "midnight" | "spring-mint" | "peach-morning" | "lavender-dusk";
 
 export interface ThemeDef {
   id: ThemeId;
@@ -135,6 +135,37 @@ export const THEMES: ThemeDef[] = [
       "--theme-tile-vault": "#C8A070",
       "--theme-btn-primary": "#E8865C",
       "--theme-btn-secondary": "#C8A070",
+    },
+  },
+  {
+    id: "lavender-dusk",
+    label: "Lavender Dusk",
+    swatch: "linear-gradient(135deg, #EDEBF6, #C4CBE8, #AAB6E3)",
+    vars: {
+      "--theme-bg-start": "#C6BEF2",
+      "--theme-bg-mid": "#DDE1F7",
+      "--theme-bg-end": "#F0EEFA",
+      "--theme-card": "rgba(255,255,255,0.68)",
+      "--theme-card-border": "rgba(200,195,240,0.6)",
+      "--theme-text": "#3A3358",
+      "--theme-text-soft": "#6B6394",
+      "--theme-accent": "#8C7AD8",
+      "--theme-accent-deep": "#6F5FC4",
+      "--theme-accent-light": "rgba(180,170,240,0.35)",
+      "--theme-blob-1": "rgba(170,160,235,0.25)",
+      "--theme-blob-2": "rgba(255,255,255,0.4)",
+      "--theme-blob-3": "rgba(196,187,240,0.3)",
+      "--theme-header-bg": "rgba(217,222,244,0.85)",
+      "--theme-tile-recording": "#8C7AD8",
+      "--theme-tile-notes": "#A78BD8",
+      "--theme-tile-scribble": "#8C9AD6",
+      "--theme-tile-photo": "#7FAAC9",
+      "--theme-tile-stickers": "#B79BD9",
+      "--theme-tile-gif": "#7F9BD9",
+      "--theme-tile-diary": "#6F5FC4",
+      "--theme-tile-vault": "#C9A96A",
+      "--theme-btn-primary": "#6F5FC4",
+      "--theme-btn-secondary": "#C9A96A",
     },
   },
 ];

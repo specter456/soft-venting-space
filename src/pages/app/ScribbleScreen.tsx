@@ -70,6 +70,9 @@ export default function ScribbleScreen() {
   const drawing = useRef(false);
   const lastPoint = useRef<{ x: number; y: number } | null>(null);
   const hasDrawn = useRef(false);
+  // React state mirror of hasDrawn so the unsaved-guard effect re-runs
+  // when the FIRST stroke lands (a ref change alone never re-renders).
+  const [drawn, setDrawn] = useState(false);
 
   const [tool, setTool] = useState<ToolId>("pencil");
   const [color, setColor] = useState(COLORS[0]);
@@ -79,8 +82,8 @@ export default function ScribbleScreen() {
 
   const setDirty = useSetDirty();
   useEffect(() => {
-    setDirty(hasDrawn.current && versions.length === 0);
-  }, [versions.length, setDirty]);
+    setDirty(drawn && versions.length === 0);
+  }, [drawn, versions.length, setDirty]);
 
   const bgClass = BACKGROUNDS.find((b) => b.id === bg.id)!.cls;
 
@@ -179,6 +182,7 @@ export default function ScribbleScreen() {
               e.preventDefault();
               drawing.current = true;
               hasDrawn.current = true;
+              if (!drawn) setDrawn(true);
               lastPoint.current = null;
               (e.target as HTMLElement).setPointerCapture(e.pointerId);
               stroke(e);

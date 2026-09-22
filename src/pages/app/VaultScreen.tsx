@@ -13,6 +13,7 @@ import { LockScreen } from "@/components/LockScreen";
 import {
   KV_PASSCODE_HASH,
   KV_PASSCODE_SALT,
+  getSetting,
   removeItem,
   useTable,
   type KVPair,
@@ -56,8 +57,7 @@ export default function VaultScreen() {
   // is always kept, and only a correct passcode opens it
   const [unlocked, setUnlocked] = useState(false);
   // the vault's second lock can be switched off in Settings (default on)
-  const doubleLock =
-    kv.find((k) => k.key === "vaultDoubleLock")?.value !== "false";
+  const doubleLock = getSetting("vaultDoubleLock") !== "false";
   const [filter, setFilter] = useState<Filter>("all");
   const [openId, setOpenId] = useState<string | null>(null);
 
