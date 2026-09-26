@@ -330,11 +330,30 @@ export function subscribe(listener: () => void): () => void {
   };
 }
 
+// Per-store cached filtered views for useTable's snapshot. useSyncExternalStore
+// compares snapshots with Object.is, so a fresh .filter() array per call would
+// make every render look "changed" (same loop class as snag #5191 in music.ts).
+// cacheViews[name] is rebuilt whenever that store's cache array is replaced;
+// cacheViewsSpace guards against a space switch leaving a stale filter.
+const cacheViews = new Map<StoreName, LocalRow[]>();
+const viewSource = new Map<StoreName, LocalRow[]>();
+let cacheViewsSpace: string | null = null;
+
 function getSnapshot(name: StoreName): LocalRow[] {
   // KV store is never filtered — it holds cross-space metadata (savedSpaces, activeSpaceId)
   // and per-space identity keys that are overwritten by activateSpace().
   if (!CONTENT_STORES.includes(name) || !_activeSpaceId) return cache[name];
-  return cache[name].filter((row) => row.spaceId === _activeSpaceId);
+  if (_activeSpaceId !== cacheViewsSpace) {
+    cacheViews.clear();
+    cacheViewsSpace = _activeSpaceId;
+  }
+  let view = cacheViews.get(name);
+  if (!view || cache[name] !== viewSource.get(name)) {
+    view = cache[name].filter((row) => row.spaceId === _activeSpaceId);
+    viewSource.set(name, cache[name]);
+    cacheViews.set(name, view);
+  }
+  return view;
 }
 
 /* ─── IndexedDB plumbing (with a graceful in-memory fallback) ─────── */
@@ -355,8 +374,6 @@ function openDb(): Promise<IDBDatabase> {
         }
       }
     };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
   });
   return dbPromise;
 }

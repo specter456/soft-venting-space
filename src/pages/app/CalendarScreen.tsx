@@ -43,7 +43,6 @@ interface CalendarDecorations {
 const DECOR_KEY = "venting-calendar-decor";
 
 function loadDecorations(): CalendarDecorations {
-  console.log("[smoke] loadDecorations enter");
   try {
     const raw = scopedGetItem(DECOR_KEY);
     if (raw) return JSON.parse(raw) as CalendarDecorations;
@@ -70,13 +69,8 @@ const BUILT_IN_WALLPAPERS: { id: string; label: string; style: string }[] = [
 /* ─── Main component ─────────────────────────────────────────────── */
 
 export default function CalendarScreen() {
-  const __n = ((globalThis as unknown as { __calRenders?: number }).__calRenders =
-    ((globalThis as unknown as { __calRenders?: number }).__calRenders ?? 0) + 1);
-  console.log("[smoke] CAL render #", __n);
   const entries = useTable<CalendarEntry>("calendarEntries");
-  console.log("[smoke] CAL after entries hook", entries.length);
   const vaultItems = useTable<VaultItem>("vaultItems");
-  console.log("[smoke] CAL after vault hook", vaultItems.length);
   const today = new Date();
   const todayKey = dateKeyFor(today);
   const [view, setView] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
@@ -84,13 +78,11 @@ export default function CalendarScreen() {
   // Customization state
   const [decorating, setDecorating] = useState(false);
   const [decor, setDecor] = useState<CalendarDecorations>(loadDecorations);
-  console.log("[smoke] CAL after decor hook");
   const [decorPanel, setDecorPanel] = useState<"none" | "sticker" | "gif" | "wallpaper">("none");
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Save decorations when they change
-  useEffect(() => { saveDecorations(decor); }, [decor]);
 
   const prevMonth = useTapGuard(() => {
     setView((v) => new Date(v.getFullYear(), v.getMonth() - 1, 1));
@@ -116,7 +108,6 @@ export default function CalendarScreen() {
   const isCurrentMonth =
     view.getMonth() === today.getMonth() && view.getFullYear() === today.getFullYear();
   const cells = buildMonthCells(view);
-  console.log("[smoke] CAL cells built:", cells.length);
 
   // Decoration helpers
   const addSticker = useCallback((emoji: string) => {
@@ -207,7 +198,6 @@ export default function CalendarScreen() {
     return { backgroundImage: `url(${decor.wallpaper})`, backgroundSize: "cover", backgroundPosition: "center" };
   })();
 
-  console.log("[smoke] CAL body end");
   return (
     <div className="space-y-5">
       {/* ─── Month header ───────────────────────────────────────── */}

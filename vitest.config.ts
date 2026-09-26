@@ -14,6 +14,9 @@ export default defineConfig({
     environment: "happy-dom",
     globals: false,
     include: ["tests/**/*.test.tsx", "tests/**/*.test.ts"],
-    // The app is 100% local (IndexedDB/localStorage) — no network mocking needed.
+    // forks (child processes) instead of worker_threads: the DOM-heavy app
+    // boot under happy-dom + threads hangs this environment indefinitely;
+    // forks completes reliably and isolates crashes better.
+    pool: "forks",
   },
 });

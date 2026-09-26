@@ -483,18 +483,34 @@ class MusicEngine {
 
   subscribe = (l: () => void) => { this.listeners.add(l); return () => { this.listeners.delete(l); }; };
 
-  getState = (): MusicState => ({
-    playing: this._playing || this._activeScene !== null,
-    track: this._layer === "game" ? this.gameTrack : this.ambientTrack,
-    layer: this._layer,
-    volume: this._volume,
-    muted: this._muted,
-    ambientUploads: readUploads(KV_AMBIENT_UPLOADS),
-    gameUploads: readUploads(KV_GAME_UPLOADS),
-    activeScene: this._activeScene,
-  });
+  // Cached snapshot for useSyncExternalStore. React compares snapshots with
+  // Object.is, so getState MUST return the same object between real changes —
+  // building a fresh object per call caused an infinite re-render loop in
+  // MusicWidget ("Maximum update depth exceeded" → snag card, e.g. #5191).
+  // Every mutation goes through emit(), which clears the cache; nothing else
+  // may write the fields below without calling emit().
+  private _snapshot: MusicState | null = null;
 
-  private emit(): void { for (const l of this.listeners) { try { l(); } catch { /* subscriber error must never crash */ } } }
+  getState = (): MusicState => {
+    if (!this._snapshot) {
+      this._snapshot = {
+        playing: this._playing || this._activeScene !== null,
+        track: this._layer === "game" ? this.gameTrack : this.ambientTrack,
+        layer: this._layer,
+        volume: this._volume,
+        muted: this._muted,
+        ambientUploads: readUploads(KV_AMBIENT_UPLOADS),
+        gameUploads: readUploads(KV_GAME_UPLOADS),
+        activeScene: this._activeScene,
+      };
+    }
+    return this._snapshot;
+  };
+
+  private emit(): void {
+    this._snapshot = null; // invalidate the cached snapshot
+    for (const l of this.listeners) { try { l(); } catch { /* subscriber error must never crash */ } }
+  }
 
   private _effectiveVol(): number { return this._muted ? 0 : this._volume; }
 
