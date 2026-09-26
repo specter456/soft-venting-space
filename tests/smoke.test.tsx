@@ -128,6 +128,7 @@ const text = () => container.textContent ?? "";
 // 350ms covers the app's tap-guard cool-down; the extra 450 lets any
 // AnimatePresence exit (mode="wait") finish before the next step asserts.
 const settle = (ms: number) => act(async () => { await new Promise((r) => setTimeout(r, ms + 450)); });
+const __mark = (m: string) => console.log(`[step] ${m}`);
 
 import { act } from "react";
 
@@ -202,9 +203,11 @@ afterAll(() => {
 async function signupFreshGuest() {
   expectVisible(/Open your safe room/, "entry choice");
 
+  __mark("guest click next");
   await settle(350); // tap-guard cool-down before the first real tap
   act(() => { button((t) => t.includes("Continue as guest")).click(); });
   await settle(400); // AnimatePresence exit → guest step enters
+  __mark("guest step shown");
   expectVisible(/Choose a name for your space/, "guest name step");
 
   const input = container.querySelector("input");
@@ -214,20 +217,28 @@ async function signupFreshGuest() {
     input!.dispatchEvent(new Event("input", { bubbles: true }));
   });
   await settle(350);
+  __mark("name continue click");
   act(() => { button((t) => t === "Continue").click(); });
   await settle(400);
+  __mark("after name continue");
   expectVisible(/Create a 4-digit passcode/, "passcode create");
 
+  __mark("code1 start");
   await tapCode();
+  __mark("code1 done");
   await settle(300);
   expectVisible(/Type it once more/, "passcode confirm");
+  __mark("code2 start");
   await tapCode();
+  __mark("code2 done");
   await settle(700); // hash + space creation + AnimatePresence
   expectVisible(/How was your/, "check-in screen");
 
+  __mark("checkin visible, mood click next");
   await settle(350);
   act(() => { button((t) => t.includes("Happy")).click(); });
   await settle(600);
+  __mark("after mood click");
   expectVisible(/Good (morning|afternoon|evening|night)/, "home greeting");
   expectVisible(/How are you feeling today\?|You're feeling/, "home mood card");
 }
