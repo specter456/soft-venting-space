@@ -6,14 +6,15 @@ import { useUnsavedGuard } from "@/lib/useUnsavedGuard";
 import { UnsavedDialog } from "@/components/UnsavedDialog";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
-const SeasonalParticles = React.lazy(() => import("@/components/SeasonalParticles"));
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
+const SeasonalParticles = lazyWithRetry(() => import("@/components/SeasonalParticles"));
 
 // Defer non-critical dashboard widgets — they only run after the shell is visible
-const MusicWidget = React.lazy(() => import("@/components/MusicWidget"));
-const BreathingMinute = React.lazy(() => import("@/components/BreathingMinute"));
-const GentleReminder = React.lazy(() => import("@/components/GentleReminder"));
+const MusicWidget = lazyWithRetry(() => import("@/components/MusicWidget"));
+const BreathingMinute = lazyWithRetry(() => import("@/components/BreathingMinute"));
+const GentleReminder = lazyWithRetry(() => import("@/components/GentleReminder"));
 // LockScreen lazy — imports framer-motion + sonner + lucide-react, only needed when lock is active
-const LockScreen = React.lazy(() => import("@/components/LockScreen").then(m => ({ default: m.LockScreen })));
+const LockScreen = lazyWithRetry(() => import("@/components/LockScreen").then(m => ({ default: m.LockScreen })));
 import { getSetting } from "@/lib/db";
 import {
   KV_PASSCODE_HASH,
@@ -125,7 +126,7 @@ export default function Dashboard() {
       const last = lastNavRef.current;
       if (last && last.to === to && now - last.at < 700) return;
       lastNavRef.current = { to, at: now };
-      navigate(to);
+      navigate(to, { viewTransition: true });
     },
     [navigate],
   );
@@ -138,6 +139,19 @@ export default function Dashboard() {
   const isHome = location.pathname === "/dashboard";
   const title = TITLES[location.pathname] ?? "Venting";
   const showBar = location.pathname === "/dashboard" || location.pathname.startsWith("/dashboard/");
+
+  // ── One shared taskbar pill that glides between the four tabs ──────
+  const activeTabIndex = TABS.findIndex((tab) =>
+    tab.to === "/dashboard/calendar"
+      ? location.pathname.startsWith("/dashboard/calendar")
+      : location.pathname === tab.to,
+  );
+  // Remember the last active tab so the pill can glide before hiding on
+  // non-tab screens (render-phase state adjustment — no effects, no refs).
+  const [pillIndex, setPillIndex] = useState(() => Math.max(activeTabIndex, 0));
+  if (activeTabIndex >= 0 && activeTabIndex !== pillIndex) {
+    setPillIndex(activeTabIndex);
+  }
 
   // Set document title for the private dashboard
   useEffect(() => {
@@ -283,6 +297,9 @@ export default function Dashboard() {
             <MusicWidget />
           </React.Suspense>
         </QuietBoundary>
+          {/* Soft screen glide: incoming slides+fades in; outgoing fades/slides
+              out via the View Transitions API when the browser supports it. */}
+          <div key={location.pathname} className="screen-glide">
           {showContent ? (
             <Outlet />
           ) : (
@@ -293,6 +310,7 @@ export default function Dashboard() {
               </p>
             </div>
           )}
+          </div>
         </main>
 
         {showGuard && <UnsavedDialog onSave={handleSave} onLeave={handleLeave} />}
@@ -318,9 +336,19 @@ export default function Dashboard() {
             className="fixed right-0 bottom-4 lg:bottom-0 left-0 z-[9999] flex justify-center px-5 lg:px-0 lg:justify-center pointer-events-auto"
           >
             <div
-              className="flex w-full lg:max-w-none items-center gap-1 p-1.5 lg:p-0 lg:h-14 bg-white/70 lg:bg-white/80 backdrop-blur-md border border-white/50 lg:border-0 lg:border-t border-white/40 shadow-lg shadow-[#8C9AD6]/15 lg:shadow-none pointer-events-auto"
+              className="relative flex w-full lg:max-w-none items-center gap-1 p-1.5 lg:p-0 lg:h-14 bg-white/70 lg:bg-white/80 backdrop-blur-md border border-white/50 lg:border-0 lg:border-t border-white/40 shadow-lg shadow-[#8C9AD6]/15 lg:shadow-none pointer-events-auto"
               style={{ borderRadius: "24px 24px 0 0" }}
             >
+              {/* ONE shared active pill — slides + resizes smoothly between tabs */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute top-1.5 bottom-1.5 left-1.5 w-[calc((100%-1.5rem)/4)] rounded-full transition-[transform,opacity] duration-[250ms] ease-out will-change-transform lg:top-0 lg:bottom-0 lg:left-0 lg:w-[calc((100%-0.75rem)/4)]"
+                style={{
+                  transform: `translateX(calc(${pillIndex} * (100% + 0.25rem)))`,
+                  opacity: activeTabIndex >= 0 ? 1 : 0,
+                  background: "var(--theme-accent-deep, #5A8ABE)",
+                }}
+              />
               {TABS.map((tab) => {
                 const active = tab.to === "/dashboard/calendar"
                   ? location.pathname.startsWith("/dashboard/calendar")
@@ -338,13 +366,10 @@ export default function Dashboard() {
                     }}
                     onPointerUp={() => navTo(tab.to)}
                     className={cn(
-                      "flex flex-1 flex-col items-center gap-0.5 py-2 min-h-[44px] transition-transform pointer-events-auto",
+                      "relative flex flex-1 flex-col items-center gap-0.5 py-2 min-h-[44px] transition-transform active:scale-[0.97] pointer-events-auto",
                       !active && "hover:bg-[var(--theme-accent-light)]",
                     )}
-                    style={{
-                      borderRadius: "999px",
-                      ...(active ? { background: "var(--theme-accent-deep, #5A8ABE)" } : {}),
-                    }}
+                    style={{ borderRadius: "999px" }}
                   >
                     <span
                       className={cn(

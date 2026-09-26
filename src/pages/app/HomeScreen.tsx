@@ -7,15 +7,16 @@ import { type MoodId, moodById, todayDateKey } from "@/lib/moods";
 import { useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
 import { useSeasonEmoji } from "@/components/SeasonalParticles";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 // Lazy-load heavy child components — each pulls in framer-motion; loading
 // them all at once made the home screen slow to appear.
-const FutureNoteSection = React.lazy(() => import("@/components/FutureNoteSection"));
-const MonthlyWeather = React.lazy(() => import("@/components/MonthlyWeather"));
-const GratitudeJar = React.lazy(() => import("@/components/GratitudeJar"));
-const GoodnightWindDown = React.lazy(() => import("@/components/GoodnightWindDown"));
-const TinyTales = React.lazy(() => import("@/components/TinyTales"));
-const PolaroidWallSection = React.lazy(() => import("@/components/PolaroidWall"));
-const PlantHomeCard = React.lazy(() => import("@/components/MyLittlePlant").then(m => ({ default: m.PlantHomeCard })));
+const FutureNoteSection = lazyWithRetry(() => import("@/components/FutureNoteSection"));
+const MonthlyWeather = lazyWithRetry(() => import("@/components/MonthlyWeather"));
+const GratitudeJar = lazyWithRetry(() => import("@/components/GratitudeJar"));
+const GoodnightWindDown = lazyWithRetry(() => import("@/components/GoodnightWindDown"));
+const TinyTales = lazyWithRetry(() => import("@/components/TinyTales"));
+const PolaroidWallSection = lazyWithRetry(() => import("@/components/PolaroidWall"));
+const PlantHomeCard = lazyWithRetry(() => import("@/components/MyLittlePlant").then(m => ({ default: m.PlantHomeCard })));
 
 /** Per-section error boundary: if one card crashes, the rest of Home still shows. */
 class SectionBoundary extends Component<{ name: string; children: ReactNode }, { hasError: boolean }> {
@@ -231,17 +232,23 @@ function HomeScreenInner() {
                       const m = moodById(id);
                       if (!m) return null;
                       return (
-                        <button
-                          key={m.id}
-                          type="button"
-                          onClick={() => pickMood(m.id)}
-                          className="group flex flex-col items-center gap-1.5"
-                        >
-                          <MoodBubble mood={m} size="md" className="group-hover:scale-110" />
-                          <span className="text-[11px] font-bold text-ink-soft group-hover:text-ink">
+                        <div key={m.id} className="group flex flex-col items-center gap-1.5">
+                          {/* two SIBLING buttons — nesting a button inside a
+                              button is invalid HTML and warns in React */}
+                          <MoodBubble
+                            mood={m}
+                            size="md"
+                            className="group-hover:scale-110"
+                            onClick={() => pickMood(m.id)}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => pickMood(m.id)}
+                            className="text-[11px] font-bold text-ink-soft group-hover:text-ink"
+                          >
                             {m.label}
-                          </span>
-                        </button>
+                          </button>
+                        </div>
                       );
                     })}
                   </div>

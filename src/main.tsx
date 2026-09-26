@@ -1,65 +1,44 @@
 import React, { Suspense } from "react";
 import { AppErrorBoundary, ScreenBoundary, installGlobalErrorHandlers } from "@/components/AppErrorBoundary";
 import { hydrate } from "@/lib/db";
-import { logError } from "@/lib/error-journal";
-
-/**
- * Wrap a lazy import with auto-retry (up to 2 retries with backoff).
- * If the chunk fails to load (network blip), this retries before giving up.
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- each screen keeps its own prop type at the JSX call site; the wrapper stays props-agnostic.
-type LazyFactory = () => Promise<{ default: React.ComponentType<any> }>;
-function retryLazy(factory: LazyFactory, retries = 2, delayMs = 800) {
-  return React.lazy(() => {
-    const attempt = (remaining: number): ReturnType<LazyFactory> =>
-      factory().catch((err) => {
-        if (remaining <= 0) {
-          logError("lazy-chunk", err);
-          throw err;
-        }
-        console.info(`[venting] lazy chunk retry (${retries - remaining + 1}/${retries})…`);
-        return new Promise((resolve) => setTimeout(resolve, delayMs)).then(() => attempt(remaining - 1));
-      });
-    return attempt(retries);
-  });
-}
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
 // Toaster lazy — pulls in sonner + lucide-react + next-themes, not needed for first paint
-const Toaster = retryLazy(() => import("@/components/ui/sonner").then(m => ({ default: m.Toaster })));
+const Toaster = lazyWithRetry(() => import("@/components/ui/sonner").then(m => ({ default: m.Toaster })));
 // VlyToolbar lazy-loaded — it imports framer-motion + @zumer/snapdom which
 // are heavy; only needed on dev deployments (.vly.sh), so defer entirely.
-const VlyToolbar = retryLazy(() => import("../vly-toolbar-readonly.tsx").then(m => ({ default: m.VlyToolbar })));
+const VlyToolbar = lazyWithRetry(() => import("../vly-toolbar-readonly.tsx").then(m => ({ default: m.VlyToolbar })));
 // OfflineNotice lazy — pulls in sonner, not needed for first paint
-const OfflineNotice = retryLazy(() => import("@/components/Friendly").then(m => ({ default: m.OfflineNotice })));
+const OfflineNotice = lazyWithRetry(() => import("@/components/Friendly").then(m => ({ default: m.OfflineNotice })));
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import { ThemeProvider } from "@/lib/themes";
 import "./index.css";
 
 // Public routes — lazy-loaded so the initial bundle stays tiny
-const Landing = retryLazy(() => import("./pages/Landing"));
-const LoginEntry = retryLazy(() => import("./pages/LoginEntry"));
-const NotFound = retryLazy(() => import("./pages/NotFound"));
+const Landing = lazyWithRetry(() => import("./pages/Landing"));
+const LoginEntry = lazyWithRetry(() => import("./pages/LoginEntry"));
+const NotFound = lazyWithRetry(() => import("./pages/NotFound"));
 
 // Dashboard shell — eagerly imported (has render-time setState, cannot be lazy)
 import Dashboard from "./pages/Dashboard";
 
 // Dashboard screens — lazy-loaded for smaller initial bundle
-const HomeScreen = retryLazy(() => import("./pages/app/HomeScreen"));
-const RecordScreen = retryLazy(() => import("./pages/app/RecordScreen"));
-const NotesScreen = retryLazy(() => import("./pages/app/NotesScreen"));
-const NoteEditor = retryLazy(() => import("./pages/app/NoteEditor"));
-const CreateScreen = retryLazy(() => import("./pages/app/CreateScreen"));
-const VaultScreen = retryLazy(() => import("./pages/app/VaultScreen"));
-const ScribbleScreen = retryLazy(() => import("./pages/app/ScribbleScreen"));
-const StickerStudio = retryLazy(() => import("./pages/app/StickerStudio"));
-const GifStudio = retryLazy(() => import("./pages/app/GifStudio"));
-const GamesScreen = retryLazy(() => import("./pages/app/GamesScreen"));
-const SettingsScreen = retryLazy(() => import("./pages/app/SettingsScreen"));
-const DiaryScreen = retryLazy(() => import("./pages/app/DiaryScreen"));
-const PolaroidWallScreen = retryLazy(() => import("@/components/PolaroidWall").then(m => ({ default: m.PolaroidWallScreen })));
-const CalendarScreen = retryLazy(() => import("./pages/app/CalendarScreen"));
-const CalendarDayView = retryLazy(() => import("./pages/app/CalendarDayView"));
+const HomeScreen = lazyWithRetry(() => import("./pages/app/HomeScreen"));
+const RecordScreen = lazyWithRetry(() => import("./pages/app/RecordScreen"));
+const NotesScreen = lazyWithRetry(() => import("./pages/app/NotesScreen"));
+const NoteEditor = lazyWithRetry(() => import("./pages/app/NoteEditor"));
+const CreateScreen = lazyWithRetry(() => import("./pages/app/CreateScreen"));
+const VaultScreen = lazyWithRetry(() => import("./pages/app/VaultScreen"));
+const ScribbleScreen = lazyWithRetry(() => import("./pages/app/ScribbleScreen"));
+const StickerStudio = lazyWithRetry(() => import("./pages/app/StickerStudio"));
+const GifStudio = lazyWithRetry(() => import("./pages/app/GifStudio"));
+const GamesScreen = lazyWithRetry(() => import("./pages/app/GamesScreen"));
+const SettingsScreen = lazyWithRetry(() => import("./pages/app/SettingsScreen"));
+const DiaryScreen = lazyWithRetry(() => import("./pages/app/DiaryScreen"));
+const PolaroidWallScreen = lazyWithRetry(() => import("@/components/PolaroidWall").then(m => ({ default: m.PolaroidWallScreen })));
+const CalendarScreen = lazyWithRetry(() => import("./pages/app/CalendarScreen"));
+const CalendarDayView = lazyWithRetry(() => import("./pages/app/CalendarDayView"));
 
 /** Soft breathing-heart loader for lazy chunks */
 function ScreenLoader() {

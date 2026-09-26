@@ -11,6 +11,7 @@ import {
 } from "@/lib/db";
 import { scopedRemoveItem, safeSessionRemoveItem } from "@/lib/safe-storage";
 import { journalCount, copyReport, clearJournal, APP_VERSION } from "@/lib/error-journal";
+import { showCopiedToast, showCopyFailedToast, useCopyFeedback } from "@/lib/clipboard";
 import { useAsyncTapGuard, useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
 import { THEMES, useTheme } from "@/lib/themes";
@@ -534,12 +535,16 @@ function BackupSection() {
 
 function ErrorJournalSection() {
   const [count, setCount] = useState(() => journalCount());
+  const { copied, markCopied } = useCopyFeedback();
 
   const handleCopy = async () => {
     const ok = await copyReport();
-    toast(ok ? "Report copied" : "Couldn't copy", {
-      description: ok ? "Technical details on your clipboard — paste where needed." : "Try again in a moment.",
-    });
+    if (ok) {
+      markCopied();
+      showCopiedToast();
+    } else {
+      showCopyFailedToast();
+    }
   };
 
   const handleClear = () => {
@@ -559,7 +564,7 @@ function ErrorJournalSection() {
           onClick={handleCopy}
           className="rounded-full bg-lavender-100/80 px-3 py-1.5 text-[10px] font-bold text-lavender-600 transition-transform hover:scale-105 active:scale-95"
         >
-          copy report
+          {copied ? "copied! ✓" : "copy report"}
         </button>
         <button
           type="button"

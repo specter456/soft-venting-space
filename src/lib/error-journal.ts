@@ -5,6 +5,7 @@
  */
 
 import { getActiveSpaceId } from "@/lib/db";
+import { copyText } from "@/lib/clipboard";
 // Real version from package.json (bundled at build time — no network, no config).
 import { version as pkgVersion } from "../../package.json";
 
@@ -148,8 +149,7 @@ export function formatReport(): string {
 export async function copyReport(): Promise<boolean> {
   try {
     const text = formatReport();
-    await navigator.clipboard.writeText(text);
-    return true;
+    return await copyText(text);
   } catch {
     return false;
   }

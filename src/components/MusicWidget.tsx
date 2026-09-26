@@ -66,13 +66,19 @@ export default function MusicWidget() {
                 {isGame ? "🎮 game music" : "🎵 soothing sounds"}
               </p>
               {!isGame && (
-                <div className="mt-2 flex gap-1">
+                <div className="relative mt-2 flex gap-1">
+                  {/* ONE shared pill that glides between music | scenes */}
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-y-0 left-0 w-[calc((100%-0.25rem)/2)] rounded-full bg-lavender-500 shadow-md transition-transform duration-[250ms] ease-out will-change-transform"
+                    style={{ transform: tab === "scenes" ? "translateX(calc(100% + 0.25rem))" : "translateX(0)" }}
+                  />
                   <button type="button" onClick={() => setTab("music")}
-                    className={cn("flex-1 rounded-full py-1.5 text-[11px] font-bold transition-transform", tab === "music" ? "bg-lavender-500 text-white shadow-md" : "text-ink-soft hover:text-ink-deep")}>
+                    className={cn("relative flex-1 rounded-full py-1.5 text-[11px] font-bold transition-transform active:scale-[0.97]", tab === "music" ? "text-white" : "text-ink-soft hover:text-ink-deep")}>
                     🎵 music
                   </button>
                   <button type="button" onClick={() => setTab("scenes")}
-                    className={cn("flex-1 rounded-full py-1.5 text-[11px] font-bold transition-transform", tab === "scenes" ? "bg-lavender-500 text-white shadow-md" : "text-ink-soft hover:text-ink-deep")}>
+                    className={cn("relative flex-1 rounded-full py-1.5 text-[11px] font-bold transition-transform active:scale-[0.97]", tab === "scenes" ? "text-white" : "text-ink-soft hover:text-ink-deep")}>
                     🌿 scenes
                   </button>
                 </div>

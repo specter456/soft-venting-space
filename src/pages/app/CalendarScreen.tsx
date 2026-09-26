@@ -50,10 +50,6 @@ function loadDecorations(): CalendarDecorations {
   return { stickers: [], wallpaper: null, wallpaperType: null };
 }
 
-function saveDecorations(d: CalendarDecorations) {
-  scopedSetItem(DECOR_KEY, JSON.stringify(d));
-}
-
 const BUILT_IN_STICKERS = [
   "🎂", "⭐", "🦋", "💜", "🌸", "☁️", "🎀", "🐻",
   "🍰", "🌙", "🌈", "🍬", "🧸", "🌺", "✨", "🐣",
@@ -83,6 +79,11 @@ export default function CalendarScreen() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Save decorations when they change
+  useEffect(() => {
+    try {
+      scopedSetItem(DECOR_KEY, JSON.stringify(decor));
+    } catch { /* storage unavailable — ignore */ }
+  }, [decor]);
 
   const prevMonth = useTapGuard(() => {
     setView((v) => new Date(v.getFullYear(), v.getMonth() - 1, 1));

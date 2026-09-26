@@ -2,6 +2,8 @@ import React from "react";
 import { useLocation, useNavigate } from "react-router";
 import { FriendlyCrashFallback } from "@/components/Friendly";
 import { logError, reportCode, copyReport, shareReport } from "@/lib/error-journal";
+import { isChunkLoadError, trySoftReload } from "@/lib/lazyWithRetry";
+import { showCopiedToast, showCopyFailedToast } from "@/lib/clipboard";
 
 interface Props {
   children: React.ReactNode;
@@ -15,6 +17,8 @@ interface State {
   hasError: boolean;
   /** The captured error for the report code. */
   capturedError: Error | null;
+  /** True for 2s after a successful copy so the button reads "copied! ✓". */
+  copied: boolean;
 }
 
 let lastGlobalErrorAt = 0;
@@ -26,7 +30,8 @@ let lastGlobalErrorAt = 0;
  * causes removeChild DOM errors, so it is avoided.
  */
 export class AppErrorBoundary extends React.Component<Props, State> {
-  state: State = { hasError: false, capturedError: null };
+  state: State = { hasError: false, capturedError: null, copied: false };
+  private copyTimer: number | undefined;
 
   static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, capturedError: error };
@@ -51,12 +56,29 @@ export class AppErrorBoundary extends React.Component<Props, State> {
     }
   }
 
+  componentWillUnmount() {
+    window.clearTimeout(this.copyTimer);
+  }
+
   private retry = () => {
-    this.setState({ hasError: false, capturedError: null });
+    this.setState({ hasError: false, capturedError: null, copied: false });
   };
 
-  private handleCopy = async () => {
-    await copyReport();
+  /** Copy the journal report with instant feedback: "copied! ✓" + toast. */
+  private handleCopy = async (): Promise<boolean> => {
+    const ok = await copyReport();
+    if (ok) {
+      showCopiedToast();
+      this.setState({ copied: true });
+      window.clearTimeout(this.copyTimer);
+      this.copyTimer = window.setTimeout(
+        () => this.setState({ copied: false }),
+        2000,
+      );
+    } else {
+      showCopyFailedToast();
+    }
+    return ok;
   };
 
   private handleShare = async () => {
@@ -101,7 +123,7 @@ export class AppErrorBoundary extends React.Component<Props, State> {
                 onClick={this.handleCopy}
                 className="rounded-full px-5 py-2 text-xs font-bold text-ink-soft transition-colors hover:bg-lavender-100/70 hover:text-ink-deep"
               >
-                copy report
+                {this.state.copied ? "copied! ✓" : "copy report"}
               </button>
               <button
                 type="button"
@@ -194,6 +216,15 @@ export function installGlobalErrorHandlers(): () => void {
     report();
   };
   const onRejection = (event: PromiseRejectionEvent) => {
+    // Lazy-chunk failures self-heal: ONE soft reload per session (guarded
+    // against loops). Keep the console clean — we handle it, no snag card.
+    if (isChunkLoadError(event.reason)) {
+      event.preventDefault();
+      if (trySoftReload()) return;
+      logError("lazy-chunk-global", String(event.reason?.message ?? event.reason));
+      report();
+      return;
+    }
     console.error("[venting] unhandled rejection:", event.reason);
     report();
   };

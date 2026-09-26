@@ -27,7 +27,10 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
-import * as React from "react";
+
+// React's act() requires this flag; without it every act call logs a
+// console.error and the tour's "console clean" assertions can never pass.
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 // ─── Browser-environment shims (before any app import) ────────────────
 
@@ -169,8 +172,12 @@ beforeAll(async () => {
   // Boot at the entry choice screen.
   window.history.replaceState({}, "", "/login");
 
-  // Import the real entrypoint — it renders itself into #root.
-  await import("../src/main");
+  // Import the real entrypoint — it renders itself into #root. Wrapped in
+  // act so the initial root render happens inside the act environment
+  // (otherwise React logs "update … not wrapped in act(...)").
+  await act(async () => {
+    await import("../src/main");
+  });
   await settle(400);
 
   // ---- Test instrumentation (no app code changes) ----
@@ -213,7 +220,14 @@ async function signupFreshGuest() {
   const input = container.querySelector("input");
   expect(input, "name input should exist").toBeTruthy();
   act(() => {
-    input!.value = "SmokeTester";
+    // Use the NATIVE value setter: React patches `input.value` with a
+    // value-tracker that dedupes identical values, which would swallow the
+    // synthetic input event and leave onChange (and the name) unset.
+    const nativeSet = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      "value",
+    )?.set;
+    nativeSet?.call(input!, "SmokeTester");
     input!.dispatchEvent(new Event("input", { bubbles: true }));
   });
   await settle(350);

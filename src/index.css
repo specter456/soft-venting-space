@@ -645,3 +645,29 @@
   background: rgba(140, 154, 214, 0.3);
   border-radius: 9999px;
 }
+
+/* ─── Soft screen glide — never a hard jump between screens ────────
+   Incoming: slides 12px up + fades in (~220ms).
+   Outgoing: fades + slides 12px out, only when the navigation opts into
+   the View Transitions API (taskbar tabs) and the browser supports it. */
+.screen-glide {
+  view-transition-name: screen;
+  animation: screen-glide-in 220ms ease-out both;
+}
+@keyframes screen-glide-in {
+  from { opacity: 0; transform: translateY(12px); }
+}
+@keyframes screen-glide-out {
+  to { opacity: 0; transform: translateY(-12px); }
+}
+::view-transition-old(screen) {
+  animation: screen-glide-out 220ms ease-out both;
+}
+::view-transition-new(screen) {
+  animation: screen-glide-in 220ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .screen-glide { animation: none; }
+  ::view-transition-old(screen) { animation-duration: 1ms; }
+  ::view-transition-new(screen) { animation-duration: 1ms; }
+}

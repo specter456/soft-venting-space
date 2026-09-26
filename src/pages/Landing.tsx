@@ -1,10 +1,11 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight } from "lucide-react";
-import { lazy, Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Logo } from "@/components/Logo";
 import { QuietBoundary } from "@/components/AppErrorBoundary";
-const SeasonalParticles = lazy(() => import("@/components/SeasonalParticles"));
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
+const SeasonalParticles = lazyWithRetry(() => import("@/components/SeasonalParticles"));
 import { SplashScreen } from "@/components/SplashScreen";
 import { DocumentHead } from "@/components/DocumentHead";
 

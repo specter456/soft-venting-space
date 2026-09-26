@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useCopyFeedback } from "@/lib/clipboard";
 
 /** Never show raw technical text — every failure gets a gentle explanation. */
 export function friendlyErrorText(): string {
@@ -23,9 +24,10 @@ export function FriendlyCrashFallback({
   onContinue?: () => void;
   title?: string;
   code?: string;
-  onCopy?: () => void;
+  onCopy?: () => boolean | void | Promise<boolean | void>;
   onShare?: () => void;
 }) {
+  const { copied, markCopied } = useCopyFeedback();
   return (
     <div className="flex min-h-dvh items-center justify-center bg-gradient-to-b from-cream-soft via-cream to-lavender-50 p-6 text-ink">
       <div className="clay-card w-full max-w-sm px-6 py-8 text-center">
@@ -55,10 +57,13 @@ export function FriendlyCrashFallback({
           {onCopy && (
             <button
               type="button"
-              onClick={onCopy}
+              onClick={async () => {
+                const ok = await onCopy();
+                if (ok !== false) markCopied();
+              }}
               className="rounded-full px-5 py-2.5 text-xs font-bold text-ink-soft transition-colors hover:bg-lavender-100/70 hover:text-ink-deep"
             >
-              copy report
+              {copied ? "copied! ✓" : "copy report"}
             </button>
           )}
           {onShare && (
