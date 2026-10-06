@@ -27,8 +27,11 @@ try {
   failed = await startVitest("test", ["tests/smoke.test.tsx"], {
     watch: false,
     run: true,
-    testTimeout: 15000,
-    hookTimeout: 15000,
+    // The tour waits out real tap-guards and AnimatePresence exits and the
+    // first visit to each lazy screen pays a one-off transform cost, so the
+    // stock 5s/15s budgets kill the signup flow mid-act and cascade failures.
+    testTimeout: 60000,
+    hookTimeout: 60000,
     reporters: ["default"],
   });
 } catch (err) {

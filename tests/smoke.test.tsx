@@ -130,16 +130,45 @@ let container: HTMLElement;
 const text = () => container.textContent ?? "";
 // 350ms covers the app's tap-guard cool-down; the extra 450 lets any
 // AnimatePresence exit (mode="wait") finish before the next step asserts.
-const settle = (ms: number) => act(async () => { await new Promise((r) => setTimeout(r, ms + 450)); });
+// (Keep as a plain async/await so the mark fires reliably after the act.)
+const settle = async (ms: number) => {
+  __mark(`settle ${ms} start`);
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, ms + 450));
+  });
+  __mark(`settle ${ms} done`);
+};
 const __mark = (m: string) => console.log(`[step] ${m}`);
+
+/**
+ * Poll until the rendered text matches. Lazy screens are fetched on first
+ * visit and the very first transform under vitest can take longer than any
+ * fixed settle, so assertions wait for the screen instead of a stopwatch.
+ */
+async function waitFor(matcher: RegExp, label: string, timeoutMs = 15_000) {
+  const started = Date.now();
+  for (;;) {
+    if (matcher.test(text())) break;
+    if (Date.now() - started > timeoutMs) {
+      expectVisible(matcher, label);
+      return;
+    }
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 120));
+    });
+  }
+  __mark(`visible: ${label}`);
+}
 
 import { act } from "react";
 
 function go(to: string) {
+  __mark(`go ${to}`);
   act(() => {
     window.history.pushState({}, "", to);
     window.dispatchEvent(new PopStateEvent("popstate"));
   });
+  __mark(`go ${to} act done`);
 }
 function button(match: (t: string) => boolean): HTMLButtonElement {
   const all = [...container.querySelectorAll("button")];
@@ -178,7 +207,9 @@ beforeAll(async () => {
   await act(async () => {
     await import("../src/main");
   });
-  await settle(400);
+  // First visit fetches the entry chunk (on-demand transform here), so wait
+  // for the screen rather than for a stopwatch.
+  await waitFor(/Open your safe room/, "entry choice after boot", 30_000);
 
   // ---- Test instrumentation (no app code changes) ----
   // Every error boundary in the app is a class with componentDidCatch.
@@ -199,7 +230,14 @@ beforeAll(async () => {
   }
 });
 
-afterAll(() => {
+afterAll(async () => {
+  // Flush React's scheduled work while `window` still exists. Without this,
+  // a scheduler callback queued by the final assertion fires after happy-dom
+  // tears down → "ReferenceError: window is not defined" as an unhandled
+  // error, which fails an otherwise-green run.
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, 500));
+  });
   console.error = origError;
   console.warn = origWarn;
 });
@@ -208,14 +246,14 @@ afterAll(() => {
 
 /** Enter the dashboard as a fresh guest: entry choice → name → passcode ×2 → check-in. */
 async function signupFreshGuest() {
-  expectVisible(/Open your safe room/, "entry choice");
+  await waitFor(/Open your safe room/, "entry choice");
 
   __mark("guest click next");
   await settle(350); // tap-guard cool-down before the first real tap
   act(() => { button((t) => t.includes("Continue as guest")).click(); });
   await settle(400); // AnimatePresence exit → guest step enters
   __mark("guest step shown");
-  expectVisible(/Choose a name for your space/, "guest name step");
+  await waitFor(/Choose a name for your space/, "guest name step");
 
   const input = container.querySelector("input");
   expect(input, "name input should exist").toBeTruthy();
@@ -235,7 +273,7 @@ async function signupFreshGuest() {
   act(() => { button((t) => t === "Continue").click(); });
   await settle(400);
   __mark("after name continue");
-  expectVisible(/Create a 4-digit passcode/, "passcode create");
+  await waitFor(/Create a 4-digit passcode/, "passcode create");
 
   __mark("code1 start");
   await tapCode();
@@ -246,14 +284,14 @@ async function signupFreshGuest() {
   await tapCode();
   __mark("code2 done");
   await settle(700); // hash + space creation + AnimatePresence
-  expectVisible(/How was your/, "check-in screen");
+  await waitFor(/How was your/, "check-in screen");
 
   __mark("checkin visible, mood click next");
   await settle(350);
   act(() => { button((t) => t.includes("Happy")).click(); });
   await settle(600);
   __mark("after mood click");
-  expectVisible(/Good (morning|afternoon|evening|night)/, "home greeting");
+  await waitFor(/Good (morning|afternoon|evening|night)/, "home greeting");
   expectVisible(/How are you feeling today\?|You're feeling/, "home mood card");
 }
 
@@ -284,22 +322,19 @@ describe("Venting smoke tour", () => {
     "all four tabs render: home → games → calendar → settings → home",
     { retry: 2 },
     async () => {
+      __mark("test2 start");
       go("/dashboard/games");
-      await settle(400);
-      expectVisible(/gentle places to land/, "games grid");
+      await waitFor(/gentle places to land/, "games grid");
       expectVisible(/recently played|❤️ favorites|Bubble Pop|Create your own game/, "games content");
 
       go("/dashboard/calendar");
-      await settle(400);
-      expectVisible(/important|thought dump|notes/i, "calendar");
+      await waitFor(/important|thought dump|notes/i, "calendar");
 
       go("/dashboard/settings");
-      await settle(400);
-      expectVisible(/delete everything|theme|about/i, "settings");
+      await waitFor(/delete everything|theme|about/i, "settings");
 
       go("/dashboard");
-      await settle(400);
-      expectVisible(/Good (morning|afternoon|evening|night)|How are you feeling|You're feeling/, "home again");
+      await waitFor(/Good (morning|afternoon|evening|night)|How are you feeling|You're feeling/, "home again");
 
       expectNoBoundary();
       expectNoConsoleErrors();
@@ -310,12 +345,12 @@ describe("Venting smoke tour", () => {
     "open one game (Bubble Pop) → back to grid",
     { retry: 2 },
     async () => {
+      __mark("test3 start");
       go("/dashboard/games");
-      await settle(400);
+      await waitFor(/gentle places to land/, "games grid (test3)");
       await settle(350);
       act(() => { button((t) => t.includes("Bubble Pop")).click(); });
-      await settle(500);
-      expectVisible(/Each bubble holds a worry|Bubble Pop/, "bubble pop open");
+      await waitFor(/Each bubble holds a worry/, "bubble pop open");
 
       await settle(350);
       act(() => { button((t) => t.includes("all games")).click(); });
@@ -331,6 +366,7 @@ describe("Venting smoke tour", () => {
     "route re-entry (reload-equivalent) on a tab recovers cleanly",
     { retry: 2 },
     async () => {
+      __mark("test4 start");
       // Unmount/remount of a screen subtree = what a reload exercises for the
       // boundary + lazy chunk path. Leave games, come back, leave, come back.
       go("/dashboard");
@@ -340,8 +376,7 @@ describe("Venting smoke tour", () => {
       go("/dashboard/settings");
       await settle(300);
       go("/dashboard/games");
-      await settle(400);
-      expectVisible(/gentle places to land/, "grid after re-entry");
+      await waitFor(/gentle places to land/, "grid after re-entry");
 
       expectNoBoundary();
       expectNoConsoleErrors();
@@ -352,15 +387,14 @@ describe("Venting smoke tour", () => {
     "recording screen loads (no crash without a mic)",
     { retry: 2 },
     async () => {
+      __mark("test5 start");
       go("/dashboard/record");
-      await settle(400);
-      expectVisible(/How would you like to let it out\?/, "record picker");
+      await waitFor(/How would you like to let it out\?/, "record picker");
 
       // Voice mode renders its recorder without touching getUserMedia.
       await settle(350);
       act(() => { button((t) => t.includes("Voice Recording")).click(); });
-      await settle(500);
-      expectVisible(/Tap to start recording/, "voice recorder");
+      await waitFor(/Tap to start recording/, "voice recorder");
 
       expectNoBoundary();
       expectNoConsoleErrors();
@@ -371,16 +405,22 @@ describe("Venting smoke tour", () => {
     "lock from settings → lock screen appears",
     { retry: 2 },
     async () => {
+      __mark("test6 start");
       go("/dashboard/settings");
-      await settle(400);
-      const lock = [...container.querySelectorAll("button")].find(
-        (b) => b.getAttribute("aria-label")?.includes("Lock your space"),
-      );
+      await waitFor(/delete everything|theme|about/i, "settings header (test6)");
+      let lock: HTMLButtonElement | undefined;
+      for (let i = 0; i < 60 && !lock; i++) {
+        lock = [...container.querySelectorAll("button")].find(
+          (b) => b.getAttribute("aria-label")?.includes("Lock your space"),
+        );
+        if (!lock) {
+          await act(async () => { await new Promise((r) => setTimeout(r, 120)); });
+        }
+      }
       expect(lock, "lock button should exist in the header").toBeTruthy();
       await settle(350);
       act(() => { lock!.click(); });
-      await settle(600);
-      expectVisible(/enter your passcode|unlock|passcode/i, "lock screen");
+      await waitFor(/enter your passcode|unlock|passcode/i, "lock screen");
 
       expectNoBoundary();
       expectNoConsoleErrors();

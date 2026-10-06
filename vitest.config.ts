@@ -18,5 +18,11 @@ export default defineConfig({
     // boot under happy-dom + threads hangs this environment indefinitely;
     // forks completes reliably and isolates crashes better.
     pool: "forks",
+    // The tour is deliberately slow: every step waits out the app's tap-guard
+    // cool-down plus AnimatePresence exits (each settle is ~0.5-1.2s). The
+    // 5s default would kill the signup flow mid-act and cascade failures.
+    testTimeout: 60_000,
+    hookTimeout: 60_000,
+    teardownTimeout: 10_000,
   },
 });
