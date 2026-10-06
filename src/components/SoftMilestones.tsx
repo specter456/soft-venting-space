@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTable, type MoodCheckin, type VaultItem, type KVPair } from "@/lib/db";
 import { scopedGetItem } from "@/lib/safe-storage";
@@ -116,7 +116,14 @@ export default function SoftMilestones() {
   const [prevEarned, setPrevEarned] = useState<Set<MilestoneId>>(new Set());
   const initRef = useRef(true);
 
-  const earned = getEarnedMilestones(checkins, vaultItems, kv);
+  // MUST be memoized: getEarnedMilestones returns a fresh Set each call, and
+  // a new identity in the effect's dep array re-ran that effect forever
+  // (setPrevEarned → new Set → new dep → effect → …) — an infinite render
+  // loop that froze Settings (same family as snag #5191).
+  const earned = useMemo(
+    () => getEarnedMilestones(checkins, vaultItems, kv),
+    [checkins, vaultItems, kv],
+  );
 
   // Show toast only when a NEW milestone is earned (not on mount)
   useEffect(() => {
@@ -133,7 +140,13 @@ export default function SoftMilestones() {
         break; // one toast at a time
       }
     }
-    setPrevEarned(new Set(earned));
+    // Keep identity stable when nothing changed, so this effect can't
+    // schedule another render for no reason.
+    setPrevEarned((prev) =>
+      prev.size === earned.size && [...prev].every((id) => earned.has(id))
+        ? prev
+        : new Set(earned),
+    );
   }, [earned]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (

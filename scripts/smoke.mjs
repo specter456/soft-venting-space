@@ -22,9 +22,13 @@ hook.enable();
 // Boots vitest programmatically and hard-exits afterwards — the smoke test
 // mounts the real app (timers, IndexedDB shim, WebAudio stubs) which can leave
 // live handles that would otherwise keep the process alive forever.
-let failed = true;
+// startVitest resolves to the Vitest *instance* (not a boolean), so the old
+// `process.exit(failed ? 1 : 0)` exited 1 even on a fully green run.
+// The real verdict comes from the runner state: failed tests + unhandled
+// errors (an unhandled rejection / post-teardown crash must fail the smoke).
+let vitest;
 try {
-  failed = await startVitest("test", ["tests/smoke.test.tsx"], {
+  vitest = await startVitest("test", ["tests/smoke.test.tsx"], {
     watch: false,
     run: true,
     // The tour waits out real tap-guards and AnimatePresence exits and the
@@ -38,4 +42,15 @@ try {
   console.error("smoke runner crashed:", err);
   process.exit(1);
 }
-process.exit(failed ? 1 : 0);
+if (!vitest) {
+  console.error("smoke runner: vitest did not start");
+  process.exit(1);
+}
+const failedTests = vitest.state.getCountOfFailedTests();
+const unhandled = vitest.state.getUnhandledErrors();
+if (unhandled.length) {
+  console.error(`\n[smoke] ${unhandled.length} unhandled error(s):`);
+  for (const err of unhandled) console.error(String(err?.stack ?? err));
+}
+if (failedTests > 0) console.error(`\n[smoke] ${failedTests} failing test(s)`);
+process.exit(failedTests > 0 || unhandled.length > 0 ? 1 : 0);

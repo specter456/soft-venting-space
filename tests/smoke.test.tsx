@@ -327,14 +327,24 @@ describe("Venting smoke tour", () => {
       await waitFor(/gentle places to land/, "games grid");
       expectVisible(/recently played|❤️ favorites|Bubble Pop|Create your own game/, "games content");
 
+      // ONE shared pill must glide to the active tab (translateX step = index).
+      const pill = () => container.querySelector<HTMLElement>("nav > div > span");
+      expect(pill(), "gliding taskbar pill should exist").toBeTruthy();
+      expect(pill()!.getAttribute("style"), "pill sits on Games (index 1)").toContain("1 *");
+
       go("/dashboard/calendar");
       await waitFor(/important|thought dump|notes/i, "calendar");
+      expect(pill()!.getAttribute("style"), "pill glides to Calendar (index 2)").toContain("2 *");
 
       go("/dashboard/settings");
       await waitFor(/delete everything|theme|about/i, "settings");
+      // Version stamp (mission 4): Settings → About must show the real version.
+      expectVisible(/Version 1\.0\.0/, "About version in settings");
+      expect(pill()!.getAttribute("style"), "pill glides to Settings (index 3)").toContain("3 *");
 
       go("/dashboard");
       await waitFor(/Good (morning|afternoon|evening|night)|How are you feeling|You're feeling/, "home again");
+      expect(pill()!.getAttribute("style"), "pill glides back to Home (index 0)").toContain("0 *");
 
       expectNoBoundary();
       expectNoConsoleErrors();
