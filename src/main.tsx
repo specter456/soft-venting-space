@@ -23,36 +23,53 @@ const NotFound = lazyWithRetry(() => import("./pages/NotFound"));
 // Dashboard shell — eagerly imported (has render-time setState, cannot be lazy)
 import Dashboard from "./pages/Dashboard";
 
-// Dashboard screens — lazy-loaded for smaller initial bundle
-const HomeScreen = lazyWithRetry(() => import("./pages/app/HomeScreen"));
-const RecordScreen = lazyWithRetry(() => import("./pages/app/RecordScreen"));
-const NotesScreen = lazyWithRetry(() => import("./pages/app/NotesScreen"));
-const NoteEditor = lazyWithRetry(() => import("./pages/app/NoteEditor"));
-const CreateScreen = lazyWithRetry(() => import("./pages/app/CreateScreen"));
-const VaultScreen = lazyWithRetry(() => import("./pages/app/VaultScreen"));
-const ScribbleScreen = lazyWithRetry(() => import("./pages/app/ScribbleScreen"));
-const StickerStudio = lazyWithRetry(() => import("./pages/app/StickerStudio"));
-const GifStudio = lazyWithRetry(() => import("./pages/app/GifStudio"));
-const GamesScreen = lazyWithRetry(() => import("./pages/app/GamesScreen"));
-const SettingsScreen = lazyWithRetry(() => import("./pages/app/SettingsScreen"));
-const DiaryScreen = lazyWithRetry(() => import("./pages/app/DiaryScreen"));
-const PolaroidWallScreen = lazyWithRetry(() => import("@/components/PolaroidWall").then(m => ({ default: m.PolaroidWallScreen })));
-const CalendarScreen = lazyWithRetry(() => import("./pages/app/CalendarScreen"));
-const CalendarDayView = lazyWithRetry(() => import("./pages/app/CalendarDayView"));
+// Dashboard screens — lazy-loaded for smaller initial bundle, shared with
+// the idle prefetcher in @/lib/screens (warmed after Home's first paint).
+import {
+  HomeScreen,
+  RecordScreen,
+  NotesScreen,
+  NoteEditor,
+  CreateScreen,
+  VaultScreen,
+  ScribbleScreen,
+  StickerStudio,
+  GifStudio,
+  GamesScreen,
+  SettingsScreen,
+  DiaryScreen,
+  PolaroidWallScreen,
+  CalendarScreen,
+  CalendarDayView,
+} from "@/lib/screens";
 
-/** Soft breathing-heart loader for lazy chunks */
-function ScreenLoader() {
+/**
+ * Soft screen skeleton — shown only if a chunk is still in flight (first
+ * visit with no warm-up). It mirrors the shape of a screen and swaps out
+ * seamlessly the moment the real screen resolves — never a full-screen
+ * "warming up…" heart.
+ */
+function ScreenSkeleton() {
   return (
-    <div className="flex min-h-[60dvh] flex-col items-center justify-center gap-4 text-center">
-      <div className="text-4xl animate-floaty-slow" aria-hidden>💜</div>
-      <p className="text-sm font-semibold text-ink-soft">warming up…</p>
+    <div
+      aria-hidden
+      className="min-h-[55dvh] w-full animate-pulse space-y-4 pt-4 motion-reduce:animate-none"
+    >
+      <div className="h-4 w-28 rounded-full bg-[var(--theme-accent-light, #D9DEF4)]" />
+      <div className="h-40 w-full rounded-[1.6rem] bg-white/70" />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="h-24 rounded-3xl bg-white/70" />
+        <div className="h-24 rounded-3xl bg-white/70" />
+        <div className="h-24 rounded-3xl bg-white/70" />
+        <div className="h-24 rounded-3xl bg-white/70" />
+      </div>
     </div>
   );
 }
 
 /** Wrap lazy components in Suspense */
 function Lazy({ children }: { children: React.ReactNode }) {
-  return <Suspense fallback={<ScreenLoader />}>{children}</Suspense>;
+  return <Suspense fallback={<ScreenSkeleton />}>{children}</Suspense>;
 }
 
 /** Inline splash loader for top-level lazy routes — shows instantly */

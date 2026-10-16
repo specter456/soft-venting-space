@@ -7,6 +7,7 @@ import { UnsavedDialog } from "@/components/UnsavedDialog";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
+import { prefetchMainTabs, prefetchSubScreens } from "@/lib/screens";
 const SeasonalParticles = lazyWithRetry(() => import("@/components/SeasonalParticles"));
 
 // Defer non-critical dashboard widgets — they only run after the shell is visible
@@ -134,6 +135,16 @@ export default function Dashboard() {
   // Scroll to top on every route change so header/greeting is always visible first.
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
+  }, [location.pathname]);
+
+  // ── Instant tabs: warm every main tab chunk after Home's first paint,
+  // during idle time, so the first switch never waits on a download.
+  useEffect(() => {
+    prefetchMainTabs();
+  }, []);
+  // Keep each route's sub-screens warm too (calendar day view).
+  useEffect(() => {
+    prefetchSubScreens(location.pathname);
   }, [location.pathname]);
 
   const isHome = location.pathname === "/dashboard";
