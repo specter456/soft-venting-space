@@ -5,6 +5,7 @@ import { useSetDirty } from "@/lib/useUnsavedGuard";
 import { armPendingPin } from "@/components/PolaroidWall";
 import { Eraser, Loader2, Paintbrush, Pen, Save, Square, ImageDown, Copy, Grid2x2 } from "lucide-react";
 import { createVaultItem } from "@/lib/db";
+import { importGalleryPhoto } from "@/lib/gallery";
 import { saveToGallery } from "@/lib/save-to-gallery";
 import { combineIntoCollage } from "@/lib/collage";
 import { cn } from "@/lib/utils";
@@ -50,6 +51,7 @@ const BACKGROUNDS = [
 function captureScribble(
   canvas: HTMLCanvasElement | null,
   bgClass: string,
+  photo?: HTMLImageElement | null,
 ): string {
   if (!canvas) return "";
   const hex = bgClass.match(/#[0-9a-fA-F]{6}/)?.[0] ?? "#fdf6ea";
@@ -60,6 +62,15 @@ function captureScribble(
   if (!ctx) return "";
   ctx.fillStyle = hex;
   ctx.fillRect(0, 0, 700, 900);
+  // Faint photo background layer (same 30% look as on screen), cover-fit.
+  if (photo && photo.complete && photo.naturalWidth > 0) {
+    const scale = Math.max(700 / photo.naturalWidth, 900 / photo.naturalHeight);
+    const w = photo.naturalWidth * scale;
+    const h = photo.naturalHeight * scale;
+    ctx.globalAlpha = 0.3;
+    ctx.drawImage(photo, (700 - w) / 2, (900 - h) / 2, w, h);
+    ctx.globalAlpha = 1;
+  }
   ctx.drawImage(canvas, 0, 0, 700, 900);
   return out.toDataURL("image/png");
 }
@@ -77,6 +88,10 @@ export default function ScribbleScreen() {
   const [tool, setTool] = useState<ToolId>("pencil");
   const [color, setColor] = useState(COLORS[0]);
   const [bg, setBg] = useState(BACKGROUNDS[0]);
+  // Optional gallery-photo background: faint layer to scribble over (toggle).
+  const [photoBg, setPhotoBg] = useState<string | null>(null);
+  const [photoOn, setPhotoOn] = useState(false);
+  const photoImgRef = useRef<HTMLImageElement | null>(null);
   const [saving, setSaving] = useState(false);
   const [versions, setVersions] = useState<string[]>([]);
 
@@ -86,6 +101,34 @@ export default function ScribbleScreen() {
   }, [drawn, versions.length, setDirty]);
 
   const bgClass = BACKGROUNDS.find((b) => b.id === bg.id)!.cls;
+
+  /** The active photo-background layer (only when the toggle is on). */
+  const activePhoto = () => (photoBg && photoOn ? photoImgRef.current : null);
+
+  const loadPhotoLayer = (src: string) => {
+    const img = new Image();
+    img.src = src;
+    photoImgRef.current = img;
+  };
+
+  /** Chip: first tap imports from the gallery, later taps toggle it on/off. */
+  const pickPhotoBg = async () => {
+    if (photoBg) {
+      setPhotoOn((on) => !on);
+      return;
+    }
+    const item = await importGalleryPhoto({ caption: "scribble background" });
+    if (!item) return; // cancelled, or the soft "didn't open" line showed
+    setPhotoBg(item.art);
+    setPhotoOn(true);
+    loadPhotoLayer(item.art);
+  };
+
+  const clearPhotoBg = () => {
+    setPhotoBg(null);
+    setPhotoOn(false);
+    photoImgRef.current = null;
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -144,7 +187,7 @@ export default function ScribbleScreen() {
     try {
       // capture the real drawing as a PNG (background + strokes) so the
       // vault shows the actual picture. Stored on this device only.
-      const art = captureScribble(canvasRef.current, bg.cls);
+      const art = captureScribble(canvasRef.current, bg.cls, activePhoto());
       createVaultItem({
         kind: "doodle",
         art: art || "🖍️",
@@ -176,6 +219,16 @@ export default function ScribbleScreen() {
       {/* ─── Canvas ───────────────────────────────────────────────── */}
       <div className="clay-card relative overflow-hidden p-2.5">
         <div className={cn("relative overflow-hidden rounded-[1.6rem]", bgClass)}>
+          {/* Optional faint gallery-photo layer — scribble right over it */}
+          {photoBg && photoOn && (
+            <img
+              src={photoBg}
+              alt=""
+              aria-hidden
+              draggable={false}
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-30"
+            />
+          )}
           <canvas
             ref={canvasRef}
             onPointerDown={(e) => {
@@ -200,7 +253,7 @@ export default function ScribbleScreen() {
               drawing.current = false;
               lastPoint.current = null;
             }}
-            className="h-[52dvh] w-full cursor-crosshair touch-none"
+            className="relative h-[52dvh] w-full cursor-crosshair touch-none"
             aria-label="Free drawing canvas"
           />
           {/* doodle hints */}
@@ -271,17 +324,41 @@ export default function ScribbleScreen() {
               b.cls,
               bg.id === b.id && "ring-2 ring-lavender-400 ring-offset-2 ring-offset-cream",
             )}
+            style={{ boxShadow: "inset 0 2px 4px rgba(255,255,255,0.6), 0 4px 8px -4px rgba(99,82,150,0.35)" }}              aria-label={b.label}
+            />
+          ))}
+          {/* Gallery-photo background: import, then toggle on/off */}
+          <button
+            type="button"
+            onClick={() => void pickPhotoBg()}
+            aria-pressed={Boolean(photoBg && photoOn)}
+            className={cn(
+              "flex h-8 items-center gap-1 rounded-full px-2.5 text-[11px] font-bold transition-transform hover:scale-105",
+              photoBg && photoOn
+                ? "bg-lavender-500 text-cream-soft ring-2 ring-lavender-300 ring-offset-1 ring-offset-cream"
+                : "bg-white/70 text-ink-soft",
+            )}
             style={{ boxShadow: "inset 0 2px 4px rgba(255,255,255,0.6), 0 4px 8px -4px rgba(99,82,150,0.35)" }}
-            aria-label={b.label}
-          />
-        ))}
+          >
+            📷 photo bg
+          </button>
+          {photoBg && photoOn && (
+            <button
+              type="button"
+              onClick={clearPhotoBg}
+              aria-label="Remove photo background"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/70 text-[11px] font-bold text-ink-soft transition-transform hover:scale-105 hover:text-blush-500"
+            >
+              ✕
+            </button>
+          )}
       </div>
 
       {/* ─── Duplicate ──────────────────────────────────────── */}
       <button
         type="button"
         onClick={() => {
-          const art = captureScribble(canvasRef.current, bg.cls);
+          const art = captureScribble(canvasRef.current, bg.cls, activePhoto());
           if (art) {
             setVersions((v) => [...v, art]);
             clear();
@@ -301,7 +378,7 @@ export default function ScribbleScreen() {
           onClick={async () => {
             setSaving(true);
             try {
-              const currentArt = captureScribble(canvasRef.current, bg.cls);
+              const currentArt = captureScribble(canvasRef.current, bg.cls, activePhoto());
               const all = [...versions, ...(currentArt ? [currentArt] : [])];
               const collage = await combineIntoCollage(all);
               if (collage) {

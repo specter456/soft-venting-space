@@ -14,6 +14,7 @@ import {
   STICKER_MOUTHS,
 } from "@/lib/art";
 import { renderStickerArt } from "@/lib/canvas-art";
+import { importGalleryPhoto, squareCropPhoto } from "@/lib/gallery";
 import { cn } from "@/lib/utils";
 
 const COLOR_TO_TILE: Record<string, string> = {
@@ -40,6 +41,31 @@ export default function StickerStudio() {
   }, [name, setDirty]);
   const [saving, setSaving] = useState(false);
 
+  // Sticker source: the felt friend, or a gallery photo (square crop, soft edges).
+  const [source, setSource] = useState<"felt" | "photo">("felt");
+  const [photoArt, setPhotoArt] = useState<string | null>(null);
+
+  const pickPhoto = async () => {
+    const item = await importGalleryPhoto({ caption: "sticker photo" });
+    if (!item) return; // cancelled, or the soft "didn't open" line showed
+    const cropped = await squareCropPhoto(item.art);
+    setPhotoArt(cropped ?? item.art);
+    setSource("photo");
+  };
+
+  /** What gets saved/exported — the photo sticker, or the felt sticker. */
+  const buildStickerArt = () =>
+    source === "photo" && photoArt
+      ? photoArt
+      : renderStickerArt({
+          color: color.hex,
+          eyes: eyes.render,
+          mouth: mouth.render,
+          blush,
+          tear,
+          accessory,
+        });
+
   const applyExpression = (id: string) => {
     const expr = STICKER_EXPRESSIONS.find((e) => e.id === id);
     if (!expr) return;
@@ -56,19 +82,12 @@ export default function StickerStudio() {
     try {
       // capture the real sticker as a PNG — the vault shows the picture,
       // never a raw emoji. Stored on this device only.
-      const art = renderStickerArt({
-        color: color.hex,
-        eyes: eyes.render,
-        mouth: mouth.render,
-        blush,
-        tear,
-        accessory,
-      });
+      const art = buildStickerArt();
       createVaultItem({
         kind: "sticker",
         art: art || accessory || "🧸",
         bg: COLOR_TO_TILE[color.id] ?? "tile-peach",
-        caption: name.trim() || `a ${expression.label} sticker`,
+        caption: name.trim() || (source === "photo" ? "a photo sticker" : `a ${expression.label} sticker`),
       });
       toast("Sticker saved", { description: "Tucked into your vault, ready whenever you need it." });
     } catch (error) {
@@ -81,19 +100,82 @@ export default function StickerStudio() {
 
   return (
     <div className="space-y-5">
+      {/* ─── Sticker source: felt friend, or a gallery photo ──────── */}
+      <section>
+        <p className="text-xs font-bold text-ink-soft uppercase tracking-wide">Sticker source</p>
+        <div className="mt-2 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setSource("felt")}
+            className={cn(
+              "rounded-full px-4 py-2 text-xs font-bold transition-transform",
+              source === "felt"
+                ? "bg-lavender-500 text-cream-soft shadow-[0_6px_12px_-6px_rgba(118,90,190,0.6)]"
+                : "clay-chip text-ink hover:-translate-y-0.5",
+            )}
+          >
+            🧶 felt friend
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setSource("photo");
+              if (!photoArt) void pickPhoto();
+            }}
+            className={cn(
+              "rounded-full px-4 py-2 text-xs font-bold transition-transform",
+              source === "photo"
+                ? "bg-lavender-500 text-cream-soft shadow-[0_6px_12px_-6px_rgba(118,90,190,0.6)]"
+                : "clay-chip text-ink hover:-translate-y-0.5",
+            )}
+          >
+            📷 from gallery
+          </button>
+        </div>
+        {source === "photo" && !photoArt && (
+          <button
+            type="button"
+            onClick={() => void pickPhoto()}
+            className="clay-btn-soft mt-2 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-ink-deep"
+          >
+            📷 choose a photo from your gallery
+          </button>
+        )}
+        {source === "photo" && photoArt && (
+          <button
+            type="button"
+            onClick={() => void pickPhoto()}
+            className="mt-2 text-[11px] font-bold text-lavender-600 transition-colors hover:text-lavender-700"
+          >
+            choose a different photo
+          </button>
+        )}
+      </section>
+
       {/* ─── Preview ──────────────────────────────────────────────── */}
       <div className="clay-card flex items-center justify-center px-5 py-8">
-        <StickerPreview
-          color={color.hex}
-          eyes={eyes.render}
-          mouth={mouth.render}
-          blush={blush}
-          tear={tear}
-          accessory={accessory}
-          big
-        />
+        {source === "photo" && photoArt ? (
+          <img
+            src={photoArt}
+            alt="your photo sticker"
+            draggable={false}
+            className="h-44 w-44 object-contain drop-shadow-[0_10px_18px_rgba(99,82,150,0.35)]"
+          />
+        ) : (
+          <StickerPreview
+            color={color.hex}
+            eyes={eyes.render}
+            mouth={mouth.render}
+            blush={blush}
+            tear={tear}
+            accessory={accessory}
+            big
+          />
+        )}
       </div>
 
+      {source === "felt" && (
+        <>
       {/* ─── Expressions ──────────────────────────────────────────── */}
       <section>
         <p className="text-xs font-bold text-ink-soft uppercase tracking-wide">Expression</p>
@@ -225,6 +307,8 @@ export default function StickerStudio() {
           ))}
         </div>
       </section>
+        </>
+      )}
 
       <Input
         value={name}
@@ -250,14 +334,7 @@ export default function StickerStudio() {
         <button
           type="button"
           onClick={() => {
-            const art = renderStickerArt({
-              color: color.hex,
-              eyes: eyes.render,
-              mouth: mouth.render,
-              blush,
-              tear,
-              accessory,
-            });
+            const art = buildStickerArt();
             if (art) saveToGallery(art, `venting-sticker-${Date.now()}.png`);
           }}
           className="clay-btn-soft flex items-center justify-center gap-1.5 rounded-2xl px-4 py-3.5 text-sm font-bold text-ink-deep"

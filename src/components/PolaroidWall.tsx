@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { createVaultItem, useTable, type VaultItem } from "@/lib/db";
+import { importGalleryPhoto } from "@/lib/gallery";
 import { scopedGetItem, scopedSetItem, scopedRemoveItem } from "@/lib/safe-storage";
 import { quarantineKey } from "@/lib/error-journal";
 import { isImageArt } from "@/lib/canvas-art";
@@ -203,6 +204,14 @@ export function PolaroidWallScreen() {
     navigate("/dashboard/create?view=photos&from=wall");
   };
 
+  // Import straight from the device gallery → lands in the vault → pinned.
+  const importFromGallery = async () => {
+    const item = await importGalleryPhoto({ caption: "pinned moment" });
+    if (!item) return; // cancelled, or the soft "didn't open" line showed
+    addPin(item._id, item.art);
+    setPickerOpen(false);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -347,6 +356,7 @@ export function PolaroidWallScreen() {
               setPickerOpen(false);
             }}
             onMakeNew={openMakeNew}
+            onImportGallery={() => void importFromGallery()}
             onClose={() => setPickerOpen(false)}
           />
         )}
@@ -361,11 +371,13 @@ function VaultPhotoPicker({
   photos,
   onSelect,
   onMakeNew,
+  onImportGallery,
   onClose,
 }: {
   photos: VaultItem[];
   onSelect: (vaultId: string, art: string) => void;
   onMakeNew: () => void;
+  onImportGallery: () => void;
   onClose: () => void;
 }) {
   return (
@@ -421,8 +433,15 @@ function VaultPhotoPicker({
         )}
         <button
           type="button"
+          onClick={onImportGallery}
+          className="clay-chip mt-3 flex w-full items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-bold text-ink-deep transition-transform hover:scale-[1.01] active:scale-95"
+        >
+          📷 import from gallery
+        </button>
+        <button
+          type="button"
           onClick={onMakeNew}
-          className="mt-3 w-full rounded-full py-2 text-[11px] font-bold text-ink-soft transition-colors hover:bg-lavender-100/60 hover:text-ink-deep"
+          className="mt-2 w-full rounded-full py-2 text-[11px] font-bold text-ink-soft transition-colors hover:bg-lavender-100/60 hover:text-ink-deep"
         >
           + make a new photo instead
         </button>

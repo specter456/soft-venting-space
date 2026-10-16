@@ -9,6 +9,7 @@ import { saveToGallery } from "@/lib/save-to-gallery";
 import { GIFT_STAMPS, PHOTO_SCENES, VIDEO_AVATARS } from "@/lib/art";
 import { fillTileGradient, loadImageToCanvas } from "@/lib/canvas-art";
 import { gifDataUrlFromCanvases } from "@/lib/gif";
+import { importGalleryPhoto } from "@/lib/gallery";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,8 @@ interface Stamp {
   y: number;
   size: number;
   motion: MotionType;
+  /** Gallery-photo layer — when set, the photo renders instead of an emoji. */
+  src?: string;
 }
 
 interface CanvasText {
@@ -124,6 +127,8 @@ export default function GifStudio() {
   const [stamps, setStamps] = useState<Stamp[]>([]);
   const [selectedStamp, setSelectedStamp] = useState<string | null>(null);
   const stampIdRef = useRef(0);
+  // Decoded gallery-photo layers keyed by data URL (used when composing frames).
+  const photoImages = useRef(new Map<string, HTMLImageElement>());
   const [text, setText] = useState("");
   const [frames, setFrames] = useState<Frame[]>([]);
   const [playing, setPlaying] = useState(false);
@@ -418,6 +423,34 @@ export default function GifStudio() {
     setSelectedText(null);
   };
 
+  /** "add photo" — import from the gallery as a draggable/resizable layer. */
+  const addPhotoLayer = async () => {
+    const item = await importGalleryPhoto({ caption: "gif photo layer" });
+    if (!item) return; // cancelled, or the soft "didn't open" line showed
+    const img = new Image();
+    img.src = item.art;
+    photoImages.current.set(item.art, img);
+    stampIdRef.current += 1;
+    const id = `stamp-${stampIdRef.current}`;
+    setStamps((prev) => [
+      ...prev,
+      {
+        id,
+        emoji: "",
+        src: item.art,
+        x: SIZE * 0.5,
+        y: SIZE * 0.5,
+        size: 170,
+        motion: "still" as MotionType,
+      },
+    ]);
+    setSelectedStamp(id);
+    setSelectedText(null);
+    toast("Photo added", {
+      description: "Drag it, size it — it joins every frame you add.",
+    });
+  };
+
   const setStampMotion = (stampId: string, motion: MotionType) => {
     setStamps((prev) => prev.map((s) => s.id === stampId ? { ...s, motion } : s));
   };
@@ -484,9 +517,14 @@ export default function GifStudio() {
 
   const stampSize = (stampId: string, delta: number) => {
     setStamps((prev) =>
-      prev.map((s) =>
-        s.id === stampId ? { ...s, size: Math.max(12, Math.min(80, s.size + delta)) } : s,
-      ),
+      prev.map((s) => {
+        if (s.id !== stampId) return s;
+        // Photo layers are far bigger than emoji stamps — scale their steps.
+        const step = s.src ? delta * 4 : delta;
+        const min = s.src ? 48 : 12;
+        const max = s.src ? 480 : 80;
+        return { ...s, size: Math.max(min, Math.min(max, s.size + step)) };
+      }),
     );
   };
 
@@ -526,6 +564,14 @@ export default function GifStudio() {
     for (const s of stamps) {
       let sx = s.x;
       let sy = s.y;
+      if (s.src) {
+        // Gallery-photo layer: drawn centred at its position and size.
+        const img = photoImages.current.get(s.src);
+        if (img && img.complete && img.naturalWidth > 0) {
+          ctx.drawImage(img, sx - s.size / 2, sy - s.size / 2, s.size, s.size);
+        }
+        continue;
+      }
       if (s.motion !== "still") {
         const t = Date.now() / 1000;
         if (s.motion === "float") { sy += Math.sin(t * 1.2 + s.x) * 6; sx += Math.cos(t * 0.8 + s.y) * 3; }
@@ -924,7 +970,18 @@ export default function GifStudio() {
                 style={{ left: `${(s.x / SIZE) * 100}%`, top: `${(s.y / SIZE) * 100}%`, transform: "translate(-50%, -50%)", fontSize: s.size, lineHeight: 1, zIndex: selectedStamp === s.id ? 20 : 10,
                   animation: s.motion === "float" ? "floaty 3s ease-in-out infinite" : s.motion === "pulse" ? "pulse 2s ease-in-out infinite" : undefined }}
                 onPointerDown={(e) => { setSelectedStamp(s.id); setSelectedText(null); handleStampPointerDown(e, s.id); }}>
-                <span className="drop-shadow-sm select-none pointer-events-none">{s.emoji}</span>
+                {s.src ? (
+                  <img
+                    src={s.src}
+                    alt=""
+                    aria-hidden
+                    draggable={false}
+                    className="select-none drop-shadow-md"
+                    style={{ width: s.size, height: s.size, objectFit: "contain" }}
+                  />
+                ) : (
+                  <span className="drop-shadow-sm select-none pointer-events-none">{s.emoji}</span>
+                )}
                 {selectedStamp === s.id && (
                   <div className="absolute -top-16 left-1/2 flex -translate-x-1/2 flex-col items-center gap-1"
                     onPointerDown={(e) => e.stopPropagation()}>
@@ -978,8 +1035,16 @@ export default function GifStudio() {
           <RotateCcw className="size-4" /> Undo last stroke</button>
       </div>
 
-      {/* Stamps */}
+      {/* Stamps + gallery photo layer */}
       <div className="flex gap-2 overflow-x-auto pb-1">
+        <button
+          type="button"
+          onClick={() => void addPhotoLayer()}
+          title="Add a photo from your gallery"
+          className="clay-chip flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-xs font-bold text-ink-deep transition-transform hover:scale-105 active:scale-95"
+        >
+          <span aria-hidden>📷</span> add photo
+        </button>
         {GIFT_STAMPS.map((s) => (
           <button key={s} type="button" onClick={() => addStamp(s)}
             className="clay-chip flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl transition-transform hover:scale-110 active:scale-95">{s}</button>

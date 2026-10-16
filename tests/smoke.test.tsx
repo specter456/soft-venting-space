@@ -162,6 +162,25 @@ async function waitFor(matcher: RegExp, label: string, timeoutMs = 15_000) {
 
 import { act } from "react";
 
+/**
+ * Poll until a DOM predicate passes — for flows whose proof is an element
+ * (a photo layer, a pinned card) rather than screen text.
+ */
+async function waitUntil(predicate: () => boolean, label: string, timeoutMs = 30_000) {
+  const started = Date.now();
+  for (;;) {
+    if (predicate()) break;
+    if (Date.now() - started > timeoutMs) {
+      expect(predicate(), `timed out waiting for ${label}`).toBe(true);
+      return;
+    }
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 120));
+    });
+  }
+  __mark(`ready: ${label}`);
+}
+
 function go(to: string) {
   __mark(`go ${to}`);
   act(() => {
@@ -323,8 +342,20 @@ describe("Venting smoke tour", () => {
     { retry: 2 },
     async () => {
       __mark("test2 start");
+      // MISSION 1: sit ~2s on Home after first paint — by the end of it the
+      // idle prefetch must have warmed every main tab chunk.
+      await settle(2000);
+      const { warmedScreenNames } = await import("../src/lib/lazyWithRetry");
+      for (const tab of ["home", "games", "calendar", "settings"]) {
+        expect(
+          warmedScreenNames(),
+          `tab chunk "${tab}" should be warmed during idle (warmed: ${warmedScreenNames().join(", ")})`,
+        ).toContain(tab);
+      }
+
       go("/dashboard/games");
       await waitFor(/gentle places to land/, "games grid");
+      expect(text(), "no 'warming up' wait on a prefetched tab").not.toMatch(/warming up/);
       expectVisible(/recently played|❤️ favorites|Bubble Pop|Create your own game/, "games content");
 
       // ONE shared pill must glide to the active tab (translateX step = index).
@@ -334,10 +365,12 @@ describe("Venting smoke tour", () => {
 
       go("/dashboard/calendar");
       await waitFor(/important|thought dump|notes/i, "calendar");
+      expect(text(), "no 'warming up' on calendar").not.toMatch(/warming up/);
       expect(pill()!.getAttribute("style"), "pill glides to Calendar (index 2)").toContain("2 *");
 
       go("/dashboard/settings");
       await waitFor(/delete everything|theme|about/i, "settings");
+      expect(text(), "no 'warming up' on settings").not.toMatch(/warming up/);
       // Version stamp (mission 4): Settings → About must show the real version.
       expectVisible(/Version 1\.0\.0/, "About version in settings");
       expect(pill()!.getAttribute("style"), "pill glides to Settings (index 3)").toContain("3 *");
@@ -345,6 +378,29 @@ describe("Venting smoke tour", () => {
       go("/dashboard");
       await waitFor(/Good (morning|afternoon|evening|night)|How are you feeling|You're feeling/, "home again");
       expect(pill()!.getAttribute("style"), "pill glides back to Home (index 0)").toContain("0 *");
+
+      // Calendar's sub-screen chunk (day view) warms while idle too.
+      await settle(1500);
+      expect(warmedScreenNames(), "calendar day view should warm on the calendar tab").toContain("calendar-day");
+
+      // MISSION 1: second full pass — every switch should already be instant,
+      // never the old full-screen "warming up…" heart.
+      for (const [path, marker, label] of [
+        ["/dashboard/games", /gentle places to land/, "games (pass 2)"],
+        ["/dashboard/calendar", /important|thought dump|notes/i, "calendar (pass 2)"],
+        ["/dashboard/settings", /delete everything|theme|about/i, "settings (pass 2)"],
+        ["/dashboard", /Good (morning|afternoon|evening|night)|You're feeling/, "home (pass 2)"],
+      ] as const) {
+        go(path);
+        await waitFor(marker, label);
+        expect(text(), `${label} — must never show 'warming up'`).not.toMatch(/warming up/);
+      }
+
+      // First-ever visit to an un-warmed sub-screen: soft skeleton only,
+      // still no "warming up" heart anywhere.
+      go("/dashboard/diary");
+      await waitFor(/Open my diary|Dear diary|diary is empty/i, "diary first visit");
+      expect(text(), "diary first visit must never show 'warming up'").not.toMatch(/warming up/);
 
       expectNoBoundary();
       expectNoConsoleErrors();
@@ -405,6 +461,170 @@ describe("Venting smoke tour", () => {
       await settle(350);
       act(() => { button((t) => t.includes("Voice Recording")).click(); });
       await waitFor(/Tap to start recording/, "voice recorder");
+
+      expectNoBoundary();
+      expectNoConsoleErrors();
+    },
+  );
+
+  it(
+    "gallery import lands in the vault and survives re-entry (Photo Doodle)",
+    { retry: 2 },
+    async () => {
+      __mark("gallery test start");
+      // Decode path: stub createImageBitmap so a fake PNG “opens” headlessly.
+      vi.stubGlobal(
+        "createImageBitmap",
+        async () => ({ width: 400, height: 300, close: () => {} }),
+      );
+      const { importGalleryPhoto } = await import("../src/lib/gallery");
+      const file = new File(
+        [new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])],
+        "smile.png",
+        { type: "image/png" },
+      );
+
+      let item: { _id: string; art: string; kind: string } | null = null;
+      await act(async () => {
+        item = await importGalleryPhoto({ file });
+      });
+      expect(item, "imported photo should become a vault item").toBeTruthy();
+      expect(item!.kind).toBe("photo");
+      expect(item!.art.startsWith("data:image"), "stored as a local data URL").toBe(true);
+
+      // Photo Doodle → the fresh import sits in the "from vault" grid.
+      go("/dashboard/create?view=photos");
+      await waitFor(/photo source/, "photo doodle (photos view)");
+      const thumbs = () =>
+        [...container.querySelectorAll("img")].filter((i) =>
+          (i.getAttribute("src") ?? "").startsWith("data:image"),
+        );
+      expect(thumbs().length, "imported photo shows in the vault grid").toBeGreaterThan(0);
+
+      // Leave and come back (reload-equivalent for the local cache): still there.
+      go("/dashboard");
+      await settle(400);
+      go("/dashboard/create?view=photos");
+      await waitFor(/photo source/, "photo doodle (re-entry)");
+      expect(thumbs().length, "imported photo survives re-entry").toBeGreaterThan(0);
+
+      expectNoBoundary();
+      expectNoConsoleErrors();
+    },
+  );
+
+  it(
+    "gallery picker drives Stickers, Scribble, GIF Studio and the Wall",
+    { retry: 2 },
+    async () => {
+      __mark("picker wiring test start");
+      vi.stubGlobal(
+        "createImageBitmap",
+        async () => ({ width: 400, height: 300, close: () => {} }),
+      );
+
+      // The helper appends a hidden <input type=file accept=image/*> to
+      // <body> and clicks it; happy-dom has no OS dialog, so the file is
+      // handed to that exact input via a change event — the real plumbing.
+      const drivePicker = async (label: string, waitMs = 500) => {
+        let input: HTMLInputElement | null = null;
+        for (let i = 0; i < 50 && !input; i++) {
+          input = document.querySelector<HTMLInputElement>(
+            'body > input[type="file"][accept="image/*"]',
+          );
+          if (!input) {
+            await act(async () => {
+              await new Promise((r) => setTimeout(r, 60));
+            });
+          }
+        }
+        expect(input, `gallery picker should open (${label})`).toBeTruthy();
+        const file = new File(
+          [new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])],
+          "shot.png",
+          { type: "image/png" },
+        );
+        Object.defineProperty(input!, "files", {
+          value: { 0: file, length: 1, item: (i: number) => (i === 0 ? file : null) },
+          configurable: true,
+        });
+        // Keep the whole async import chain inside act() so React's
+        // "not wrapped in act" warnings can't mask real failures.
+        await act(async () => {
+          input!.dispatchEvent(new Event("change"));
+          await new Promise((r) => setTimeout(r, waitMs));
+        });
+      };
+
+      // ── Stickers: photo source → square crop (headless engines never
+      //    fire the decode event, so this rides the 3s fallback). ──
+      go("/dashboard/stickers");
+      await waitFor(/Sticker source/, "sticker studio");
+      await settle(350);
+      act(() => {
+        button((t) => t.includes("from gallery")).click();
+      });
+      await drivePicker("stickers", 3800);
+      await waitFor(/choose a different photo/, "photo sticker source saved", 30_000);
+
+      // ── Scribble: gallery photo becomes the faint background layer ──
+      go("/dashboard/scribble");
+      await waitFor(/Background/, "scribble");
+      await settle(350);
+      act(() => {
+        button((t) => t.includes("photo bg")).click();
+      });
+      await drivePicker("scribble");
+      await waitUntil(
+        () => Boolean(container.querySelector('img[src^="data:image"]')),
+        "scribble photo background layer",
+      );
+      expect(
+        button((t) => t.includes("photo bg")).getAttribute("aria-pressed"),
+        "photo background chip should be on",
+      ).toBe("true");
+
+      // ── GIF Studio: "add photo" places a frame layer ──
+      go("/dashboard/gif-studio");
+      await waitFor(/add photo/, "gif studio");
+      await settle(350);
+      act(() => {
+        button((t) => t.includes("add photo")).click();
+      });
+      await drivePicker("gif studio");
+      await waitUntil(
+        () =>
+          [...container.querySelectorAll("img")].some(
+            (i) =>
+              (i.getAttribute("src") ?? "").startsWith("data:image") &&
+              i.style.width === "170px",
+          ),
+        "gif photo layer",
+      );
+
+      // ── Wall: picker → "import from gallery" → pinned ──
+      go("/dashboard/polaroid-wall");
+      await waitFor(/your wall is waiting/, "empty wall");
+      await settle(350);
+      act(() => {
+        button((t) => t.includes("pick from vault")).click();
+      });
+      await waitFor(/choose a photo to pin/, "wall picker");
+      await settle(250);
+      act(() => {
+        button((t) => t.includes("import from gallery")).click();
+      });
+      await drivePicker("wall");
+      await waitUntil(
+        () => Boolean(container.querySelector('img[src^="data:image"]')),
+        "pinned polaroid photo",
+      );
+
+      // Drain trailing app timers (pin sparkle 1.1s, toast dismiss 4s)
+      // inside act() so late setState can't fire out of scope.
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 5000));
+      });
 
       expectNoBoundary();
       expectNoConsoleErrors();

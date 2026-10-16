@@ -4,11 +4,12 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { useSetDirty } from "@/lib/useUnsavedGuard";
 import { ArrowLeft, Check, Images, Loader2, Lock, Palette, Sparkles, ImageDown, Grid2x2 } from "lucide-react";
-import { createVaultItem } from "@/lib/db";
+import { createVaultItem, useTable, type VaultItem } from "@/lib/db";
+import { importGalleryPhoto } from "@/lib/gallery";
 import { saveToGallery } from "@/lib/save-to-gallery";
 import { combineIntoCollage } from "@/lib/collage";
 import { PHOTO_SCENES } from "@/lib/art";
-import { renderPhotoScene } from "@/lib/canvas-art";
+import { isImageArt, renderPhotoScene } from "@/lib/canvas-art";
 import { armPendingPin } from "@/components/PolaroidWall";
 import { cn } from "@/lib/utils";
 
@@ -45,12 +46,49 @@ export default function CreateScreen() {
   const fromWall = params.get("from") === "wall";
   const [view, setView] = useState<"hub" | "photos">(params.get("view") === "photos" ? "photos" : "hub");
   const [selected, setSelected] = useState<string[]>([]);
+  // Photo source: existing vault photos, or a fresh device-gallery import.
+  const [source, setSource] = useState<"vault" | "gallery">("vault");
+  const [picked, setPicked] = useState<string[]>([]);
+  const vaultItems = useTable<VaultItem>("vaultItems");
+  const vaultPhotos = vaultItems.filter(
+    (i) => i && i.kind === "photo" && isImageArt(i.art),
+  );
   const [saving, setSaving] = useState(false);
   // Unsaved-work guard: picked-but-unsaved photos trigger the leave dialog.
   const setDirty = useSetDirty();
   useEffect(() => {
     setDirty(selected.length > 0);
   }, [selected.length, setDirty]);
+
+  const pinPicked = () => {
+    const item = vaultPhotos.find((p) => p._id === picked[0]);
+    if (!item) return;
+    armPendingPin(item._id, item.art);
+    navigate("/dashboard/polaroid-wall");
+  };
+
+  const importFromGallery = async () => {
+    const item = await importGalleryPhoto({ caption: "from your gallery" });
+    if (!item) return; // cancelled, or the soft "didn't open" line already showed
+    if (fromWall) {
+      // Came from the wall → pin the new photo straight away (like scenes).
+      armPendingPin(item._id, item.art);
+      navigate("/dashboard/polaroid-wall");
+      return;
+    }
+    // Land the user on their vault grid so the new photo is right there.
+    setSource("vault");
+    toast("Saved to your vault", {
+      description: "Your gallery photo is tucked behind the double lock.",
+      action: {
+        label: "pin to wall 📌",
+        onClick: () => {
+          armPendingPin(item._id, item.art);
+          navigate("/dashboard/polaroid-wall");
+        },
+      },
+    });
+  };
 
   const savePhotos = async () => {
     if (saving || selected.length === 0) return;
@@ -118,6 +156,96 @@ export default function CreateScreen() {
         <p className="text-center text-sm font-medium text-ink-soft">
           Pick soft moments — they&apos;ll be locked inside your private vault.
         </p>
+
+        {/* ── Photo source: your vault, or the device gallery ──────── */}
+        <div className="flex items-center justify-center gap-2">
+          <span className="text-[11px] font-bold text-ink-soft">photo source</span>
+          <button
+            type="button"
+            onClick={() => setSource("vault")}
+            aria-pressed={source === "vault"}
+            className={cn(
+              "rounded-full px-3.5 py-1.5 text-xs font-bold transition-transform",
+              source === "vault"
+                ? "bg-lavender-500 text-cream-soft shadow-[0_6px_12px_-6px_rgba(118,90,190,0.6)]"
+                : "clay-chip text-ink hover:-translate-y-0.5",
+            )}
+          >
+            🗝️ from vault
+          </button>
+          <button
+            type="button"
+            onClick={() => setSource("gallery")}
+            aria-pressed={source === "gallery"}
+            className={cn(
+              "rounded-full px-3.5 py-1.5 text-xs font-bold transition-transform",
+              source === "gallery"
+                ? "bg-lavender-500 text-cream-soft shadow-[0_6px_12px_-6px_rgba(118,90,190,0.6)]"
+                : "clay-chip text-ink hover:-translate-y-0.5",
+            )}
+          >
+            📷 from gallery
+          </button>
+        </div>
+
+        {source === "gallery" ? (
+          <button
+            type="button"
+            onClick={() => void importFromGallery()}
+            className="clay-btn-soft flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-bold text-ink-deep"
+          >
+            <Images className="size-4" /> choose a photo from your gallery
+          </button>
+        ) : vaultPhotos.length === 0 ? (
+          <p className="rounded-2xl bg-white/60 px-4 py-3 text-center text-xs font-semibold text-ink-soft">
+            no photos in your vault yet — import one from your gallery 📷
+          </p>
+        ) : (
+          <div className="grid grid-cols-3 gap-3">
+            {vaultPhotos.map((item) => {
+              const active = picked.includes(item._id);
+              return (
+                <button
+                  key={item._id}
+                  type="button"
+                  onClick={() =>
+                    setPicked((prev) =>
+                      active ? prev.filter((id) => id !== item._id) : [...prev, item._id],
+                    )
+                  }
+                  className={cn(
+                    "relative aspect-square overflow-hidden rounded-[1.4rem] transition-transform hover:scale-[1.03]",
+                    active && "ring-2 ring-lavender-400 ring-offset-2 ring-offset-cream",
+                  )}
+                >
+                  <img
+                    src={item.art}
+                    alt={item.caption ?? "vault photo"}
+                    draggable={false}
+                    className="h-full w-full object-cover"
+                  />
+                  {active && (
+                    <span className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-lavender-500 text-cream-soft">
+                      <Check className="size-3" />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {source === "vault" && picked.length > 0 && (
+          <button
+            type="button"
+            onClick={pinPicked}
+            className="clay-btn-soft flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-ink-deep"
+          >
+            📌 pin {picked.length === 1 ? "this photo" : `these ${picked.length} photos`} to the wall
+          </button>
+        )}
+
+        <p className="text-[11px] font-bold text-ink-soft">…or pick a soft scene</p>
 
         <div className="grid grid-cols-3 gap-3">
           {PHOTO_SCENES.map((scene) => {
