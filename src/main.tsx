@@ -41,6 +41,7 @@ import {
   PolaroidWallScreen,
   CalendarScreen,
   CalendarDayView,
+  PlantScreen,
 } from "@/lib/screens";
 
 /**
@@ -231,6 +232,7 @@ createRoot(rootEl).render(
             <Route path="gif-studio" element={<InnerRoute><GifStudio /></InnerRoute>} />
             <Route path="vault" element={<InnerRoute><VaultScreen /></InnerRoute>} />
             <Route path="games" element={<InnerRoute><GamesScreen /></InnerRoute>} />
+            <Route path="plant" element={<InnerRoute><PlantScreen /></InnerRoute>} />
             <Route path="calendar" element={<InnerRoute><CalendarScreen /></InnerRoute>} />
             <Route path="calendar/:dateKey" element={<InnerRoute><CalendarDayView /></InnerRoute>} />
             <Route path="settings" element={<InnerRoute><SettingsScreen /></InnerRoute>} />

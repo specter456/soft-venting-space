@@ -39,6 +39,7 @@ const TITLES: Record<string, string> = {
   "/dashboard/gif-studio": "GIF Studio",
   "/dashboard/vault": "Private vault",
   "/dashboard/games": "Games",
+  "/dashboard/plant": "your little plant 🌱",
   "/dashboard/calendar": "Calendar",
   "/dashboard/settings": "Settings",
   "/dashboard/diary": "Diary",

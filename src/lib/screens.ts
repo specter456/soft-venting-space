@@ -33,6 +33,11 @@ export const PolaroidWallScreen = lazyWithRetry(() =>
   import("@/components/PolaroidWall").then((m) => ({ default: m.PolaroidWallScreen })),
 );
 
+/* ── Plant screen — its own route/header, entered from the Home card.
+   Home already lazy-loads this exact module for the card, so the chunk is
+   warm and the screen opens instantly. ────────────────────────────── */
+export const PlantScreen = lazyWithRetry(() => import("@/components/MyLittlePlant"));
+
 /* ─── Idle scheduling ───────────────────────────────────────────────── */
 
 /**

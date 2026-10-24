@@ -1,11 +1,16 @@
 /**
  * My Little Plant — streak-based daily companion.
- * Smiley pot, vibrant bouquet that grows over days, stats, and dots.
+ *
+ * The plant and its smiley pot are ONE svg unit (<PlantUnit/>): the stem
+ * (or seed mound) always starts INSIDE the pot opening — its bottom
+ * y-coordinate sits below the pot's top edge — so plant and pot can never
+ * separate. Growth stages are simply different drawings inside that same
+ * svg, all rooted at the same point above the rim.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { Link } from "react-router";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   SEED_CHOICES,
   SEED_PALETTES,
@@ -17,7 +22,6 @@ import {
   loadShelf,
   nextMilestone,
   plantDateKey,
-  plantStatusLine,
   retireBloom,
   savePlantState,
   stageForDays,
@@ -58,239 +62,247 @@ function BloomFlowerSvg({ pal, size, petalCount }: { pal: SeedPalette; size: num
   );
 }
 
-function PotWithFace({ wiggle }: { wiggle: boolean }) {
+/* ─── ONE svg: smiley pot + growth stage ───────────────────────────── */
+
+const UNIT_W = 160;
+const UNIT_H = 240;
+/** The pot's top edge (rim top) — the growth always crosses it. */
+const POT_TOP = 150;
+/** Stem/seed base — BELOW the pot's top edge, i.e. inside the pot opening. */
+const STEM_BOT = 160;
+
+/** A flower drawn as plain svg shapes — never a nested <svg>. */
+function FlowerG({ cx, cy, size, count, pal }: {
+  cx: number;
+  cy: number;
+  size: number;
+  count: number;
+  pal: SeedPalette;
+}) {
   return (
-    <motion.div
-      animate={wiggle ? { rotate: [0, -3, 3, -1.5, 0] } : { rotate: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className="relative z-10 mx-auto flex w-[120px] flex-col items-center"
-      style={{ transformOrigin: "center bottom" }}
-    >
-      {/* pot body — trapezoid via clip-path */}
-      <div
-        className="relative h-[72px] w-full"
-        style={{
-          clipPath: "polygon(8% 0%, 92% 0%, 100% 100%, 0% 100%)",
-          background: "linear-gradient(180deg, #E8A87C 0%, #D88A5E 40%, #C47A4A 100%)",
-        }}
-      >
-        {/* rim */}
-        <div
-          className="absolute -top-[5px] left-0 h-[10px] w-full rounded-sm"
-          style={{ background: "linear-gradient(180deg, #F0C098, #E8A87C)" }}
-        />
-        {/* soil surface */}
-        <div
-          className="absolute top-[5px] left-[6px] right-[6px] h-[6px] rounded-full"
-          style={{ background: "linear-gradient(180deg, #6B4A2E, #4A321E)" }}
-        />
-        {/* eyes */}
-        <span className="absolute top-[26px] left-[30px] h-[7px] w-[7px] rounded-full bg-[#3A2010]" aria-hidden />
-        <span className="absolute top-[26px] right-[30px] h-[7px] w-[7px] rounded-full bg-[#3A2010]" aria-hidden />
-        {/* blush cheeks */}
-        <span className="absolute top-[36px] left-[20px] h-[8px] w-[10px] rounded-full bg-[#E89AA0]/60" aria-hidden />
-        <span className="absolute top-[36px] right-[20px] h-[8px] w-[10px] rounded-full bg-[#E89AA0]/60" aria-hidden />
-        {/* smile — small arc */}
-        <svg className="absolute top-[36px] left-1/2 -translate-x-1/2" width="18" height="10" viewBox="0 0 18 10" aria-hidden>
-          <path d="M2 2 Q9 10 16 2" fill="none" stroke="#3A2010" strokeWidth="2" strokeLinecap="round" opacity="0.7" />
-        </svg>
-      </div>
-    </motion.div>
+    <g>
+      {Array.from({ length: count }, (_, i) => {
+        const deg = (360 / count) * i;
+        return (
+          <g key={deg} transform={`rotate(${deg} ${cx} ${cy})`}>
+            <ellipse
+              cx={cx}
+              cy={cy - size * 0.34}
+              rx={size * 0.17}
+              ry={size * 0.36}
+              fill={pal.petal}
+              stroke={pal.petalDeep}
+              strokeWidth="1.2"
+            />
+          </g>
+        );
+      })}
+      <circle cx={cx} cy={cy} r={size * 0.24} fill={pal.center} />
+      <circle cx={cx - size * 0.07} cy={cy - size * 0.07} r={size * 0.11} fill="rgba(255,255,255,0.55)" />
+    </g>
   );
 }
 
-function PlantVisual({
-  stage,
-  pal,
-  wiggle,
-  extraSip,
-}: {
+/**
+ * The whole plant — smiley pot AND the current growth stage — as ONE svg.
+ * Growth stages are just different drawings inside this same svg: seed
+ * mound → sprout → stem+leaves → bud → half bloom → full glowing bouquet.
+ * The stem base (STEM_BOT = 160) always sits below the pot's top edge
+ * (POT_TOP = 150), so the plant is rooted inside the pot opening with zero
+ * gap — at every stage, forever.
+ */
+export function PlantUnit({ stage, pal, wiggle = false, extraSip = false, className }: {
   stage: number;
   pal: SeedPalette;
-  wiggle: boolean;
-  extraSip: boolean;
+  /** short celebration wiggle after a watering */
+  wiggle?: boolean;
+  /** 💧 burst overlay after an extra sip */
+  extraSip?: boolean;
+  className?: string;
 }) {
+  const uid = useId().replace(/:/g, "");
+  const reduceMotion = useReducedMotion();
   const isGlowing = stage >= 28;
-  const hasStem = stage >= 3;
-  const bouquetCount = stage >= 14 ? 3 : 1;
+  const leaves = (
+    <>
+      <ellipse cx="61" cy="142" rx="15" ry="7.5" fill="#7FBF87" transform="rotate(-24 61 142)" />
+      <ellipse cx="99" cy="131" rx="15" ry="7.5" fill="#8FCB95" transform="rotate(24 99 131)" />
+    </>
+  );
 
   return (
-    <motion.div
-      className="relative flex h-[190px] w-48 items-end justify-center"
-      animate={wiggle ? { rotate: [0, -4, 4, -2, 0] } : { rotate: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-    >
-      {/* soft glow behind the bouquet (28+ days) */}
-      <div
-        className="absolute inset-0 rounded-full"
-        style={{
-          background: isGlowing
-            ? `radial-gradient(circle, ${pal.glow} 0%, rgba(255,255,255,0) 60%)`
-            : "transparent",
-        }}
-      />
-      {/* stem — explicitly centered so framer's scaleY never shifts it */}
-      {hasStem && (
-        <motion.div
-          className="absolute bottom-0 left-1/2 w-2 rounded-full"
-          style={{
-            height: 80,
-            x: "-50%",
-            background: "linear-gradient(180deg,#5E9E6C,#3E7A4E)",
-            transformOrigin: "bottom center",
-          }}
-          initial={{ scaleY: 0.3 }}
-          animate={{ scaleY: 1 }}
-          transition={{ type: "spring", stiffness: 160, damping: 14 }}
-        />
-      )}
-      {/* leaves (stage 3+) */}
-      {hasStem && (
-        <>
-          <motion.div
-            className="absolute"
-            style={{
-              bottom: 16,
-              left: 34,
-              width: 20,
-              height: 13,
-              borderRadius: "9999px 0 9999px 9999px",
-              background: "linear-gradient(135deg,#8CC084,#5E9E6C)",
-            }}
-            animate={wiggle ? { rotate: [-28, -34, -24, -28] } : { rotate: -28 }}
-            transition={{ duration: 0.45, ease: "easeOut" }}
-          />
-          <motion.div
-            className="absolute"
-            style={{
-              bottom: 22,
-              right: 34,
-              width: 20,
-              height: 13,
-              borderRadius: "0 9999px 9999px 9999px",
-              background: "linear-gradient(45deg,#8CC084,#5E9E6C)",
-            }}
-            animate={wiggle ? { rotate: [28, 34, 24, 28] } : { rotate: 28 }}
-            transition={{ duration: 0.45, ease: "easeOut" }}
-          />
-        </>
-      )}
-      {/* bouquet layer — fixed box above the pot, each bloom positioned inside */}
-      {stage >= 7 && (
-        <div
-          className="absolute left-1/2"
-          style={{ bottom: 82, width: 168, height: 96, transform: "translateX(-50%)" }}
+    <span className="relative flex flex-col items-center" data-testid="plant-unit-wrap">
+      <svg
+        data-testid="plant-unit"
+        data-stage={stage}
+        width={UNIT_W}
+        height={UNIT_H}
+        viewBox={`0 0 ${UNIT_W} ${UNIT_H}`}
+        className={className}
+        aria-hidden
+      >
+        <defs>
+          <linearGradient id={`pot-${uid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#E8A87C" />
+            <stop offset="45%" stopColor="#D88A5E" />
+            <stop offset="100%" stopColor="#C47A4A" />
+          </linearGradient>
+          <linearGradient id={`rim-${uid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#F0C098" />
+            <stop offset="100%" stopColor="#E8A87C" />
+          </linearGradient>
+          <linearGradient id={`soil-${uid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#6B4A2E" />
+            <stop offset="100%" stopColor="#4A321E" />
+          </linearGradient>
+          <linearGradient id={`stem-${uid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#5E9E6C" />
+            <stop offset="100%" stopColor="#3E7A4E" />
+          </linearGradient>
+          <radialGradient id={`glow-${uid}`}>
+            <stop offset="0%" stopColor={pal.glow} />
+            <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+          </radialGradient>
+        </defs>
+
+        {/* ── the smiley pot (bottom) ─────────────────────────────── */}
+        <g data-part="pot">
+          {/* body — gentle flare, like the old clip-path pot */}
+          <path d="M24,166 H136 L150,226 Q152,234 143,234 H17 Q8,234 10,226 Z" fill={`url(#pot-${uid})`} />
+          {/* rim — this rect's y IS the pot's top edge */}
+          <rect data-part="pot-rim" x="14" y={POT_TOP} width="132" height="16" rx="6" fill={`url(#rim-${uid})`} />
+          {/* soil at the pot opening — the stem's feet are planted here */}
+          <ellipse cx="80" cy="153" rx="64" ry="9" fill={`url(#soil-${uid})`} />
+          {/* face */}
+          <circle cx="50" cy="193" r="4" fill="#3A2010" />
+          <circle cx="110" cy="193" r="4" fill="#3A2010" />
+          <ellipse cx="44" cy="204" rx="6" ry="4.5" fill="#E89AA0" opacity="0.6" />
+          <ellipse cx="116" cy="204" rx="6" ry="4.5" fill="#E89AA0" opacity="0.6" />
+          <path d="M71,203 Q80,213 89,203" fill="none" stroke="#3A2010" strokeWidth="2.5" strokeLinecap="round" opacity="0.7" />
+        </g>
+
+        {/* ── the growth stage — rooted inside the pot opening ────── */}
+        <motion.g
+          data-part="plant"
+          style={{ transformOrigin: `80px ${STEM_BOT}px` }}
+          animate={
+            reduceMotion
+              ? { rotate: 0 }
+              : wiggle
+                ? { rotate: [0, -5, 5, -3, 0] }
+                : { rotate: [0, -2, 0] }
+          }
+          transition={
+            wiggle
+              ? { duration: 0.5, ease: "easeOut" }
+              : { duration: 4.5, repeat: Infinity, ease: "easeInOut" }
+          }
         >
-          {stage < 14 ? (
-            /* a single first flower */
-            <motion.div
-              className="absolute left-1/2"
-              style={{ bottom: 0, x: "-50%" }}
-              animate={{ y: [0, -2, 0] }}
-              transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <BloomFlowerSvg pal={pal} size={44} petalCount={5} />
-            </motion.div>
-          ) : (
-            /* small bouquet (14–27) → lush multi-color bouquet (28+) */
-            <>
-              <motion.div
-                className="absolute left-1/2"
-                style={{ bottom: 4, x: "-50%", filter: `drop-shadow(0 0 8px ${pal.glow})` }}
-                animate={isGlowing
-                  ? { scale: [1, 1.06, 1], rotate: [0, -2, 0], y: [0, -3, 0] }
-                  : { scale: 1, rotate: 0 }}
-                transition={{ duration: isGlowing ? 3.5 : 0.3, repeat: isGlowing ? Infinity : 0, ease: "easeInOut" }}
-              >
-                <BloomFlowerSvg pal={pal} size={isGlowing ? 56 : 46} petalCount={6} />
-              </motion.div>
-              {bouquetCount >= 3 && (
-                <>
-                  <motion.div
-                    className="absolute"
-                    style={{ bottom: 10, left: 18, filter: "drop-shadow(0 0 4px rgba(240,180,41,0.5))" }}
-                    animate={isGlowing ? { rotate: [0, -4, 0] } : { rotate: -6 }}
-                    transition={{ duration: isGlowing ? 4 : 0.3, repeat: isGlowing ? Infinity : 0, ease: "easeInOut" }}
-                  >
-                    <BloomFlowerSvg pal={SEED_PALETTES["sun-gold"]} size={isGlowing ? 30 : 26} petalCount={5} />
-                  </motion.div>
-                  <motion.div
-                    className="absolute"
-                    style={{ bottom: 6, right: 20, filter: "drop-shadow(0 0 4px rgba(143,217,196,0.5))" }}
-                    animate={isGlowing ? { rotate: [0, 4, 0] } : { rotate: 6 }}
-                    transition={{ duration: isGlowing ? 4.5 : 0.3, repeat: isGlowing ? Infinity : 0, ease: "easeInOut" }}
-                  >
-                    <BloomFlowerSvg pal={SEED_PALETTES.mint} size={isGlowing ? 28 : 24} petalCount={5} />
-                  </motion.div>
-                </>
-              )}
-              {isGlowing && (
-                <motion.div
-                  className="absolute"
-                  style={{ bottom: 2, left: 52, filter: "drop-shadow(0 0 4px rgba(243,184,201,0.5))" }}
-                  animate={{ rotate: [0, -3, 0] }}
-                  transition={{ duration: 3.8, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  <BloomFlowerSvg pal={SEED_PALETTES.rose} size={24} petalCount={4} />
-                </motion.div>
-              )}
-              {/* sparkles only when fully glowing */}
-              {isGlowing &&
-                [0, 1, 2, 3, 4].map((i) => (
-                  <motion.span
-                    key={i}
-                    className="absolute text-xs"
-                    style={{
-                      left: `${50 + Math.cos((i / 5) * 6.28 - 0.4) * 42}%`,
-                      top: `${50 + Math.sin((i / 5) * 6.28 - 0.4) * 38}%`,
-                    }}
-                    animate={{ opacity: [0, 1, 0], scale: [0.6, 1.4, 0.6] }}
-                    transition={{ duration: 2.6, repeat: Infinity, delay: i * 0.5 }}
-                    aria-hidden
-                  >
-                    ✨
-                  </motion.span>
-                ))}
-            </>
+          {isGlowing && <circle cx="80" cy="66" r="64" fill={`url(#glow-${uid})`} />}
+
+          {/* stage 0 — a seed mound in the pot's opening */}
+          {stage === 0 && (
+            <g data-part="seed-mound">
+              <ellipse cx="80" cy="152" rx="26" ry="11" fill="#7A5236" />
+              <ellipse cx="80" cy="145" rx="5" ry="6.5" fill="#8A5A38" stroke="#5E3D26" strokeWidth="1.5" />
+            </g>
           )}
-        </div>
-      )}
-      {/* sprout (stage 1–2 only — stem takes over at 3) */}
-      {stage >= 1 && stage < 3 && (
-        <span
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 text-3xl"
-          style={{ filter: "drop-shadow(0 2px 4px rgba(90,140,100,0.3))" }}
-          aria-hidden
-        >
-          🌱
-        </span>
-      )}
-      {/* seed (stage 0) */}
-      {stage === 0 && (
-        <motion.span
-          animate={{ y: [0, -2, 0] }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 text-3xl"
-          aria-hidden
-        >
-          🫘
-        </motion.span>
-      )}
-      {/* extra sip wiggle overlay */}
+
+          {/* stage 1–2 — sprout */}
+          {stage >= 1 && stage < 3 && (
+            <g data-part="sprout">
+              <rect data-part="stem" x="77.5" y="116" width="5" height={STEM_BOT - 116} rx="2.5" fill="#6FAF7B" />
+              <ellipse cx="68" cy="123" rx="10" ry="5.5" fill="#7FBF87" transform="rotate(-28 68 123)" />
+              <ellipse cx="92" cy="119" rx="10" ry="5.5" fill="#8FCB95" transform="rotate(28 92 119)" />
+              {/* little soil bump around the sprout's feet */}
+              <ellipse cx="80" cy="154" rx="15" ry="5.5" fill="#7A5236" />
+            </g>
+          )}
+
+          {/* stage 3–6 — stem + leaves */}
+          {stage >= 3 && stage < 7 && (
+            <g data-part="stem-and-leaves">
+              <rect data-part="stem" x="76" y="74" width="8" height={STEM_BOT - 74} rx="4" fill={`url(#stem-${uid})`} />
+              {leaves}
+            </g>
+          )}
+
+          {/* stage 7–13 — a bud */}
+          {stage >= 7 && stage < 14 && (
+            <g data-part="bud">
+              <rect data-part="stem" x="76" y="66" width="8" height={STEM_BOT - 66} rx="4" fill={`url(#stem-${uid})`} />
+              {leaves}
+              <g transform="rotate(-8 80 72)">
+                <ellipse cx="80" cy="54" rx="11" ry="15" fill={pal.petal} stroke={pal.petalDeep} strokeWidth="1.5" />
+                <path d="M74,46 Q80,38 86,46" fill="none" stroke={pal.petalDeep} strokeWidth="1.2" opacity="0.7" />
+                <ellipse cx="72" cy="67" rx="8" ry="4.5" fill="#5E9E6C" transform="rotate(-32 72 67)" />
+                <ellipse cx="88" cy="67" rx="8" ry="4.5" fill="#5E9E6C" transform="rotate(32 88 67)" />
+              </g>
+            </g>
+          )}
+
+          {/* stage 14–27 — half bloom: one open flower + a side bud */}
+          {stage >= 14 && stage < 28 && (
+            <g data-part="half-bloom">
+              <rect data-part="stem" x="76" y="70" width="8" height={STEM_BOT - 70} rx="4" fill={`url(#stem-${uid})`} />
+              {leaves}
+              <path d="M80,120 Q62,114 54,104" fill="none" stroke="#5E9E6C" strokeWidth="4" strokeLinecap="round" />
+              <ellipse cx="50" cy="99" rx="8" ry="11.5" fill={pal.petal} stroke={pal.petalDeep} strokeWidth="1.2" transform="rotate(-18 50 99)" />
+              <FlowerG cx={80} cy={48} size={34} count={6} pal={pal} />
+            </g>
+          )}
+
+          {/* stage 28+ — full glowing bouquet */}
+          {stage >= 28 && (
+            <g data-part="full-bloom">
+              <rect data-part="stem" x="76" y="64" width="8" height={STEM_BOT - 64} rx="4" fill={`url(#stem-${uid})`} />
+              {leaves}
+              <path d="M80,118 Q60,114 50,104" fill="none" stroke="#5E9E6C" strokeWidth="4" strokeLinecap="round" />
+              <path d="M80,126 Q102,124 114,114" fill="none" stroke="#5E9E6C" strokeWidth="4" strokeLinecap="round" />
+              <path d="M78,130 Q72,131 69,132" fill="none" stroke="#5E9E6C" strokeWidth="3" strokeLinecap="round" />
+              <FlowerG cx={47} cy={98} size={22} count={5} pal={SEED_PALETTES["sun-gold"]} />
+              <FlowerG cx={116} cy={110} size={20} count={5} pal={SEED_PALETTES.mint} />
+              <FlowerG cx={66} cy={133} size={15} count={4} pal={SEED_PALETTES.rose} />
+              <FlowerG cx={80} cy={44} size={38} count={6} pal={pal} />
+              {/* soft sparkles */}
+              {[0, 1, 2, 3, 4].map((i) => {
+                const a = (i / 5) * Math.PI * 2 - 0.4;
+                const x = 80 + Math.cos(a) * 54;
+                const y = 62 + Math.sin(a) * 48;
+                return (
+                  <motion.circle
+                    key={i}
+                    cx={x}
+                    cy={y}
+                    r="3"
+                    fill="#FFF6D8"
+                    style={{ transformOrigin: `${x}px ${y}px` }}
+                    animate={reduceMotion ? { opacity: 0.8 } : { opacity: [0, 1, 0], scale: [0.6, 1.3, 0.6] }}
+                    transition={{ duration: 2.6, repeat: Infinity, delay: i * 0.5 }}
+                  />
+                );
+              })}
+            </g>
+          )}
+        </motion.g>
+      </svg>
+
+      {/* 💧 burst after an extra sip — a tiny overlay, not a second plant */}
       {extraSip && (
         <motion.span
           initial={{ x: "-50%", scale: 0.6, opacity: 1 }}
           animate={{ x: "-50%", scale: 1.3, opacity: 0 }}
           transition={{ duration: 0.5 }}
-          className="absolute top-6 left-1/2 text-lg"
+          className="absolute -top-2 left-1/2 text-lg"
           aria-hidden
         >
           💧
         </motion.span>
       )}
-    </motion.div>
+    </span>
   );
 }
+
 
 function WateredDots({ days }: { days: number[] }) {
   const now = new Date();
@@ -413,17 +425,16 @@ export default function MyLittlePlant() {
         <motion.span aria-hidden className="absolute top-10 right-8 text-2xl opacity-60" animate={{ x: [0, -10, 0] }} transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}>☁️</motion.span>
         <motion.span aria-hidden className="absolute top-2 left-1/3 text-2xl" animate={{ scale: [1, 1.08, 1] }} transition={{ duration: 4, repeat: Infinity }}>☀️</motion.span>
 
-        {/* plant + pot = ONE centered unit at bottom of sky card */}
+        {/* plant + pot = ONE svg unit, centered near the bottom of the sky card */}
         <div className="relative z-10 mx-auto flex flex-col items-center">
           {state ? (
-            <>
-              {/* plant-visual: bottom overlaps pot top by 12px */}
-              <div className="relative" style={{ marginBottom: -12 }}>
-                <PlantVisual stage={state.careDays} pal={pal} wiggle={wiggle} extraSip={extraSip} />
-              </div>
-              {/* pot — same flex column, never moved separately */}
-              <PotWithFace wiggle={wiggle} />
-            </>
+            <PlantUnit
+              stage={state.careDays}
+              pal={pal}
+              wiggle={wiggle}
+              extraSip={extraSip}
+              className="h-[264px] w-[176px]"
+            />
           ) : (
             <div className="flex h-48 w-48 items-end justify-center">
               <span className="mb-14 text-5xl opacity-60">🪴</span>
@@ -626,6 +637,19 @@ export default function MyLittlePlant() {
 
 /* ─── Home mini-card ───────────────────────────────────────────────── */
 
+/** Home-card line — "1 day · A Tiny Seed", never "1 days". */
+export function plantCardLine(s: PlantState | null): string {
+  if (!s) return "plant a seed to begin 🌱";
+  const n = s.careDays;
+  return `${n} day${n === 1 ? "" : "s"} · ${stageForDays(n).label}`;
+}
+
+/** Tiny status for the Home card: watered today 💤 / needs water 💧. */
+export function plantCardStatus(s: PlantState | null): string | null {
+  if (!s) return null;
+  return canWaterToday(s) ? "needs water 💧" : "watered today 💤";
+}
+
 export function PlantHomeCard() {
   const [state, setState] = useState<PlantState | null>(loadPlantState);
 
@@ -635,44 +659,33 @@ export function PlantHomeCard() {
     return () => document.removeEventListener("visibilitychange", refresh);
   }, []);
 
-  const pal = state ? SEED_PALETTES[state.seed] : null;
-  const stageInfo = state ? stageForDays(state.careDays) : null;
+  const pal = state ? SEED_PALETTES[state.seed] : SEED_PALETTES.wisteria;
+  const status = plantCardStatus(state);
 
   return (
     <Link
-      to="/dashboard/games?route=plant"
+      to="/dashboard/plant"
       className="clay-card group flex w-full items-center gap-3 px-5 py-4 transition-transform hover:-translate-y-0.5"
     >
-      <span className="relative flex h-11 w-11 shrink-0 items-center justify-center">
-        {state && pal ? (
-          state.careDays >= 28 ? (
-            <motion.span
-              className="relative flex h-9 w-9 items-center justify-center"
-              animate={{ opacity: [0.85, 1, 0.85] }}
-              transition={{ duration: 3, repeat: Infinity }}
-            >
-              <span
-                className="absolute h-9 w-9 rounded-full"
-                style={{ background: `radial-gradient(circle, ${pal.glow} 0%, transparent 70%)` }}
-              />
-              <BloomFlowerSvg pal={pal} size={20} petalCount={5} />
-            </motion.span>
-          ) : state.careDays >= 7 ? (
-            <span className="text-2xl">🌸</span>
-          ) : state.careDays >= 1 ? (
-            <span className="text-2xl">🌱</span>
-          ) : (
-            <span className="text-2xl">🫘</span>
-          )
-        ) : (
-          <span className="text-2xl opacity-70">🪴</span>
-        )}
-      </span>
+      {/* mini version of the SAME single-svg plant+pot, gently swaying */}
+      {state ? (
+        <span className="flex h-[72px] w-12 shrink-0 items-end justify-center">
+          <PlantUnit stage={state.careDays} pal={pal} className="h-[72px] w-12" />
+        </span>
+      ) : (
+        <span
+          className="flex h-11 w-11 shrink-0 items-center justify-center text-2xl opacity-70"
+          aria-hidden
+        >
+          🪴
+        </span>
+      )}
       <div className="min-w-0 flex-1">
         <p className="text-sm font-bold tracking-tight text-ink-deep">your little plant 🌱</p>
-        <p className="truncate text-[11px] font-medium text-ink-soft">
-          {stageInfo && state ? `${state.careDays} days · ${stageInfo.label}` : plantStatusLine(state)}
-        </p>
+        <p className="truncate text-[11px] font-medium text-ink-soft">{plantCardLine(state)}</p>
+        {status && (
+          <p className="truncate text-[10px] font-semibold text-ink-soft">{status}</p>
+        )}
       </div>
       <span aria-hidden className="text-sm text-ink-soft transition-colors group-hover:text-ink-deep">
         →

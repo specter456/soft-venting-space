@@ -1,7 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
-import MyLittlePlant from "@/components/MyLittlePlant";
 import { sfxArpeggio } from "@/lib/sfx";
 import { BuilderShell, worldGradientFor } from "@/components/BuilderShell";
 import { quarantineKey } from "@/lib/error-journal";
@@ -300,7 +299,6 @@ function sfxFill() {
   } catch { /* */ }
 }
 
-/** Soft water pour — used by Bloom Garden (exported for the plant component). */
 /** Soft plop — for cloud stack landing */
 function sfxPlop() {
   try { const c = sCtx(); const t = c.currentTime;
@@ -339,10 +337,6 @@ export { sfxArpeggio } from "@/lib/sfx";
 /* ─── Game registry ───────────────────────────────────────────────── */
 
 type BuiltInGameId = "pop" | "tiles" | "moon" | "honeycomb" | "nimbus" | "garden" | "coloring" | "pond" | "clouds" | "jelly" | "plinko" | "band" | "fireworks";
-
-export type PlantRouteId = "plant";
-
-export { default as MyLittlePlant } from "@/components/MyLittlePlant";
 
 /* ─── Moonlight Glide music ─────────────────────────────────────────── */
 
@@ -522,17 +516,14 @@ type ScreenState =
 
 export default function GamesScreen() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const route = searchParams.get("game") ?? searchParams.get("route") ?? null;
-  const isPlant = route === "plant" || route === "bloom";
   const gameParam = searchParams.get("game") as BuiltInGameId | null;
   const forcedGame =
     gameParam && BUILT_IN_GAMES.some((g) => g.id === gameParam) ? gameParam : null;
   const [screenState, setScreen] = useState<ScreenState>(() => {
     if (forcedGame) return { kind: "play", game: forcedGame };
-    if (isPlant) return { kind: "play", game: "garden" };
     return { kind: "grid" };
   });
-  // Deep links (?game=x / ?route=plant) win over internal navigation state.
+  // Deep links (?game=x) win over internal navigation state.
   const screen: ScreenState = forcedGame
     ? { kind: "play", game: forcedGame }
     : screenState;
@@ -860,7 +851,7 @@ export default function GamesScreen() {
           {screen.game === "moon" && <MoonlightGlide />}
           {screen.game === "honeycomb" && <HoneycombPop />}
           {screen.game === "nimbus" && <NimbusFriend />}
-          {screen.game === "garden" && (isPlant ? <MyLittlePlant /> : <MemoryGarden />)}
+          {screen.game === "garden" && <MemoryGarden />}
           {screen.game === "coloring" && <SoftColoring />}
           {screen.game === "pond" && <PondPals />}
           {screen.game === "clouds" && <CloudStack />}
@@ -1949,8 +1940,6 @@ function SoftColoring() {
     </motion.div>
   );
 }
-
-/* Bloom Garden now lives in @/components/MyLittlePlant (one daily-growing plant). */
 
 /* ─── Pond Pals ─────────────────────────────────────────────── */
 
