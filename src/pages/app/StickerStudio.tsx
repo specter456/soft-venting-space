@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
-import { useSetDirty } from "@/lib/useUnsavedGuard";
+import { useState } from "react";
+import { useUnsavedWork } from "@/lib/useUnsavedGuard";
 import { Loader2, Save, ImageDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { createVaultItem } from "@/lib/db";
@@ -35,15 +35,27 @@ export default function StickerStudio() {
   const [tear, setTear] = useState(false);
   const [accessory, setAccessory] = useState<string | null>("💗");
   const [name, setName] = useState("");
-  const setDirty = useSetDirty();
-  useEffect(() => {
-    setDirty(name.trim().length > 0);
-  }, [name, setDirty]);
   const [saving, setSaving] = useState(false);
 
   // Sticker source: the felt friend, or a gallery photo (square crop, soft edges).
   const [source, setSource] = useState<"felt" | "photo">("felt");
   const [photoArt, setPhotoArt] = useState<string | null>(null);
+
+  // Unsaved-work signature: every control compared with the moment we
+  // opened (or the last save) — any tweak makes the sticker dirty.
+  const sig = JSON.stringify([
+    STICKER_COLORS.indexOf(color),
+    STICKER_EXPRESSIONS.indexOf(expression),
+    STICKER_EYES.indexOf(eyes),
+    STICKER_MOUTHS.indexOf(mouth),
+    blush,
+    tear,
+    accessory ?? "",
+    name.trim(),
+    source,
+    photoArt ?? "",
+  ]);
+  const [savedSig, setSavedSig] = useState(sig);
 
   const pickPhoto = async () => {
     const item = await importGalleryPhoto({ caption: "sticker photo" });
@@ -77,7 +89,7 @@ export default function StickerStudio() {
   };
 
   const save = async () => {
-    if (saving) return;
+    if (saving) return false;
     setSaving(true);
     try {
       // capture the real sticker as a PNG — the vault shows the picture,
@@ -89,14 +101,20 @@ export default function StickerStudio() {
         bg: COLOR_TO_TILE[color.id] ?? "tile-peach",
         caption: name.trim() || (source === "photo" ? "a photo sticker" : `a ${expression.label} sticker`),
       });
+      setSavedSig(sig);
       toast("Sticker saved", { description: "Tucked into your vault, ready whenever you need it." });
+      return true;
     } catch (error) {
       console.error(error);
       toast("Couldn't save your sticker", { description: "Please try again in a moment." });
+      return false;
     } finally {
       setSaving(false);
     }
   };
+
+  // Unsaved = any control (or the name) changed since opening / last save.
+  useUnsavedWork({ dirty: sig !== savedSig, onSave: save });
 
   return (
     <div className="space-y-5">

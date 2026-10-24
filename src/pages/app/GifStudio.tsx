@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useEffect, useRef, useState, useCallback, type PointerEvent as ReactPointerEvent } from "react";
-import { useSetDirty } from "@/lib/useUnsavedGuard";
+import { useUnsavedWork } from "@/lib/useUnsavedGuard";
 import { Loader2, Pause, Play, Plus, RotateCcw, Save, Trash2, Download, Share2, Minus, X, Copy, Grid2x2 } from "lucide-react";
 import { createVaultItem } from "@/lib/db";
 import { combineIntoCollage } from "@/lib/collage";
@@ -141,11 +141,17 @@ export default function GifStudio() {
   const [selectedText, setSelectedText] = useState<number | null>(null);
   const textIdRef = useRef(0);
   const [encouragement, setEncouragement] = useState(MAGIC_MESSAGES[0]);
-  const setDirty = useSetDirty();
-  // Mark dirty when there are frames, stamps, or doodles
-  useEffect(() => {
-    setDirty(frames.length > 0 || stamps.length > 0 || undoStack.current.length > 0 || canvasTexts.length > 0);
-  }, [frames.length, stamps.length, canvasTexts.length, setDirty]);
+  // Unsaved-work signature: content compared with the moment we opened
+  // (or the last save) — any frame/stamp/text/doodle change makes it dirty.
+  const sig = JSON.stringify([
+    frames.length,
+    stamps.length,
+    canvasTexts.length,
+    canUndo,
+    bg === "avatar" ? "avatar" : bg.emoji,
+    editingFrameIdx ?? -1,
+  ]);
+  const [savedSig, setSavedSig] = useState(sig);
 
   // Drawing settings
   const [inkColor, setInkColor] = useState<InkColor>(INK_COLORS[5].value);
@@ -673,7 +679,7 @@ export default function GifStudio() {
   /* ─── Save to vault ────────────────────────────────────────────────── */
 
   const save = async () => {
-    if (saving) return;
+    if (saving) return false;
     setSaving(true);
     try {
       let gifUrl = "";
@@ -692,14 +698,20 @@ export default function GifStudio() {
         bg: "tile-blush",
         caption: frames.length > 0 ? `a ${frames.length}-frame gif` : "a doodled gif",
       });
+      setSavedSig(sig);
       toast("GIF saved", { description: "Locked into your vault — frames play in order." });
+      return true;
     } catch (error) {
       console.error(error);
       toast("Couldn't save your GIF", { description: "Please try again in a moment." });
+      return false;
     } finally {
       setSaving(false);
     }
   };
+
+  // Unsaved = content changed since opening / last save.
+  useUnsavedWork({ dirty: sig !== savedSig, onSave: save });
 
   /* ─── Download & Share ─────────────────────────────────────────────── */
 

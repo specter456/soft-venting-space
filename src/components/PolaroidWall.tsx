@@ -7,6 +7,7 @@ import { scopedGetItem, scopedSetItem, scopedRemoveItem } from "@/lib/safe-stora
 import { quarantineKey } from "@/lib/error-journal";
 import { isImageArt } from "@/lib/canvas-art";
 import { cn } from "@/lib/utils";
+import { useUnsavedWork } from "@/lib/useUnsavedGuard";
 
 const STORAGE_KEY = "venting-polaroid-wall";
 /** Set by Photo Doodle on save; the wall consumes and clears it. */
@@ -63,6 +64,18 @@ function saveWall(pins: PolaroidPin[]) {
   scopedSetItem(STORAGE_KEY, JSON.stringify(pins));
 }
 
+function makePin(vaultId: string, art: string): PolaroidPin {
+  return {
+    id: `pin-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    vaultId,
+    art,
+    caption: "",
+    x: 8 + Math.random() * 58,
+    y: 8 + Math.random() * 58,
+    tilt: (Math.random() - 0.5) * 16,
+  };
+}
+
 /* ─── Home card ──────────────────────────────────────────────────── */
 
 export default function PolaroidWallSection() {
@@ -96,29 +109,32 @@ export function PolaroidWallScreen() {
   const navigate = useNavigate();
   const vaultItems = useTable<VaultItem>("vaultItems");
   const [pins, setPins] = useState<PolaroidPin[]>(loadWall);
+  // Clean-state baseline: what the wall looked like when we opened it.
+  // An auto-pinned hand-off (Photo Doodle → wall) joins the baseline,
+  // so arriving with a pin is not an "unsaved change".
+  const initialPinsRef = useRef(pins);
+  const [baseline, setBaseline] = useState(() => JSON.stringify(pins));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [sparkleId, setSparkleId] = useState<string | null>(null);
   const dragging = useRef<{ id: string; startX: number; startY: number; origX: number; origY: number } | null>(null);
   const wallRef = useRef<HTMLDivElement>(null);
 
-  const addPin = useCallback((vaultId: string, art: string) => {
-    const id = `pin-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    const pin: PolaroidPin = {
-      id,
-      vaultId,
-      art,
-      caption: "",
-      x: 8 + Math.random() * 58,
-      y: 8 + Math.random() * 58,
-      tilt: (Math.random() - 0.5) * 16,
-    };
-    setPins((prev) => {
-      const next = [...prev, pin];
+  const addPin = useCallback((vaultId: string, art: string, asBaseline = false) => {
+    const pin = makePin(vaultId, art);
+    if (asBaseline) {
+      const next = [...initialPinsRef.current, pin];
+      setPins(next);
       saveWall(next);
-      return next;
-    });
-    setSparkleId(id);
+      setBaseline(JSON.stringify(next));
+    } else {
+      setPins((prev) => {
+        const next = [...prev, pin];
+        saveWall(next);
+        return next;
+      });
+    }
+    setSparkleId(pin.id);
     setTimeout(() => setSparkleId(null), 1100);
   }, []);
 
@@ -127,7 +143,7 @@ export function PolaroidWallScreen() {
     const pending = consumePendingPin();
     if (pending) {
       // Defer so the setState is not synchronous inside the effect.
-      const t = setTimeout(() => addPin(pending.vaultId, pending.art), 0);
+      const t = setTimeout(() => addPin(pending.vaultId, pending.art, true), 0);
       return () => clearTimeout(t);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -211,6 +227,24 @@ export function PolaroidWallScreen() {
     addPin(item._id, item.art);
     setPickerOpen(false);
   };
+
+  // Unsaved = polaroids moved / captioned / added / removed since we opened.
+  const wallSig = JSON.stringify(pins);
+  useUnsavedWork({
+    dirty: wallSig !== baseline,
+    // Every wall change auto-persists, so saving just confirms + re-baselines.
+    onSave: () => {
+      saveWall(pins);
+      setBaseline(wallSig);
+      return true;
+    },
+    // Discard = revert to the state we opened with (storage included).
+    onDiscard: () => {
+      setPins(initialPinsRef.current);
+      saveWall(initialPinsRef.current);
+      setBaseline(JSON.stringify(initialPinsRef.current));
+    },
+  });
 
   return (
     <div className="space-y-4">

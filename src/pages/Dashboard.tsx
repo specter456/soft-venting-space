@@ -117,7 +117,7 @@ export default function Dashboard() {
     if (idx > 0) navigate(-1);
     else navigate("/dashboard");
   }, [navigate]);
-  const { showGuard, handleSave, handleLeave, handleBack } = useUnsavedGuard(backOneStep);
+  const { showGuard, handleSave, handleLeave, handleBack, requestLeave } = useUnsavedGuard(backOneStep);
 
   // Taskbar taps fire BOTH onPointerUp and Link's click — dedupe so each tap
   // pushes exactly one history entry (otherwise "back one step" feels broken).
@@ -128,9 +128,10 @@ export default function Dashboard() {
       const last = lastNavRef.current;
       if (last && last.to === to && now - last.at < 700) return;
       lastNavRef.current = { to, at: now };
-      navigate(to, { viewTransition: true });
+      // Leaving a dirty creation screen via the taskbar asks first too.
+      requestLeave(() => navigate(to, { viewTransition: true }));
     },
-    [navigate],
+    [navigate, requestLeave],
   );
 
   // Scroll to top on every route change so header/greeting is always visible first.

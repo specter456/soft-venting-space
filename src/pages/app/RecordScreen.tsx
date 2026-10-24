@@ -10,6 +10,7 @@ import { MOODS, type MoodId, moodById } from "@/lib/moods";
 import { music } from "@/lib/music";
 import { cn } from "@/lib/utils";
 import { useTapGuard } from "@/lib/useTapGuard";
+import { useUnsavedWork } from "@/lib/useUnsavedGuard";
 
 type Mode = "voice" | "video";
 type Stage = "idle" | "recording" | "done";
@@ -167,10 +168,11 @@ export default function RecordScreen() {
 
   const handleSave = async () => {
     const id = await persist();
-    if (!id) return;
+    if (!id) return false;
     toast(mode === "voice" ? "Voice note saved" : "Video vent saved", {
       description: "Kept privately — only you can open it.",
     });
+    return true;
   };
 
   const handleReflect = async () => {
@@ -200,6 +202,10 @@ export default function RecordScreen() {
   const [avatar] = useState(
     () => VIDEO_AVATARS[Math.floor(Math.random() * VIDEO_AVATARS.length)],
   );
+
+  // Unsaved take: recorded, not yet saved into the recordings table.
+  const unsavedTake = mode !== null && stage === "done" && !savedId && recordedBlob !== null;
+  useUnsavedWork({ dirty: unsavedTake, onSave: handleSave });
 
   return (
     <div className="space-y-6">

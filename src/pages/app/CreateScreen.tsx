@@ -1,8 +1,8 @@
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { useSetDirty } from "@/lib/useUnsavedGuard";
+import { useUnsavedWork } from "@/lib/useUnsavedGuard";
 import { ArrowLeft, Check, Images, Loader2, Lock, Palette, Sparkles, ImageDown, Grid2x2 } from "lucide-react";
 import { createVaultItem, useTable, type VaultItem } from "@/lib/db";
 import { importGalleryPhoto } from "@/lib/gallery";
@@ -55,10 +55,7 @@ export default function CreateScreen() {
   );
   const [saving, setSaving] = useState(false);
   // Unsaved-work guard: picked-but-unsaved photos trigger the leave dialog.
-  const setDirty = useSetDirty();
-  useEffect(() => {
-    setDirty(selected.length > 0);
-  }, [selected.length, setDirty]);
+  useUnsavedWork({ dirty: selected.length > 0, onSave: () => savePhotos() });
 
   const pinPicked = () => {
     const item = vaultPhotos.find((p) => p._id === picked[0]);
@@ -91,7 +88,7 @@ export default function CreateScreen() {
   };
 
   const savePhotos = async () => {
-    if (saving || selected.length === 0) return;
+    if (saving || selected.length === 0) return false;
     setSaving(true);
     try {
       let lastArt = "";
@@ -129,9 +126,11 @@ export default function CreateScreen() {
         setSelected([]);
         setView("hub");
       }
+      return true;
     } catch (error) {
       console.error(error);
       toast("Couldn't save those photos", { description: "Please try again in a moment." });
+      return false;
     } finally {
       setSaving(false);
     }

@@ -1,6 +1,6 @@
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
-import { useSetDirty } from "@/lib/useUnsavedGuard";
+import { useState } from "react";
+import { useUnsavedWork } from "@/lib/useUnsavedGuard";
 import { useNavigate, useSearchParams } from "react-router";
 import { Check, Loader2, Mic, Video } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,8 +22,6 @@ export default function NoteEditor() {
   const recordings = useTable<Recording>("recordings");
 
   const [body, setBody] = useState("");
-  const setDirty = useSetDirty();
-  useEffect(() => { setDirty(body.trim().length > 0); }, [body, setDirty]);
   const [mood, setMood] = useState<MoodId | null>(null);
   // pre-select the recording we were sent here with (from Record → Reflect in Notes)
   const [recordingId, setRecordingId] = useState<string | null>(attachId);
@@ -38,7 +36,7 @@ export default function NoteEditor() {
       toast("Nothing to save yet", {
         description: "Write a line, attach a recording, or add a photo — any one is enough.",
       });
-      return;
+      return false;
     }
     setSaving(true);
     try {
@@ -80,13 +78,23 @@ export default function NoteEditor() {
         description: "Tucked safely into your private journal.",
       });
       navigate("/dashboard/notes");
+      return true;
     } catch (error) {
       console.error(error);
       toast("Couldn't save that note", { description: "Please try again in a moment." });
+      return false;
     } finally {
       setSaving(false);
     }
   };
+
+  // Unsaved = text, an attached photo, or a different recording than we
+  // arrived with (the deep-linked preselection itself is not a change).
+  const hasChanges =
+    body.trim().length > 0 ||
+    Boolean(photo) ||
+    (Boolean(selectedRecording) && recordingId !== attachId);
+  useUnsavedWork({ dirty: hasChanges, onSave: save });
 
   return (
     <div className="space-y-5">

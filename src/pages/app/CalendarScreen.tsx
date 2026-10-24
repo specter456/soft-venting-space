@@ -10,6 +10,7 @@ import {
 } from "@/lib/calendar";
 import { useTable, type CalendarEntry, type VaultItem } from "@/lib/db";
 import { scopedGetItem, scopedSetItem } from "@/lib/safe-storage";
+import { useUnsavedWork } from "@/lib/useUnsavedGuard";
 import { useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
 
@@ -84,6 +85,26 @@ export default function CalendarScreen() {
       scopedSetItem(DECOR_KEY, JSON.stringify(decor));
     } catch { /* storage unavailable — ignore */ }
   }, [decor]);
+
+  // Clean-state baseline: the decorations we opened with.
+  const [decorBaseline, setDecorBaseline] = useState(() => JSON.stringify(decor));
+  // Unsaved = sticker / GIF / wallpaper changes since we opened (or last save).
+  const decorSig = JSON.stringify(decor);
+  useUnsavedWork({
+    dirty: decorSig !== decorBaseline,
+    // Decorations auto-persist, so saving just confirms + re-baselines.
+    onSave: () => {
+      setDecorBaseline(decorSig);
+      return true;
+    },
+    // Discard = put the decorations back exactly as we found them.
+    onDiscard: () => {
+      try {
+        setDecor(JSON.parse(decorBaseline) as typeof decor);
+        scopedSetItem(DECOR_KEY, decorBaseline);
+      } catch { /* storage unavailable — ignore */ }
+    },
+  });
 
   const prevMonth = useTapGuard(() => {
     setView((v) => new Date(v.getFullYear(), v.getMonth() - 1, 1));

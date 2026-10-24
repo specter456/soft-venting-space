@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { scopedGetItem, scopedSetItem } from "@/lib/safe-storage";
 import { cn } from "@/lib/utils";
+import { useUnsavedWork } from "@/lib/useUnsavedGuard";
 
 const STORAGE_KEY = "venting-future-notes";
 
@@ -111,6 +112,16 @@ export default function FutureNoteSection() {
 
   const unsealable = notes.filter((n) => n.opensOn <= today);
   const sealed = notes.filter((n) => n.opensOn > today);
+
+  // Unsaved = the composer holds text (a sealed note also needs a date).
+  useUnsavedWork({
+    dirty: writing && text.trim().length > 0,
+    onSave: () => {
+      if (!text.trim() || !selectedDate) return false; // can't seal without a day
+      sealNote();
+      return true;
+    },
+  });
 
   return (
     <div className="space-y-4">

@@ -1,7 +1,7 @@
 import { toast } from "sonner";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useNavigate } from "react-router";
-import { useSetDirty } from "@/lib/useUnsavedGuard";
+import { useUnsavedWork } from "@/lib/useUnsavedGuard";
 import { armPendingPin } from "@/components/PolaroidWall";
 import { Eraser, Loader2, Paintbrush, Pen, Save, Square, ImageDown, Copy, Grid2x2 } from "lucide-react";
 import { createVaultItem } from "@/lib/db";
@@ -94,11 +94,9 @@ export default function ScribbleScreen() {
   const photoImgRef = useRef<HTMLImageElement | null>(null);
   const [saving, setSaving] = useState(false);
   const [versions, setVersions] = useState<string[]>([]);
-
-  const setDirty = useSetDirty();
-  useEffect(() => {
-    setDirty(drawn && versions.length === 0);
-  }, [drawn, versions.length, setDirty]);
+  // True once the canvas content has been saved (or cleared away);
+  // any new stroke / background change marks it unsaved again.
+  const [saved, setSaved] = useState(false);
 
   const bgClass = BACKGROUNDS.find((b) => b.id === bg.id)!.cls;
 
@@ -115,18 +113,21 @@ export default function ScribbleScreen() {
   const pickPhotoBg = async () => {
     if (photoBg) {
       setPhotoOn((on) => !on);
+      setSaved(false);
       return;
     }
     const item = await importGalleryPhoto({ caption: "scribble background" });
     if (!item) return; // cancelled, or the soft "didn't open" line showed
     setPhotoBg(item.art);
     setPhotoOn(true);
+    setSaved(false);
     loadPhotoLayer(item.art);
   };
 
   const clearPhotoBg = () => {
     setPhotoBg(null);
     setPhotoOn(false);
+    setSaved(false);
     photoImgRef.current = null;
   };
 
@@ -182,7 +183,7 @@ export default function ScribbleScreen() {
   };
 
   const save = async () => {
-    if (saving) return;
+    if (saving) return false;
     setSaving(true);
     try {
       // capture the real drawing as a PNG (background + strokes) so the
@@ -194,6 +195,7 @@ export default function ScribbleScreen() {
         bg: bg.id === "night" ? "tile-lavender" : "tile-peach",
         caption: "a scribble",
       });
+      setSaved(true);
       toast("Scribble saved", {
         description: "Locked away in your private vault.",
         action: art
@@ -206,13 +208,18 @@ export default function ScribbleScreen() {
             }
           : undefined,
       });
+      return true;
     } catch (error) {
       console.error(error);
       toast("Couldn't save your scribble", { description: "Please try again in a moment." });
+      return false;
     } finally {
       setSaving(false);
     }
   };
+
+  // Unsaved = strokes on the canvas since the last save/clear.
+  useUnsavedWork({ dirty: drawn && !saved, onSave: save });
 
   return (
     <div className="space-y-4">
@@ -236,6 +243,7 @@ export default function ScribbleScreen() {
               drawing.current = true;
               hasDrawn.current = true;
               if (!drawn) setDrawn(true);
+              setSaved(false);
               lastPoint.current = null;
               (e.target as HTMLElement).setPointerCapture(e.pointerId);
               stroke(e);
@@ -318,7 +326,7 @@ export default function ScribbleScreen() {
           <button
             key={b.id}
             type="button"
-            onClick={() => setBg(b)}
+            onClick={() => { setBg(b); setSaved(false); }}
             className={cn(
               "h-8 w-8 rounded-full transition-transform hover:scale-110",
               b.cls,
@@ -362,6 +370,7 @@ export default function ScribbleScreen() {
           if (art) {
             setVersions((v) => [...v, art]);
             clear();
+            setSaved(true); // the original is saved as the copy
             toast("Page duplicated", { description: `Now editing copy ${versions.length + 2}. Original saved.` });
           }
         }}
@@ -384,6 +393,7 @@ export default function ScribbleScreen() {
               if (collage) {
                 createVaultItem({ kind: "photo", art: collage, bg: "tile-peach", caption: `a ${all.length}-page collage` });
                 saveToGallery(collage, `venting-collage-${Date.now()}.png`);
+                setSaved(true);
                 toast("Collage saved", { description: `${all.length} pages combined into one framed photo.` });
               }
             } catch {

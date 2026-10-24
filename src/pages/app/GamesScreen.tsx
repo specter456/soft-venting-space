@@ -7,6 +7,7 @@ import { quarantineKey } from "@/lib/error-journal";
 import { WORRY_BUBBLES } from "@/lib/art";
 import { music, type BuiltinTrackId } from "@/lib/music";
 import { useTapGuard } from "@/lib/useTapGuard";
+import { useUnsavedWork } from "@/lib/useUnsavedGuard";
 import { scopedGetItem, scopedSetItem } from "@/lib/safe-storage";
 import { cn } from "@/lib/utils";
 
@@ -46,6 +47,33 @@ export interface CustomGameConfig {
 }
 
 const STORAGE_KEY = "venting-custom-games";
+
+/** A brand-new builder's untouched defaults — the "clean" baseline. */
+const BUILDER_DEFAULTS: CustomGameConfig = {
+  id: "",
+  name: "",
+  world: "sky",
+  things: ["stars"],
+  touch: "catch",
+  sparkleStyle: "sparkles",
+  objectSize: "medium",
+  whisper: "",
+  sound: "chimes",
+  pace: "slow",
+  weather: "none",
+  amount: "some",
+  drift: "down",
+  createdAt: 0,
+};
+
+/** What counts as "changed" in the builder (id/createdAt excluded). */
+function configSig(c: CustomGameConfig): string {
+  return JSON.stringify([
+    c.name, c.world, c.things, c.touch, c.sparkleStyle, c.objectSize,
+    c.whisper, c.sound, c.pace, c.weather ?? "none", c.amount ?? "some",
+    c.drift ?? "down", c.worldPhoto ?? "", c.myDoodle ?? "",
+  ]);
+}
 
 function loadCustomGames(): CustomGameConfig[] {
   try {
@@ -688,6 +716,20 @@ export default function GamesScreen() {
     });
     setScreen({ kind: "grid" });
   }, []);
+
+  // Unsaved game setup: the live draft differs from what we opened with.
+  const editingSig = screen.kind === "builder" ? configSig(screen.editing ?? BUILDER_DEFAULTS) : null;
+  const draftSig = screen.kind === "builder" && draft ? configSig(draft) : null;
+  useUnsavedWork({
+    dirty: editingSig !== null && draftSig !== null && draftSig !== editingSig,
+    onSave: () => {
+      if (draft && screen.kind === "builder") {
+        saveGame(draft);
+        return true;
+      }
+      return false;
+    },
+  });
 
   return (
     <div className="relative">
