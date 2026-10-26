@@ -42,7 +42,7 @@ export { AspectRatio } from "./aspect-ratio"; // ~1KB - Maintain aspect ratios
 // Navigation
 export { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator, BreadcrumbEllipsis } from "./breadcrumb"; // ~4KB
 export { Tabs, TabsList, TabsTrigger, TabsContent } from "./tabs"; // ~5KB - Tab navigation
-export { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuTrigger, NavigationMenuContent, NavigationMenuLink, NavigationMenuIndicator, NavigationMenuViewport, navigationMenuTriggerStyle } from "./navigation-menu"; // ~8KB
+export { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuTrigger, NavigationMenuContent, NavigationMenuLink, NavigationMenuIndicator, NavigationMenuViewport } from "./navigation-menu"; // ~8KB
 
 // Overlays & Dialogs
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "./tooltip"; // ~4KB - Hover tooltips
@@ -65,7 +65,7 @@ export { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "./inpu
 // Content Display
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "./accordion"; // ~5KB - Collapsible sections
 export { Collapsible, CollapsibleTrigger, CollapsibleContent } from "./collapsible"; // ~3KB - Simple collapse
-export { Toggle, toggleVariants } from "./toggle"; // ~3KB - Toggle button
+export { Toggle } from "./toggle"; // ~3KB - Toggle button
 export { ToggleGroup, ToggleGroupItem } from "./toggle-group"; // ~4KB - Button group toggle
 export { Alert, AlertTitle, AlertDescription } from "./alert"; // ~3KB - Alert messages
 export { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, TableCaption } from "./table"; // ~4KB - Data tables

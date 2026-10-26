@@ -17,6 +17,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router";
+import { toast } from "sonner";
 
 /* ─── Global dirty flag (module-level) ───────────────────────────── */
 
@@ -182,12 +183,7 @@ export function useUnsavedGuard(onBack: () => void) {
     // If saving already navigated somewhere, don't move a second time.
     const urlNow = window.location.pathname + window.location.search + window.location.hash;
     if (urlNow === urlBefore) action();
-    if (saved) {
-      try {
-        const { toast } = await import("sonner");
-        toast("saved 💜");
-      } catch { /* toast is a nicety, never a failure */ }
-    }
+    if (saved) toast("saved 💜");
   }, []);
 
   const handleSave = useCallback(() => { void finish(true); }, [finish]);

@@ -2,7 +2,7 @@ import { toast } from "sonner";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useNavigate } from "react-router";
 import { useUnsavedWork } from "@/lib/useUnsavedGuard";
-import { armPendingPin } from "@/components/PolaroidWall";
+import { armPendingPin } from "@/lib/wall-pin";
 import { Eraser, Loader2, Paintbrush, Pen, Save, Square, ImageDown, Copy, Grid2x2 } from "lucide-react";
 import { createVaultItem } from "@/lib/db";
 import { importGalleryPhoto } from "@/lib/gallery";

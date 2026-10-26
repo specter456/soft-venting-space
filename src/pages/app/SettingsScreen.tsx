@@ -14,7 +14,7 @@ import { journalCount, copyReport, clearJournal, APP_VERSION } from "@/lib/error
 import { showCopiedToast, showCopyFailedToast, useCopyFeedback } from "@/lib/clipboard";
 import { useAsyncTapGuard, useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
-import { THEMES, useTheme } from "@/lib/themes";
+import { THEMES, useTheme } from "@/lib/theme";
 import { downloadBackup, restoreBackup } from "@/lib/backup";
 import SoftMilestones from "@/components/SoftMilestones";
 

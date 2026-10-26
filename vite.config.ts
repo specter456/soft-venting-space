@@ -25,8 +25,9 @@ export default defineConfig({
         // Manual chunk splitting for better caching and lazy loading
         manualChunks: {
           // Vendor chunks for large libraries
+          // (no convex-vendor chunk: the client bundle never imports `convex`,
+          // and an empty manual chunk triggers a build warning.)
           'react-vendor': ['react', 'react-dom', 'react-router'],
-          'convex-vendor': ['convex'],
           // Large UI library chunks
           'radix-ui': [
             '@radix-ui/react-accordion',

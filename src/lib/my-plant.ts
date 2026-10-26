@@ -207,3 +207,16 @@ export function plantStatusLine(s: PlantState | null): string {
   }
   return `${s.careDays} day${s.careDays === 1 ? "" : "s"} · needs water 💧`;
 }
+
+/** Home-card line — "1 day · A Tiny Seed", never "1 days". */
+export function plantCardLine(s: PlantState | null): string {
+  if (!s) return "plant a seed to begin 🌱";
+  const n = s.careDays;
+  return `${n} day${n === 1 ? "" : "s"} · ${stageForDays(n).label}`;
+}
+
+/** Tiny status for the Home card: watered today 💤 / needs water 💧. */
+export function plantCardStatus(s: PlantState | null): string | null {
+  if (!s) return null;
+  return canWaterToday(s) ? "needs water 💧" : "watered today 💤";
+}

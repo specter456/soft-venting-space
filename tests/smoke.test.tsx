@@ -120,7 +120,7 @@ console.error = (...args: unknown[]) => {
 const origWarn = console.warn;
 console.warn = (...args: unknown[]) => {
   const msg = args.map((a) => (a instanceof Error ? a.message : String(a))).join(" ");
-  // Warnings are recorded but never fail the run.
+  // Warnings fail the run too — the tour's console must be completely clean.
   consoleErrors.push(`(warn) ${msg}`);
 };
 
@@ -199,10 +199,17 @@ function expectNoBoundary() {
   expect(boundaryHits, `error boundary caught: ${JSON.stringify(boundaryHits)}`).toHaveLength(0);
 }
 function expectNoConsoleErrors() {
+  // Excused: React's own "The above error occurred in" parenting lines, and
+  // db.ts's intentional "IndexedDB unavailable" degraded-storage diagnostic,
+  // which only fires in environments without IndexedDB (the test DOM) and is
+  // a deliberate warning, not noise. Everything else — every console.error
+  // AND console.warn — must stay clean on the tour.
   const real = consoleErrors.filter(
-    (m) => !m.includes("The above error occurred in") && !m.startsWith("(warn)"),
+    (m) =>
+      !m.includes("The above error occurred in") &&
+      !m.includes("IndexedDB unavailable"),
   );
-  expect(real, `console.error fired:\n${consoleErrors.join("\n")}`).toHaveLength(0);
+  expect(real, `console.error/warn fired:\n${consoleErrors.join("\n")}`).toHaveLength(0);
 }
 function expectVisible(matcher: RegExp, label: string) {
   const t = text();

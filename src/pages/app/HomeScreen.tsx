@@ -6,7 +6,7 @@ import { removeItem, saveCheckin, useTable, getSetting, type MoodCheckin } from 
 import { type MoodId, moodById, todayDateKey } from "@/lib/moods";
 import { useTapGuard } from "@/lib/useTapGuard";
 import { cn } from "@/lib/utils";
-import { useSeasonEmoji } from "@/components/SeasonalParticles";
+import { useSeasonEmoji } from "@/lib/season";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 // Lazy-load heavy child components — each pulls in framer-motion; loading
 // them all at once made the home screen slow to appear.

@@ -18,13 +18,14 @@ import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router";
 import fs from "node:fs";
 import path from "node:path";
+import { PlantUnit, PlantHomeCard } from "@/components/MyLittlePlant";
 import {
-  PlantUnit,
-  PlantHomeCard,
+  SEED_PALETTES,
   plantCardLine,
   plantCardStatus,
-} from "@/components/MyLittlePlant";
-import { SEED_PALETTES, plantDateKey, type PlantState } from "@/lib/my-plant";
+  plantDateKey,
+  type PlantState,
+} from "@/lib/my-plant";
 import { setScopedSpaceId } from "@/lib/safe-storage";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

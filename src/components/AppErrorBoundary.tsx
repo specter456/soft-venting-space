@@ -2,7 +2,6 @@ import React from "react";
 import { useLocation, useNavigate } from "react-router";
 import { FriendlyCrashFallback } from "@/components/Friendly";
 import { logError, reportCode, copyReport, shareReport } from "@/lib/error-journal";
-import { isChunkLoadError, trySoftReload } from "@/lib/lazyWithRetry";
 import { showCopiedToast, showCopyFailedToast } from "@/lib/clipboard";
 
 interface Props {
@@ -20,8 +19,6 @@ interface State {
   /** True for 2s after a successful copy so the button reads "copied! ✓". */
   copied: boolean;
 }
-
-let lastGlobalErrorAt = 0;
 
 /**
  * Friendly error boundary. Shows a gentle snag card with a report code.
@@ -195,44 +192,3 @@ export class QuietBoundary extends React.Component<{ children: React.ReactNode; 
   }
 }
 
-/**
- * Global safety net: uncaught errors and unhandled rejections outside React
- * show a friendly toast instead of silently leaving the app broken. Fires at
- * most once every 5 seconds to avoid toast storms.
- */
-export function installGlobalErrorHandlers(): () => void {
-  const report = () => {
-    const now = Date.now();
-    if (now - lastGlobalErrorAt < 5000) return;
-    lastGlobalErrorAt = now;
-    // Lazy import keeps the main bundle light.
-    import("@/components/Friendly").then(({ showFriendlyErrorToast }) =>
-      showFriendlyErrorToast(),
-    );
-  };
-
-  const onError = (event: ErrorEvent) => {
-    console.error("[venting] uncaught error:", event.error ?? event.message);
-    report();
-  };
-  const onRejection = (event: PromiseRejectionEvent) => {
-    // Lazy-chunk failures self-heal: ONE soft reload per session (guarded
-    // against loops). Keep the console clean — we handle it, no snag card.
-    if (isChunkLoadError(event.reason)) {
-      event.preventDefault();
-      if (trySoftReload()) return;
-      logError("lazy-chunk-global", String(event.reason?.message ?? event.reason));
-      report();
-      return;
-    }
-    console.error("[venting] unhandled rejection:", event.reason);
-    report();
-  };
-
-  window.addEventListener("error", onError);
-  window.addEventListener("unhandledrejection", onRejection);
-  return () => {
-    window.removeEventListener("error", onError);
-    window.removeEventListener("unhandledrejection", onRejection);
-  };
-}

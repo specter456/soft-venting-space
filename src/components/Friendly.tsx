@@ -1,12 +1,7 @@
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useCopyFeedback } from "@/lib/clipboard";
-
-/** Never show raw technical text — every failure gets a gentle explanation. */
-export function friendlyErrorText(): string {
-  return "Something went soft for a second. Don't worry — your feelings are all still safe on this device. Try again, and if it keeps happening, we're here for you.";
-}
+import { friendlyErrorText } from "@/lib/friendly";
 
 /**
  * Friendly full-screen fallback for the app error boundary. No raw error
@@ -93,20 +88,9 @@ export function FriendlyCrashFallback({
   );
 }
 
-/** Show a friendly toast for an unexpected error (no raw message). */
-export function showFriendlyErrorToast(): void {
-  toast.error("A soft hiccup", {
-    description: friendlyErrorText(),
-    action: {
-      label: "Try again",
-      onClick: () => window.location.reload(),
-    },
-  });
-}
-
 /* ─── Online / offline ─────────────────────────────────────────────── */
 
-export function useOnline(): boolean {
+function useOnline(): boolean {
   const [online, setOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine,
   );

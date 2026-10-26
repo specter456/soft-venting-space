@@ -1,5 +1,14 @@
 import React, { Suspense } from "react";
-import { AppErrorBoundary, ScreenBoundary, installGlobalErrorHandlers } from "@/components/AppErrorBoundary";
+import { AppErrorBoundary } from "@/components/AppErrorBoundary";
+import { installGlobalErrorHandlers } from "@/lib/global-error-handlers";
+import {
+  GlobalNotice,
+  InnerRoute,
+  RouteShell,
+  RouteSyncer,
+  SplashLoader,
+  ToolbarErrorBoundary,
+} from "@/app-shell";
 import { hydrate } from "@/lib/db";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
@@ -8,10 +17,9 @@ const Toaster = lazyWithRetry(() => import("@/components/ui/sonner").then(m => (
 // VlyToolbar lazy-loaded — it imports framer-motion + @zumer/snapdom which
 // are heavy; only needed on dev deployments (.vly.sh), so defer entirely.
 const VlyToolbar = lazyWithRetry(() => import("../vly-toolbar-readonly.tsx").then(m => ({ default: m.VlyToolbar })));
-// OfflineNotice lazy — pulls in sonner, not needed for first paint
-const OfflineNotice = lazyWithRetry(() => import("@/components/Friendly").then(m => ({ default: m.OfflineNotice })));
+
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router";
+import { BrowserRouter, Route, Routes } from "react-router";
 import { ThemeProvider } from "@/lib/themes";
 import "./index.css";
 
@@ -44,45 +52,6 @@ import {
   PlantScreen,
 } from "@/lib/screens";
 
-/**
- * Soft screen skeleton — shown only if a chunk is still in flight (first
- * visit with no warm-up). It mirrors the shape of a screen and swaps out
- * seamlessly the moment the real screen resolves — never a full-screen
- * "warming up…" heart.
- */
-function ScreenSkeleton() {
-  return (
-    <div
-      aria-hidden
-      className="min-h-[55dvh] w-full animate-pulse space-y-4 pt-4 motion-reduce:animate-none"
-    >
-      <div className="h-4 w-28 rounded-full bg-[var(--theme-accent-light, #D9DEF4)]" />
-      <div className="h-40 w-full rounded-[1.6rem] bg-white/70" />
-      <div className="grid grid-cols-2 gap-3">
-        <div className="h-24 rounded-3xl bg-white/70" />
-        <div className="h-24 rounded-3xl bg-white/70" />
-        <div className="h-24 rounded-3xl bg-white/70" />
-        <div className="h-24 rounded-3xl bg-white/70" />
-      </div>
-    </div>
-  );
-}
-
-/** Wrap lazy components in Suspense */
-function Lazy({ children }: { children: React.ReactNode }) {
-  return <Suspense fallback={<ScreenSkeleton />}>{children}</Suspense>;
-}
-
-/** Inline splash loader for top-level lazy routes — shows instantly */
-function SplashLoader() {
-  return (
-    <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-[#EDEBF6]">
-      <div className="text-5xl animate-floaty-slow">💜</div>
-      <p className="mt-4 text-sm font-semibold text-ink-soft">warming up…</p>
-    </div>
-  );
-}
-
 // Kick off local-storage hydration after first paint — everything Venting needs
 // lives on this device, so no async auth gate is required.
 // Using requestIdleCallback + setTimeout fallback so hydration never blocks
@@ -96,77 +65,8 @@ deferHydration(() => {
   });
 });
 
-/** Guard so runtime errors never leave the app as a blank page. */
-class ToolbarErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean }
-> {
-  state = { hasError: false };
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-  componentDidCatch(err: Error) {
-    console.warn("[VlyToolbar] Caught error, toolbar disabled:", err.message);
-  }
-  render() {
-    return this.state.hasError ? null : this.props.children;
-  }
-}
-
-/** Per-route boundary so one broken screen never blanks the whole app. */
-function RouteShell({ children }: { children: React.ReactNode }) {
-  return (
-    <AppErrorBoundary onContinue={() => (window.location.href = "/")}>
-      {children}
-    </AppErrorBoundary>
-  );
-}
-
-/** Inner-screen boundary: shell survives; auto-resets on navigation. */
-function InnerRoute({ children }: { children: React.ReactNode }) {
-  return (
-    <Lazy>
-      <ScreenBoundary>{children}</ScreenBoundary>
-    </Lazy>
-  );
-}
-
-function RouteSyncer() {
-  const location = useLocation();
-  React.useEffect(() => {
-    window.parent.postMessage(
-      { type: "iframe-route-change", path: location.pathname },
-      "*",
-    );
-  }, [location.pathname]);
-
-  React.useEffect(() => {
-    function handleMessage(event: MessageEvent) {
-      if (event.data?.type === "navigate") {
-        if (event.data.direction === "back") window.history.back();
-        if (event.data.direction === "forward") window.history.forward();
-      }
-    }
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, []);
-
-  return null;
-}
-
 // Global safety net for errors that happen outside React (runs once).
 installGlobalErrorHandlers();
-
-// Gentle offline notice pinned to the top of the app — never blocking.
-function GlobalNotice() {
-  return (
-    <div className="pointer-events-none fixed inset-x-0 top-2 z-[60] flex justify-center px-4">
-      <Suspense fallback={null}>
-        <OfflineNotice />
-      </Suspense>
-    </div>
-  );
-}
 
 const rootEl = document.getElementById("root");
 if (!rootEl) {

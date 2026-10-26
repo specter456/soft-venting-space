@@ -10,7 +10,7 @@ import { saveToGallery } from "@/lib/save-to-gallery";
 import { combineIntoCollage } from "@/lib/collage";
 import { PHOTO_SCENES } from "@/lib/art";
 import { isImageArt, renderPhotoScene } from "@/lib/canvas-art";
-import { armPendingPin } from "@/components/PolaroidWall";
+import { armPendingPin } from "@/lib/wall-pin";
 import { cn } from "@/lib/utils";
 
 const TOOLS = [

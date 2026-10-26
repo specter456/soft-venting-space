@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { sfxArpeggio } from "@/lib/sfx";
-import { BuilderShell, worldGradientFor } from "@/components/BuilderShell";
+import { BuilderShell } from "@/components/BuilderShell";
+import { worldGradientFor } from "@/lib/world-gradients";
 import { quarantineKey } from "@/lib/error-journal";
 import { WORRY_BUBBLES } from "@/lib/art";
 import { music, type BuiltinTrackId } from "@/lib/music";
@@ -312,8 +313,6 @@ function sfxThock() {
   } catch { /* */ }
 }
 
-// sfxWater re-exported from shared module to avoid circular dependency
-export { sfxWater } from "@/lib/sfx";
 
 /** Soft fill / drip — for coloring regions */
 function sfxFill() {
@@ -359,8 +358,8 @@ function sfxSplash() {
     const g = c.createGain(); g.gain.value = 0.18;
     src.connect(filter); filter.connect(g); g.connect(c.destination); src.start(c.currentTime);
   } catch { /* */ }
-}// sfxArpeggio re-exported from shared module to avoid circular dependency
-export { sfxArpeggio } from "@/lib/sfx";
+}
+
 
 /* ─── Game registry ───────────────────────────────────────────────── */
 
@@ -552,9 +551,11 @@ export default function GamesScreen() {
     return { kind: "grid" };
   });
   // Deep links (?game=x) win over internal navigation state.
-  const screen: ScreenState = forcedGame
-    ? { kind: "play", game: forcedGame }
-    : screenState;
+  // Memoised so downstream useCallback deps keep a stable identity.
+  const screen: ScreenState = useMemo(
+    () => (forcedGame ? { kind: "play", game: forcedGame } : screenState),
+    [forcedGame, screenState],
+  );
   const [customGames, setCustomGames] = useState<CustomGameConfig[]>(loadCustomGames);
 
   // ─── Recently played (last 3) + favorites — saved locally ────────
