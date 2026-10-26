@@ -199,15 +199,20 @@ function expectNoBoundary() {
   expect(boundaryHits, `error boundary caught: ${JSON.stringify(boundaryHits)}`).toHaveLength(0);
 }
 function expectNoConsoleErrors() {
-  // Excused: React's own "The above error occurred in" parenting lines, and
-  // db.ts's intentional "IndexedDB unavailable" degraded-storage diagnostic,
+  // Excused: (1) React's own "The above error occurred in" parenting lines,
+  // (2) db.ts's intentional "IndexedDB unavailable" degraded-storage diagnostic,
   // which only fires in environments without IndexedDB (the test DOM) and is
-  // a deliberate warning, not noise. Everything else — every console.error
-  // AND console.warn — must stay clean on the tour.
+  // a deliberate warning, not noise, and (3) React's act() harness message
+  // "A suspended resource finished loading inside a test" — a diagnostic
+  // React emits ONLY when IS_REACT_ACT_ENVIRONMENT is set (test code telling
+  // the test author to wrap a suspension in act()); it cannot exist in a
+  // real browser console. Everything else — every console.error AND
+  // console.warn — must stay clean on the tour.
   const real = consoleErrors.filter(
     (m) =>
       !m.includes("The above error occurred in") &&
-      !m.includes("IndexedDB unavailable"),
+      !m.includes("IndexedDB unavailable") &&
+      !m.includes("suspended resource finished loading inside a test"),
   );
   expect(real, `console.error/warn fired:\n${consoleErrors.join("\n")}`).toHaveLength(0);
 }
@@ -632,6 +637,81 @@ describe("Venting smoke tour", () => {
       await act(async () => {
         await new Promise((r) => setTimeout(r, 5000));
       });
+
+      expectNoBoundary();
+      expectNoConsoleErrors();
+    },
+  );
+
+  it(
+    "every remaining screen, creator, calendar customize and 404 stay console-clean",
+    { retry: 2, timeout: 120_000 },
+    async () => {
+      __mark("test9 start");
+      // The soft screen skeleton carries no text — its absence proves the
+      // lazy chunk resolved and the screen's REAL content mounted (so a
+      // warning fired during that mount lands inside our capture window).
+      const skeletonGone = () =>
+        !container.querySelector('[class*="min-h-[55dvh]"]');
+
+      const visit = async (path: string, marker: RegExp, label: string) => {
+        go(path);
+        await waitFor(marker, label);
+        await waitUntil(skeletonGone, `${label} — skeleton swapped for content`);
+        expectNoConsoleErrors();
+      };
+
+      await visit("/dashboard/notes", /Your reflections/, "notes");
+      await visit("/dashboard/notes/new", /How did it feel\?/, "note editor");
+      await visit(
+        "/dashboard/create",
+        /make something soft out of how you feel/,
+        "create tools",
+      );
+      await visit("/dashboard/vault", /Private vault/, "private vault");
+      await visit("/dashboard/plant", /your little plant/, "plant screen");
+
+      const { dateKeyFor } = await import("../src/lib/calendar");
+      await visit(
+        `/dashboard/calendar/${dateKeyFor(new Date())}`,
+        /back to calendar/,
+        "calendar day view",
+      );
+
+      // Calendar customize mode (sticker / GIF / wallpaper changes).
+      go("/dashboard/calendar");
+      await waitFor(/important|thought dump|notes/i, "calendar (customize)");
+      await settle(350);
+      act(() => { button((t) => t.includes("customize")).click(); });
+      await waitFor(/done/, "customize mode on");
+      expectNoConsoleErrors();
+
+      // Game creator builder via the games grid's creator card.
+      go("/dashboard/games");
+      await waitFor(/gentle places to land/, "games grid (creator)");
+      await settle(350);
+      act(() => { button((t) => t.includes("Create your own game")).click(); });
+      await waitFor(/your game, in a nutshell|recipe 🍳/, "creator builder");
+      expectNoConsoleErrors();
+
+      // 404 for an unknown route — its content marker itself proves the
+      // chunk mounted (top-level route, no inner soft skeleton involved).
+      go("/dashboard/definitely-not-a-route");
+      await waitFor(/your safe room is still here/, "404 page");
+      expectNoConsoleErrors();
+
+      // Leaving /dashboard re-arms the lock (by design — the lock state
+      // lives on the dashboard tree), so re-enter with the passcode to hand
+      // a clean, unlocked app to the lock test below.
+      go("/dashboard");
+      await waitFor(/enter your passcode/i, "lock re-armed after 404");
+      await settle(350);
+      await tapCode();
+      await settle(700);
+      await waitFor(
+        /Good (morning|afternoon|evening|night)|How are you feeling/,
+        "unlocked home after 404",
+      );
 
       expectNoBoundary();
       expectNoConsoleErrors();

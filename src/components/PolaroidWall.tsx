@@ -121,8 +121,8 @@ export function PolaroidWallScreen() {
       const t = setTimeout(() => addPin(pending.vaultId, pending.art, true), 0);
       return () => clearTimeout(t);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // addPin is a stable useCallback — running this one-shot on mount only.
+  }, [addPin]);
 
   const removePin = (id: string) => {
     setPins((prev) => {

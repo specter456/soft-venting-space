@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import { useTable, type MoodCheckin, type VaultItem, type KVPair } from "@/lib/db";
 import { scopedGetItem } from "@/lib/safe-storage";
@@ -113,13 +113,14 @@ export default function SoftMilestones() {
   const checkins = useTable<MoodCheckin>("moodCheckins");
   const vaultItems = useTable<VaultItem>("vaultItems");
   const kv = useTable<KVPair>("kv");
-  const [prevEarned, setPrevEarned] = useState<Set<MilestoneId>>(new Set());
+  // Diffing memory only — never rendered, so a ref keeps it out of the
+  // effect's dependency array entirely (state here caused an extra run).
+  const prevEarnedRef = useRef<Set<MilestoneId>>(new Set());
   const initRef = useRef(true);
 
   // MUST be memoized: getEarnedMilestones returns a fresh Set each call, and
-  // a new identity in the effect's dep array re-ran that effect forever
-  // (setPrevEarned → new Set → new dep → effect → …) — an infinite render
-  // loop that froze Settings (same family as snag #5191).
+  // an unstable identity in the effect's dep array re-ran that effect forever
+  // — an infinite render loop that froze Settings (same family as snag #5191).
   const earned = useMemo(
     () => getEarnedMilestones(checkins, vaultItems, kv),
     [checkins, vaultItems, kv],
@@ -129,25 +130,20 @@ export default function SoftMilestones() {
   useEffect(() => {
     if (initRef.current) {
       initRef.current = false;
-      setPrevEarned(new Set(earned));
+      prevEarnedRef.current = new Set(earned);
       return;
     }
     for (const id of earned) {
-      if (!prevEarned.has(id)) {
+      if (!prevEarnedRef.current.has(id)) {
         toast("you grew a little milestone 🌱", {
           description: MILESTONES.find((m) => m.id === id)?.label,
         });
         break; // one toast at a time
       }
     }
-    // Keep identity stable when nothing changed, so this effect can't
-    // schedule another render for no reason.
-    setPrevEarned((prev) =>
-      prev.size === earned.size && [...prev].every((id) => earned.has(id))
-        ? prev
-        : new Set(earned),
-    );
-  }, [earned]); // eslint-disable-line react-hooks/exhaustive-deps
+    // A ref write schedules no render, so this can never loop.
+    prevEarnedRef.current = new Set(earned);
+  }, [earned]);
 
   return (
     <div className="grid grid-cols-2 gap-2">

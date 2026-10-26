@@ -46,9 +46,11 @@ export function isChunkLoadError(reason: unknown): boolean {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- each call site keeps its own prop type at the JSX usage; the wrapper stays props-agnostic.
-type AnyComponent = React.ComponentType<any>;
-type LazyFactory = () => Promise<{ default: AnyComponent }>;
+// Props-agnostic wrapper: C is the exact component type each call site
+// imports, so its concrete props flow through to the JSX usage untouched.
+// The `ComponentType<never>` constraint accepts every component (props are
+// contravariant: `never` is assignable to any props type) — no `any` needed.
+type Loader<C> = () => Promise<{ default: C }>;
 
 /** Screens warmed by `prefetchScreen` (name → true) — diagnostics/tests. */
 const warmedScreens = new Set<string>();
@@ -89,37 +91,46 @@ export function prefetchScreen(
   }
 }
 
-export function lazyWithRetry(
-  importer: LazyFactory,
+export function lazyWithRetry<C extends React.ComponentType<never>>(
+  importer: Loader<C>,
   retries = 3,
   delayMs = 300,
-): React.LazyExoticComponent<AnyComponent> {
+): C {
   const attempt = (
     remaining: number,
     delay: number,
-  ): Promise<{ default: AnyComponent }> =>
+  ): Promise<{ default: C }> =>
     importer().catch((err: unknown) => {
       if (remaining <= 0) {
         // Retries exhausted → ONE soft reload; while it fires, keep the
         // soft skeleton visible (never resolve, never reject).
         if (trySoftReload()) return new Promise<never>(() => {});
         logError("lazy-chunk", err instanceof Error ? err : String(err));
-        return { default: ChunkRetryCard };
+        // The retry card renders no props, so it is safe for any screen.
+        return { default: ChunkRetryCard as unknown as C };
       }
       console.info(
         `[venting] chunk retry (${retries - remaining + 1}/${retries})…`,
       );
-      return new Promise<{ default: AnyComponent }>((resolve) =>
+      return new Promise<{ default: C }>((resolve) =>
         setTimeout(resolve, delay),
       ).then(() => attempt(remaining - 1, delay + delayMs));
     });
 
   // Memoised loader: React.lazy's factory and prefetchScreen both hit this
   // one promise, so warming a screen and rendering a screen share the same chunk.
-  let load: Promise<{ default: AnyComponent }> | null = null;
+  let load: Promise<{ default: C }> | null = null;
   const start = () => (load ??= attempt(retries, delayMs));
 
-  const lazy = React.lazy(() => start());
+  // React.lazy's public signature is written against `ComponentType<any>`
+  // internally; C is always a real component type, so this single bridge
+  // at the React boundary is the only cast the wrapper needs.
+  const lazy = React.lazy(
+    () =>
+      start() as unknown as Promise<{
+        default: React.ComponentType<Record<string, unknown>>;
+      }>,
+  ) as unknown as C;
   starters.set(lazy, start);
   return lazy;
 }
