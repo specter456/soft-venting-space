@@ -1,0 +1,1 @@
+function r(e){return e>=2&&e<=4?"spring":e>=5&&e<=7?"summer":e>=8&&e<=10?"autumn":"winter"}const n={spring:"🌸",summer:"✨",autumn:"🍂",winter:"❄️"};function u(){return n[r(new Date().getMonth())]}export{r as g,u};

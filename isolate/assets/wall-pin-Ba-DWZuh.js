@@ -1,0 +1,1 @@
+import{s as r,o as s,z as a,q as i}from"./index-DDDPe--x.js";const t="venting-pending-wall-pin";function c(e,n){r(t,JSON.stringify({vaultId:e,art:n}))}function p(){try{const e=s(t);if(!e)return null;a(t);const n=JSON.parse(e);return n&&typeof n.art=="string"?n:null}catch{return i(t),null}}export{c as a,p as c};
