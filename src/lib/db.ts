@@ -179,7 +179,7 @@ export function getActiveSpaceId(): string | null {
 /** Set the active space. Persists to kv and triggers re-render. */
 /** Keys that live in localStorage and need per-space migration. */
 const MIGRATABLE_LS_KEYS = [
-  "theme", "streak-plant", "plant-shelf", "future-notes", "polaroid-wall",
+  "theme", "plant", "streak-plant", "plant-shelf", "future-notes", "polaroid-wall",
   "pending-wall-pin", "gratitude-jar", "wind-down-used", "milestone-storyteller",
   "reminder-shown-today", "music-volume", "music-ambient-track", "music-ambient-uploads",
   "music-game-uploads", "music-off", "active-scene", "diary-cover", "custom-games",
@@ -187,8 +187,30 @@ const MIGRATABLE_LS_KEYS = [
   "checkin", "lock-dismissed", "band-songs",
 ];
 
-/** One-time: copy old unprefixed localStorage keys into the scoped namespace. */
+/**
+ * Is this the first space ever created on the device?
+ * Legacy (unscoped) content belongs to the first space — never to a space
+ * created later, which must always start fresh.
+ */
+function isFirstSpace(spaceId: string): boolean {
+  try {
+    const raw = (cache.kv as KVPair[]).find((k) => k.key === "savedSpaces")?.value;
+    if (!raw) return true; // legacy single-space device — this is the first
+    const list = JSON.parse(raw) as { id?: string }[];
+    if (!Array.isArray(list) || list.length === 0) return true;
+    return list[0]?.id === spaceId;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * One-time: copy old unprefixed localStorage keys into the scoped namespace
+ * of the FIRST space, then consume the legacy copies so a space created
+ * later can never inherit them.
+ */
 function migrateLocalStorageKeys(spaceId: string): void {
+  if (!isFirstSpace(spaceId)) return;
   const prefix = `venting:${spaceId}:`;
   try {
     for (const key of MIGRATABLE_LS_KEYS) {
@@ -203,6 +225,10 @@ function migrateLocalStorageKeys(spaceId: string): void {
       if (found !== undefined && found !== null) {
         localStorage.setItem(scoped, found);
       }
+    }
+    // Consume the unscoped copies — legacy content has exactly one home.
+    for (const key of MIGRATABLE_LS_KEYS) {
+      localStorage.removeItem(`venting-${key}`);
     }
   } catch { /* private mode — ignore */ }
 }

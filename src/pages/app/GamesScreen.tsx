@@ -1469,13 +1469,14 @@ const NIMBUS_COLORS: { id: NimbusColor; label: string; bg: string; shadow: strin
   { id: "mint", label: "mint", bg: "bg-[#E0F0EC]", shadow: "rgba(140,180,170,0.4)" },
 ];
 
-const NIMBUS_STORAGE_KEY = "venting-nimbus-color";
+// Scoped per space by the storage helper (`venting:<spaceId>:nimbus-color`).
+const NIMBUS_STORAGE_KEY = "nimbus-color";
 
 function NimbusFriend() {
   const [mood, setMood] = useState<NimbusMood>("idle");
   const [blush, setBlush] = useState(false);
   const [color, setColor] = useState<NimbusColor>(() => {
-    try { return (localStorage.getItem(NIMBUS_STORAGE_KEY) as NimbusColor) || "white"; } catch { return "white"; }
+    try { return (scopedGetItem(NIMBUS_STORAGE_KEY) as NimbusColor) || "white"; } catch { return "white"; }
   });
   const [showPalette, setShowPalette] = useState(false);
   const [sparkles, setSparkles] = useState<{ id: number; x: number; y: number }[]>([]);
@@ -1497,9 +1498,9 @@ function NimbusFriend() {
 
   const colorData = NIMBUS_COLORS.find((c) => c.id === color) ?? NIMBUS_COLORS[0];
 
-  // Save color preference
+  // Save color preference (per space)
   useEffect(() => {
-    try { localStorage.setItem(NIMBUS_STORAGE_KEY, color); } catch { /* ignore */ }
+    try { scopedSetItem(NIMBUS_STORAGE_KEY, color); } catch { /* ignore */ }
   }, [color]);
 
   // Reset idle timer on any interaction

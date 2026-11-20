@@ -32,6 +32,9 @@ export const DiaryScreen = lazyWithRetry(() => import("@/pages/app/DiaryScreen")
 export const PolaroidWallScreen = lazyWithRetry(() =>
   import("@/components/PolaroidWall").then((m) => ({ default: m.PolaroidWallScreen })),
 );
+export const GratitudeJarScreen = lazyWithRetry(() =>
+  import("@/components/GratitudeJar").then((m) => ({ default: m.GratitudeJarScreen })),
+);
 
 /* ── Plant screen — its own route/header, entered from the Home card.
    Home already lazy-loads this exact module for the card, so the chunk is

@@ -47,6 +47,7 @@ import {
   SettingsScreen,
   DiaryScreen,
   PolaroidWallScreen,
+  GratitudeJarScreen,
   CalendarScreen,
   CalendarDayView,
   PlantScreen,
@@ -138,6 +139,7 @@ createRoot(rootEl).render(
             <Route path="settings" element={<InnerRoute><SettingsScreen /></InnerRoute>} />
             <Route path="diary" element={<InnerRoute><DiaryScreen /></InnerRoute>} />
             <Route path="polaroid-wall" element={<InnerRoute><PolaroidWallScreen /></InnerRoute>} />
+            <Route path="jar" element={<InnerRoute><GratitudeJarScreen /></InnerRoute>} />
           </Route>
           <Route path="*" element={<RouteShell><React.Suspense fallback={<SplashLoader />}><NotFound title="Page not found" /></React.Suspense></RouteShell>} />
         </Routes>

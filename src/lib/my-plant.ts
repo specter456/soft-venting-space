@@ -7,8 +7,11 @@
 import { scopedGetItem, scopedRemoveItem, scopedSetItem } from "./safe-storage";
 import { quarantineKey } from "@/lib/error-journal";
 
-const PLANT_KEY = "venting-streak-plant";
-const SHELF_KEY = "venting-plant-shelf";
+/** Scoped by the storage helper as `venting:<spaceId>:plant` — never shared. */
+const PLANT_KEY = "plant";
+const SHELF_KEY = "plant-shelf";
+/** Pre-scoping key — migrated into `plant` for its own space on first read. */
+const LEGACY_PLANT_KEY = "streak-plant";
 
 export type SeedColor = "wisteria" | "rose" | "sun-gold" | "mint";
 
@@ -106,8 +109,23 @@ export function currentMonthDaysWatered(s: PlantState): number[] {
   return [...s.wateredMonthDays].sort((a, b) => a - b);
 }
 
+/**
+ * One-time, per-space rename: an older build stored the plant under
+ * `venting:<spaceId>:streak-plant`. Move it to `venting:<spaceId>:plant`
+ * for the SAME space only — it can never travel to another space.
+ */
+function migrateLegacyPlantKey(): void {
+  try {
+    const legacy = scopedGetItem(LEGACY_PLANT_KEY);
+    if (legacy === null) return;
+    if (scopedGetItem(PLANT_KEY) === null) scopedSetItem(PLANT_KEY, legacy);
+    scopedRemoveItem(LEGACY_PLANT_KEY);
+  } catch { /* ignore */ }
+}
+
 export function loadPlantState(): PlantState | null {
   try {
+    migrateLegacyPlantKey();
     const raw = scopedGetItem(PLANT_KEY);
     if (!raw) return null;
     const s = JSON.parse(raw) as PlantState;

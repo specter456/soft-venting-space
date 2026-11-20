@@ -48,7 +48,8 @@ beforeAll(() => {
 
 afterEach(async () => {
   await act(async () => root.unmount());
-  localStorage.removeItem("venting-streak-plant");
+  localStorage.removeItem("plant");
+  localStorage.removeItem("streak-plant");
   container.innerHTML = "";
   root = createRoot(container);
 });
@@ -219,11 +220,11 @@ describe("Home card copy", () => {
 });
 
 function seedPlant(careDays: number, lastWateredOn: string) {
-  // plain (unscoped) key — no active space in this test
+  // no active space in this test → the app's key is used verbatim
   setScopedSpaceId(null);
   const today = plantDateKey(0);
   localStorage.setItem(
-    "venting-streak-plant",
+    "plant",
     JSON.stringify({
       seed: "wisteria",
       plantedOn: today,
